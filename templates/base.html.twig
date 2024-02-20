@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>{% block title %}{{ env.INSTANCE_NAME }}{% endblock %}</title>
+        <link rel="icon" href="{{ asset('build/'~env.THEME_ICON) }}">
+        <meta name="theme-color" content="{{ env.THEME_COLOR_1 }}">
+        {% block stylesheets %}
+            {{ encore_entry_link_tags('app', null, 'app') }}
+        {% endblock %}
+
+        {% block javascripts %}
+            {{ encore_entry_script_tags('app', null, 'app') }}
+        {% endblock %}
+    </head>
+    <body>
+        {% block body %}{% endblock %}
+    </body>
+</html>

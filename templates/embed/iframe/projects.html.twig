@@ -1,0 +1,75 @@
+{% extends 'embed/iframe.html.twig' %}
+
+{% block title %}{{ parent() }} | {{ 'Projekte'|trans }}{% endblock %}
+
+{% block meta %}
+    {{ parent() }}
+    <meta name="robots" content="noindex">
+{% endblock %}
+
+{% block stylesheets %}
+    {{ encore_entry_link_tags('embed-projects', null, 'embed-projects') }}
+{% endblock %}
+
+{% block javascripts %}
+    {{ encore_entry_script_tags('embed-projects', null, 'embed-projects') }}
+{% endblock %}
+
+{% block body %}
+
+    <div id="app"></div>
+
+    <style>
+        {% if app.request.get('primaryColor') and app.request.get('primaryColor') starts with '#' %}
+            #app .embed-projects {
+                --{{ env.INSTANCE_ID }}-primary-color: {{ app.request.get('primaryColor') }};
+            }
+        {% endif %}
+        {% if app.request.get('secondaryColor') and app.request.get('primaryColor') starts with '#' %}
+            #app .embed-projects {
+                --{{ env.INSTANCE_ID }}-secondary-color: {{ app.request.get('secondaryColor') }};
+            }
+        {% endif %}
+    </style>
+
+    <script>
+        window.addEventListener('load', function () {
+            {{ env.INSTANCE_ID }}Projects('#app', {
+                locale: '{{ app.request.locale }}',
+                history: {
+                    mode: 'query',
+                    base: '{{ url('embed_iframe_projects') }}'
+                },
+                {% if env.MAPBOX_API_TOKEN %}
+                    mapboxApiToken: '{{ env.MAPBOX_API_TOKEN }}',
+                {% endif %}
+            });
+        });
+    </script>
+
+    <script>
+
+        var currentHeight = 0;
+
+        function checkDocumentHeight () {
+
+            var newHeight = document.documentElement.offsetHeight;
+
+            if(newHeight !== currentHeight) {
+                var payload = {
+                    type: '{{ env.INSTANCE_ID }}Projects:offsetHeight',
+                    value: newHeight,
+                };
+                (window.parent || window).postMessage(payload, '*');
+                currentHeight = newHeight;
+            }
+
+            setTimeout(checkDocumentHeight, 100);
+
+        }
+
+        checkDocumentHeight();
+
+    </script>
+
+{% endblock %}

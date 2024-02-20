@@ -1,0 +1,14 @@
+// fade
+
+@include vue-transition (fade) {
+  opacity: 0;
+}
+
+@keyframes loading-indicator {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

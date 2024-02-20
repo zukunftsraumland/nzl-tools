@@ -1,0 +1,16 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: '%env(INSTANCE_NAME)% API'
+            description: 'Public documentation for the %env(INSTANCE_NAME)% API.'
+            version: '1.0.0'
+        components:
+            securitySchemes:
+                cookieAuth:
+                    type: apiKey
+                    in: cookie
+                    name: PHPSESSID
+    areas:
+        default:
+            path_patterns: [ ^/api/v1 ]
+            disable_default_routes: false

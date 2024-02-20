@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+
+  apache:
+    build: .docker/apache
+    container_name: "regiosuisse-tools_apache"
+    ports:
+    - '80:80'
+    - '443:443'
+    volumes:
+    - .docker/config/vhosts:/etc/apache2/sites-enabled
+    - .:/home/wwwroot/regiosuisse-tools
+    networks:
+    - regiosuisse-tools
+    depends_on:
+    - php
+
+  mysql:
+    image: mariadb:10.3.32
+    container_name: "regiosuisse-tools_mysql"
+    command: --max_allowed_packet=1073741824
+    ports:
+    - '3306:3306'
+    volumes:
+    - mysql-data:/var/lib/mysql
+    networks:
+    - regiosuisse-tools
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: "regiosuisse-tools"
+      MYSQL_USER: "regiosuisse-tools"
+      MYSQL_PASSWORD: "regiosuisse-tools"
+
+  php:
+    build: .docker/php
+    container_name: "regiosuisse-tools_php"
+    volumes:
+    - .:/home/wwwroot/regiosuisse-tools
+    - php-var:/home/wwwroot/regiosuisse-tools/var
+    environment:
+    - "maildev_host=regiosuisse-tools_maildev"
+    networks:
+    - regiosuisse-tools
+    depends_on:
+    - maildev
+    - mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: "regiosuisse-tools_phpmyadmin"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 30000000000
+    networks:
+    - regiosuisse-tools
+    ports:
+    - '8080:80'
+    links:
+    - mysql
+
+  maildev:
+    image: djfarrelly/maildev
+    container_name: "regiosuisse-tools_maildev"
+    command: bin/maildev --web 80 --smtp 25 --hide-extensions STARTTLS
+    networks:
+    - regiosuisse-tools
+    ports:
+    - '8001:80'
+    - '25:25'
+
+networks:
+  regiosuisse-tools:
+    driver: bridge
+
+volumes:
+  mysql-data:
+    driver: local
+  php-var:
+    driver: local

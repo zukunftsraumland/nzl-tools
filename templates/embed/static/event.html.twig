@@ -1,0 +1,47 @@
+<h1>{{ pv_trans(event, 'title', app.request.locale) }}</h1>
+
+{{ pv_trans(event, 'text', app.request.locale) | raw }}
+
+{% for image in event.images %}
+    <p><img src="{{ env.HOST }}/api/v1/files/view/{{ image.id }}.{{ image.extension }}" alt="{{ pv_trans(event, 'title', app.request.locale) }}"></p>
+{% endfor %}
+
+<aside>
+
+    {% if event.topics|length %}
+        <h3>{{ 'Thema' | trans }}</h3>
+        <ul>
+            {% for e in event.topics %}
+                <li>{{ pv_trans(e, 'name', app.request.locale) }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if event.languages|length %}
+        <h3>{{ 'Durchführungssprache' | trans }}</h3>
+        <ul>
+            {% for e in event.languages %}
+                <li>{{ pv_trans(e, 'name', app.request.locale) }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if event.locations|length %}
+        <h3>{{ 'Durchführungsort' | trans }}</h3>
+        <ul>
+            {% for e in event.locations %}
+                <li>{{ pv_trans(e, 'name', app.request.locale) }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if pv_trans(event, 'links', app.request.locale)|default([])|length %}
+        <h3>{{ 'Links' | trans }}</h3>
+        <ul>
+            {% for link in pv_trans(event, 'links', app.request.locale) %}
+                <li><a href="{{ link.value|default }}" target="_blank">{{ link.label|default }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+</aside>

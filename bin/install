@@ -1,0 +1,22 @@
+#!/bin/bash
+
+echo "> Start maintenance mode"
+touch maintenance.flag
+
+echo "> Install composer dependencies"
+composer install
+
+echo "> Install yarn dependencies"
+yarn install
+
+echo "> Build assets"
+yarn build
+
+echo "> Create database if not exists"
+php bin/console doctrine:database:create --if-not-exists
+
+echo "> Perform database migrations"
+php bin/console doctrine:migrations:migrate --no-interaction
+
+echo "> End maintenance mode"
+rm maintenance.flag

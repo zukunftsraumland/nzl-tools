@@ -1,0 +1,28 @@
+@import 'config';
+@import 'embed-config';
+@import 'mixins';
+@import 'embed-mixins';
+
+.embed-event-collection {
+    @include embed-variables;
+    @include embed-base;
+
+    &-list {
+        @include embed-list;
+
+        &-item {
+            @include embed-list-item;
+        }
+    }
+
+    &-overlay {
+        @include embed-overlay;
+    }
+
+    @include embed-transitions('embed-event-collection');
+}
+
+.embed-events-view {
+    @include embed-base;
+    @include embed-view;
+}

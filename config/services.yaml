@@ -1,0 +1,49 @@
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+    host: '%env(HOST)%'
+    instance_id: '%env(INSTANCE_ID)%'
+    instance_name: '%env(INSTANCE_NAME)%'
+    mailer_from: '%env(MAILER_FROM)%'
+    chmos_url: '%env(CHMOS_URL)%'
+    chmos_certificate: '%env(resolve:CHMOS_CERTIFICATE)%'
+    tpoint_url: '%env(TPOINT_URL)%'
+    node_js: '%env(NODE_JS)%'
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        bind:
+            $host: '%env(HOST)%'
+            $instanceId: '%env(INSTANCE_ID)%'
+            $instanceName: '%env(INSTANCE_NAME)%'
+            $mailerFrom: '%env(MAILER_FROM)%'
+            $nodeJs: '%env(NODE_JS)%'
+            $mapboxApiToken: '%env(MAPBOX_API_TOKEN)%'
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    # add more service definitions when explicit configuration is needed
+    # please note that last definitions always *replace* previous ones
+
+    App\Service\ChmosService:
+        bind:
+            $url: '%env(CHMOS_URL)%'
+            $certificate: '%env(resolve:CHMOS_CERTIFICATE)%'
+
+    App\Service\TpointService:
+        bind:
+            $url: '%env(TPOINT_URL)%'
+

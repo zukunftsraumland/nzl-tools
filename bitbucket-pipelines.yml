@@ -1,0 +1,30 @@
+image: docker:24
+
+definitions:
+  services:
+    docker:
+      memory: 5120
+  steps:
+    - step: &e2e-test
+        name: 'Build, Install & Test'
+        max-time: 15
+        caches:
+          - docker
+        services:
+          - docker
+        size: 2x
+        script:
+          - export DOCKER_BUILDKIT=0
+          - docker-compose build
+          - docker-compose -f docker-compose.yml -f docker-compose.bitbucket.yml up -d
+          - docker exec regiosuisse-tools_php bash -c "bash bin/install"
+          - docker exec regiosuisse-tools_php bash -c "php bin/console app:user:create --email=info@regiosuisse.ch --password=12345678 --role=ROLE_SUPER_ADMIN"
+          - docker-compose down -v
+
+pipelines:
+  branches:
+    '{dev,main}':
+      - step: *e2e-test
+  tags:
+    'v*':
+      - step: *e2e-test

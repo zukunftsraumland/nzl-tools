@@ -1,0 +1,58 @@
+@mixin headlines ($from: 1, $to: 6) {
+  @for $i from $from to $to {
+    h#{$i}, .h#{$i} {
+      @content;
+    }
+  }
+}
+
+@mixin vue-transition-enter ($name, $transition: all .25s) {
+  .#{$name}-enter-active {
+    transition: $transition;
+  }
+  .#{$name}-enter-from {
+    @content;
+  }
+}
+
+@mixin vue-transition-leave ($name, $transition: all .25s) {
+  .#{$name}-leave-active {
+    transition: $transition;
+  }
+  .#{$name}-leave-to {
+    @content;
+  }
+}
+
+@mixin vue-transition ($name, $transition: all .25s) {
+  @include vue-transition-enter($name, $transition) {
+    @content;
+  };
+  @include vue-transition-leave($name, $transition) {
+    @content;
+  };
+}
+
+@mixin small () {
+  @media all and (max-width: $small-breakpoint) {
+    @content;
+  }
+}
+
+@mixin tablet () {
+  @media all and (max-width: $tablet-breakpoint) {
+    @content;
+  }
+}
+
+@mixin mobile () {
+  @media all and (max-width: $mobile-breakpoint) {
+    @content;
+  }
+}
+
+@mixin disable-select () {
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}

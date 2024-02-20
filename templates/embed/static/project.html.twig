@@ -1,0 +1,56 @@
+<h1>{{ pv_trans(project, 'title', app.request.locale) }}</h1>
+
+{{ pv_trans(project, 'description', app.request.locale) | raw }}
+
+{% for image in project.images %}
+    <p><img src="{{ env.HOST }}/api/v1/files/view/{{ image.id }}.{{ image.extension }}" alt="{{ pv_trans(project, 'title', app.request.locale) }}"></p>
+{% endfor %}
+
+<aside>
+
+    {% if project.topics|length %}
+        <h3>{{ 'Thema' | trans }}</h3>
+        <ul>
+            {% for e in project.topics %}
+                <li>{{ pv_trans(e, 'name', app.request.locale) }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if project.programs|length %}
+        <h3>{{ 'Programm' | trans }}</h3>
+        <ul>
+            {% for e in project.programs %}
+                <li>{{ pv_trans(e, 'name', app.request.locale) }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if project.states|length %}
+        <h3>{{ 'Kanton' | trans }}</h3>
+        <ul>
+            {% for e in project.states %}
+                <li>{{ pv_trans(e, 'name', app.request.locale) }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if project.instruments|length %}
+        <h3>{{ 'Finanzierung' | trans }}</h3>
+        <ul>
+            {% for e in project.instruments %}
+                <li>{{ pv_trans(e, 'name', app.request.locale) }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if pv_trans(project, 'links', app.request.locale)|default([])|length %}
+        <h3>{{ 'Links' | trans }}</h3>
+        <ul>
+            {% for link in pv_trans(project, 'links', app.request.locale) %}
+                <li><a href="{{ link.url|default }}" target="_blank">{{ link.label|default }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+</aside>

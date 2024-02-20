@@ -1,0 +1,238 @@
+<?php
+
+namespace App\Service;
+
+use App\Entity\Authority;
+use App\Entity\Beneficiary;
+use App\Entity\GeographicRegion;
+use App\Entity\Instrument;
+use App\Entity\ProjectType;
+use App\Entity\State;
+use App\Entity\Topic;
+use Doctrine\Common\Collections\ArrayCollection;
+use App\Entity\FinancialSupport;
+use Doctrine\ORM\EntityManagerInterface;
+
+class FinancialSupportService {
+
+    protected $em;
+
+    public function __construct(EntityManagerInterface $em)
+    {
+        $this->em = $em;
+    }
+
+    public function validateFields($payload, $fields = [])
+    {
+        foreach($fields as $field) {
+            if(!array_key_exists($field, $payload)) {
+                return [
+                    [
+                        'field' => $field,
+                    ]
+                ];
+            }
+        }
+
+        return true;
+    }
+
+    public function validateFinancialSupportPayload($payload)
+    {
+        if(($errors = $this->validateFields($payload, [
+            'position',
+            'isPublic',
+            'name',
+            'description',
+            'additionalInformation',
+            'policies',
+            'application',
+            'inclusionCriteria',
+            'exclusionCriteria',
+            'financingRatio',
+            'res',
+            'startDate',
+            'endDate',
+            'authorities',
+            'states',
+            'beneficiaries',
+            'topics',
+            'projectTypes',
+            'instruments',
+            'geographicRegions',
+            'links',
+            'contacts',
+            'logo',
+            'translations',
+        ])) !== true) {
+            return $errors;
+        }
+
+        return true;
+    }
+
+    public function createFinancialSupport($payload)
+    {
+        $financialSupport = new FinancialSupport();
+
+        $financialSupport->setCreatedAt(new \DateTime());
+
+        $financialSupport = $this->applyFinancialSupportPayload($payload, $financialSupport);
+
+        $this->em->persist($financialSupport);
+        $this->em->flush();
+
+        return $financialSupport;
+    }
+
+    public function updateFinancialSupport($financialSupport, $payload)
+    {
+        $financialSupport->setUpdatedAt(new \DateTime());
+
+        $financialSupport = $this->applyFinancialSupportPayload($payload, $financialSupport);
+
+        $this->em->persist($financialSupport);
+        $this->em->flush();
+
+        return $financialSupport;
+    }
+
+    public function deleteFinancialSupport($financialSupport)
+    {
+        $this->em->remove($financialSupport);
+        $this->em->flush();
+
+        return $financialSupport;
+    }
+
+    public function applyFinancialSupportPayload($payload, FinancialSupport $financialSupport)
+    {
+        $financialSupport
+            ->setPosition($payload['position'])
+            ->setIsPublic($payload['isPublic'])
+            ->setName($payload['name'])
+            ->setLogo($payload['logo'])
+            ->setDescription($payload['description'])
+            ->setAdditionalInformation($payload['additionalInformation'])
+            ->setPolicies($payload['policies'])
+            ->setApplication($payload['application'])
+            ->setInclusionCriteria($payload['inclusionCriteria'])
+            ->setExclusionCriteria($payload['exclusionCriteria'])
+            ->setFinancingRatio($payload['financingRatio'])
+            ->setRes($payload['res'])
+            ->setStartDate($payload['startDate'] ? new \DateTime(date('Y-m-d H:i:s', strtotime($payload['startDate']))) : null)
+            ->setEndDate($payload['endDate'] ? new \DateTime(date('Y-m-d H:i:s', strtotime($payload['endDate']))) : null)
+            ->setLinks($payload['links'] ?: [])
+            ->setContacts($payload['contacts'] ?: [])
+            ->setAuthorities(new ArrayCollection())
+            ->setStates(new ArrayCollection())
+            ->setBeneficiaries(new ArrayCollection())
+            ->setTopics(new ArrayCollection())
+            ->setProjectTypes(new ArrayCollection())
+            ->setInstruments(new ArrayCollection())
+            ->setGeographicRegions(new ArrayCollection())
+            ->setTranslations($payload['translations'] ?: [])
+        ;
+
+        foreach($payload['authorities'] as $item) {
+            $entity = null;
+            if(array_key_exists('id', $item) && $item['id']) {
+                $entity = $this->em->getRepository(Authority::class)->find($item['id']);
+            }
+            if(!$entity && array_key_exists('name', $item)) {
+                $entity = $this->em->getRepository(Authority::class)
+                    ->findOneBy(['name' => $item['name']]);
+            }
+            if($entity) {
+                $financialSupport->addAuthority($entity);
+            }
+        }
+
+        foreach($payload['states'] as $item) {
+            $entity = null;
+            if(array_key_exists('id', $item) && $item['id']) {
+                $entity = $this->em->getRepository(State::class)->find($item['id']);
+            }
+            if(!$entity && array_key_exists('name', $item)) {
+                $entity = $this->em->getRepository(State::class)
+                    ->findOneBy(['name' => $item['name']]);
+            }
+            if($entity) {
+                $financialSupport->addState($entity);
+            }
+        }
+
+        foreach($payload['beneficiaries'] as $item) {
+            $entity = null;
+            if(array_key_exists('id', $item) && $item['id']) {
+                $entity = $this->em->getRepository(Beneficiary::class)->find($item['id']);
+            }
+            if(!$entity && array_key_exists('name', $item)) {
+                $entity = $this->em->getRepository(Beneficiary::class)
+                    ->findOneBy(['name' => $item['name']]);
+            }
+            if($entity) {
+                $financialSupport->addBeneficiary($entity);
+            }
+        }
+
+        foreach($payload['topics'] as $item) {
+            $entity = null;
+            if(array_key_exists('id', $item) && $item['id']) {
+                $entity = $this->em->getRepository(Topic::class)->find($item['id']);
+            }
+            if(!$entity && array_key_exists('name', $item)) {
+                $entity = $this->em->getRepository(Topic::class)
+                    ->findOneBy(['name' => $item['name']]);
+            }
+            if($entity) {
+                $financialSupport->addTopic($entity);
+            }
+        }
+
+        foreach($payload['projectTypes'] as $item) {
+            $entity = null;
+            if(array_key_exists('id', $item) && $item['id']) {
+                $entity = $this->em->getRepository(ProjectType::class)->find($item['id']);
+            }
+            if(!$entity && array_key_exists('name', $item)) {
+                $entity = $this->em->getRepository(ProjectType::class)
+                    ->findOneBy(['name' => $item['name']]);
+            }
+            if($entity) {
+                $financialSupport->addProjectType($entity);
+            }
+        }
+
+        foreach($payload['instruments'] as $item) {
+            $entity = null;
+            if(array_key_exists('id', $item) && $item['id']) {
+                $entity = $this->em->getRepository(Instrument::class)->find($item['id']);
+            }
+            if(!$entity && array_key_exists('name', $item)) {
+                $entity = $this->em->getRepository(Instrument::class)
+                    ->findOneBy(['name' => $item['name']]);
+            }
+            if($entity) {
+                $financialSupport->addInstrument($entity);
+            }
+        }
+
+        foreach($payload['geographicRegions'] as $item) {
+            $entity = null;
+            if(array_key_exists('id', $item) && $item['id']) {
+                $entity = $this->em->getRepository(GeographicRegion::class)->find($item['id']);
+            }
+            if(!$entity && array_key_exists('name', $item)) {
+                $entity = $this->em->getRepository(GeographicRegion::class)
+                    ->findOneBy(['name' => $item['name']]);
+            }
+            if($entity) {
+                $financialSupport->addGeographicRegion($entity);
+            }
+        }
+
+        return $financialSupport;
+    }
+
+}

@@ -1,0 +1,28 @@
+{% extends '@!NelmioApiDoc/SwaggerUi/index.html.twig' %}
+
+{% block meta %}
+    {{ parent() }}
+    <link rel="icon" href="{{ asset('build/'~env.THEME_ICON) }}">
+    <meta name="theme-color" content="{{ env.THEME_COLOR_1 }}">
+{% endblock %}
+
+{% block header %}
+    <a id="logo" href="{{ url('backend_index') }}">
+        <img src="{{ asset('build/'~env.THEME_LOGO) }}" alt="{{ env.INSTANCE_NAME }} API">
+    </a>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        header:before {
+            background-color: {{ env.THEME_COLOR_3 }};
+        }
+        header #logo img {
+            background-color: transparent;
+        }
+        #swagger-ui.api-platform .info .title {
+            color: {{ env.THEME_COLOR_1 }};
+        }
+    </style>
+{% endblock %}

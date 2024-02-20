@@ -1,0 +1,29 @@
+#!/usr/bin/env node
+
+const union = require('@turf/union').default;
+
+const argv = require('minimist')(process.argv.slice(2));
+
+if(!argv._[0]) {
+    console.error('No method given.');
+    process.exit(1);
+}
+
+if(argv._[0] === 'union') {
+
+    if(!argv._[1]) {
+        console.error('Feature 1 missing.');
+        process.exit(1);
+    }
+
+    if(!argv._[2]) {
+        console.error('Feature 2 missing.');
+        process.exit(1);
+    }
+
+    let feature1 = JSON.parse(argv._[1]);
+    let feature2 = JSON.parse(argv._[2]);
+
+    console.log(JSON.stringify(union(feature1, feature2)));
+
+}

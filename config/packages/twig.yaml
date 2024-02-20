@@ -1,0 +1,19 @@
+twig:
+    default_path: '%kernel.project_dir%/templates'
+    globals:
+        env:
+            INSTANCE_ID: '%env(INSTANCE_ID)%'
+            INSTANCE_NAME: '%env(INSTANCE_NAME)%'
+            HOST: '%env(HOST)%'
+            FRONTEND_HOST: '%env(FRONTEND_HOST)%'
+            MAPBOX_API_TOKEN: '%env(MAPBOX_API_TOKEN)%'
+            THEME_COLOR_1: '%env(THEME_COLOR_1)%'
+            THEME_COLOR_2: '%env(THEME_COLOR_2)%'
+            THEME_COLOR_3: '%env(THEME_COLOR_3)%'
+            THEME_COLOR_4: '%env(THEME_COLOR_4)%'
+            THEME_LOGO: '%env(THEME_LOGO)%'
+            THEME_ICON: '%env(THEME_ICON)%'
+
+when@test:
+    twig:
+        strict_variables: true

@@ -1,0 +1,72 @@
+{% extends 'embed/iframe.html.twig' %}
+
+{% block title %}{{ parent() }} | {{ 'Agenda'|trans }}{% endblock %}
+
+{% block meta %}
+    {{ parent() }}
+    <meta name="robots" content="noindex">
+{% endblock %}
+
+{% block stylesheets %}
+    {{ encore_entry_link_tags('embed-events', null, 'embed-events') }}
+{% endblock %}
+
+{% block javascripts %}
+    {{ encore_entry_script_tags('embed-events', null, 'embed-events') }}
+{% endblock %}
+
+{% block body %}
+
+    <div id="app"></div>
+
+    <style>
+        {% if app.request.get('primaryColor') and app.request.get('primaryColor') starts with '#' %}
+            #app .embed-events {
+                --{{ env.INSTANCE_ID }}-primary-color: {{ app.request.get('primaryColor') }};
+            }
+        {% endif %}
+        {% if app.request.get('secondaryColor') and app.request.get('primaryColor') starts with '#' %}
+            #app .embed-events {
+                --{{ env.INSTANCE_ID }}-secondary-color: {{ app.request.get('secondaryColor') }};
+            }
+        {% endif %}
+    </style>
+
+    <script>
+        window.addEventListener('load', function () {
+            {{ env.INSTANCE_ID }}Events('#app', {
+                locale: '{{ app.request.locale }}',
+                history: {
+                    mode: 'query',
+                    base: '{{ url('embed_iframe_events') }}'
+                }
+            });
+        });
+    </script>
+
+    <script>
+
+        var currentHeight = 0;
+
+        function checkDocumentHeight () {
+
+            var newHeight = document.documentElement.offsetHeight;
+
+            if(newHeight !== currentHeight) {
+                var payload = {
+                    type: '{{ env.INSTANCE_ID }}Events:offsetHeight',
+                    value: newHeight,
+                };
+                (window.parent || window).postMessage(payload, '*');
+                currentHeight = newHeight;
+            }
+
+            setTimeout(checkDocumentHeight, 100);
+
+        }
+
+        checkDocumentHeight();
+
+    </script>
+
+{% endblock %}

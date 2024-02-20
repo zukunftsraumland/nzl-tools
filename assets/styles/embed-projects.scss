@@ -1,0 +1,130 @@
+@import 'config';
+@import 'embed-config';
+@import 'mixins';
+@import 'embed-mixins';
+@import '~mapbox-gl/dist/mapbox-gl';
+
+.embed-projects {
+    @include embed-variables;
+    @include embed-base;
+
+    &-search, &-filters {
+        @include embed-filters;
+    }
+
+    &-filters-list {
+        @include embed-filters-list;
+    }
+
+    &-list {
+        @include embed-list;
+
+        &-item {
+            @include embed-list-item;
+        }
+    }
+
+    &-actions {
+        @include embed-actions;
+    }
+
+    &-overlay {
+        @include embed-overlay;
+    }
+
+    &-map {
+        @include embed-section;
+        max-width: var(--#{$instance-id}-max-width);
+        position: relative;
+        overflow: hidden;
+        border-radius: var(--#{$instance-id}-border-radius-2);
+        border: 1px solid var(--#{$instance-id}-grey-light);
+
+        &:before {
+            display: block;
+            content: '';
+            padding-bottom: 50%;
+
+            .is-responsive & {
+                @include tablet {
+                    padding-bottom: 75%;
+                }
+                @container embed-regions (width <= 800px) {
+                    padding-bottom: 75%;
+                }
+                @include mobile {
+                    padding-bottom: 90%;
+                }
+            }
+        }
+
+        &-container {
+            top: 0;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: all .5s;
+
+            &.is-loading {
+                opacity: 0;
+            }
+
+            &-legend {
+                position: absolute;
+                bottom: 1.5em;
+                right: 0;
+                padding: 5px;
+                pointer-events: none;
+
+                &-row {
+                    display: flex;
+                    align-items: center;
+
+                    &-thumb {
+                        width: 1em;
+                        height: 1em;
+                        border: 1px solid var(--#{$instance-id}-black);
+                        background-color: #d9d9d9;
+                        background-repeat: repeat;
+                        background-position: center center;
+                        flex: 0 0 auto;
+                        margin-right: .5em;
+                    }
+
+                    &-label {
+                        flex: 1 1 auto;
+                        font-size: .9em;
+                    }
+
+                    &+& {
+                        margin-top: .25em;
+                    }
+                }
+            }
+
+            &-loader {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                -webkit-backdrop-filter: blur(2em);
+                backdrop-filter: blur(2em);
+                opacity: 1;
+                background: var(--#{$instance-id}-overlay-background);
+                display: flex;
+                padding: 2em;
+                justify-content: center;
+                align-items: center;
+            }
+        }
+
+    }
+
+    @include embed-transitions('embed-projects');
+}
+
+.embed-projects-view {
+    @include embed-base;
+    @include embed-view;
+}
