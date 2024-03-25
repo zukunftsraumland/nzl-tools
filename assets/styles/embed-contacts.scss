@@ -1,0 +1,46 @@
+@import 'config';
+@import 'embed-config';
+@import 'mixins';
+@import 'embed-mixins';
+
+.embed-contacts {
+    @include embed-variables;
+    @include embed-base;
+
+    &-search, &-filters {
+        @include embed-filters;
+    }
+
+    &-filters-list {
+        @include embed-filters-list;
+    }
+
+    &-list {
+        @include embed-list;
+
+        &-item {
+            @include embed-list-item;
+
+            &-content {
+                min-height: 5em;
+            }
+        }
+    }
+
+    &-actions {
+        @include embed-actions;
+    }
+
+    &-overlay {
+        @include embed-overlay;
+    }
+
+    @include embed-transitions('embed-contacts');
+}
+
+.embed-contacts-view {
+    @include embed-base;
+    @include embed-view;
+
+    max-width: 55em;
+}

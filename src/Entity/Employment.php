@@ -37,15 +37,32 @@ class Employment
     #[Groups(['employment'])]
     private $role;
 
-    #[ORM\ManyToOne(targetEntity: 'Contact')]
+    #[ORM\Column(name: 'translations', type: 'json')]
+    #[Groups(['employment'])]
+    #[OA\Property(properties: [
+        new OA\Property(property: 'fr', type: 'string'),
+        new OA\Property(property: 'it', type: 'string'),
+    ], type: 'object')]
+    private $translations = [];
+
+    #[ORM\ManyToOne(targetEntity: 'Contact', inversedBy: 'employees')]
     #[ORM\JoinColumn(name: 'company_id', referencedColumnName: 'id')]
     #[Groups(['employment'])]
     private ?Contact $company = null;
 
-    #[ORM\ManyToOne(targetEntity: 'Contact')]
+    #[ORM\ManyToOne(targetEntity: 'Contact', inversedBy: 'employments')]
     #[ORM\JoinColumn(name: 'employee_id', referencedColumnName: 'id')]
     #[Groups(['employment'])]
     private ?Contact $employee = null;
+
+    #[ORM\ManyToMany(targetEntity: 'ContactGroup', mappedBy: 'employments')]
+    #[Groups(['employment'])]
+    private $contactGroups;
+
+    public function __construct()
+    {
+        $this->contactGroups = new ArrayCollection();
+    }
 
     /**
      * Get id
@@ -199,6 +216,53 @@ class Employment
         $this->employee = $employee;
 
         return $this;
+    }
+
+    /**
+     * Get contact groups
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getContactGroups() {
+        return $this->contactGroups;
+    }
+
+    /**
+     * Set contact groups
+     *
+     * @return Employment
+     */
+    public function setContactGroups($contactGroups) {
+        $this->contactGroups = $contactGroups;
+
+        return $this;
+    }
+
+    /**
+     * Add to contact groups
+     *
+     * @param $contactGroup
+     * @return Employment
+     */
+    public function addContactGroup($contactGroup) {
+        if (!$this->contactGroups->contains($contactGroup)) {
+            $this->contactGroups->add($contactGroup);
+            $contactGroup->addEmployment($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Remove contact groups
+     *
+     * @param $contactGroup
+     */
+    public function removeContactGroup($contactGroup) {
+        if ($this->contactGroups->contains($contactGroup)) {
+            $this->contactGroups->removeElement($contactGroup);
+            $contactGroup->removeEmployment($this);
+        }
     }
 }
 

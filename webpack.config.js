@@ -5,6 +5,7 @@ const webpackEmbedEducations = require('./webpack.config.embed-educations');
 const webpackEmbedJobs = require('./webpack.config.embed-jobs');
 const webpackEmbedRegions = require('./webpack.config.embed-regions');
 const webpackEmbedPosts = require('./webpack.config.embed-posts');
+const webpackEmbedContacts = require('./webpack.config.embed-contacts');
 
 // export the final configuration as an array of multiple configurations
 module.exports = [
@@ -15,4 +16,5 @@ module.exports = [
     ...webpackEmbedJobs,
     ...webpackEmbedRegions,
     ...webpackEmbedPosts,
+    ...webpackEmbedContacts,
 ];

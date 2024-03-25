@@ -7,7 +7,7 @@
         </template>
 
         <template v-if="person">
-            {{ person.title }} {{ person.firstName }} {{ person.lastName }}<br>
+            {{ person.academicTitle }} {{ person.firstName }} {{ person.lastName }}<br>
         </template>
 
         <template v-if="employment">

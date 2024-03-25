@@ -31,6 +31,7 @@ import regions from './modules/regions';
 import contacts from './modules/contacts';
 import contactGroups from './modules/contact-groups';
 import employments from './modules/employments';
+import contactsData from './modules/contacts-data';
 import stints from './modules/stints';
 import posts from './modules/posts';
 import tags from './modules/tags';
@@ -72,6 +73,7 @@ export default createStore({
         contacts,
         contactGroups,
         employments,
+        contactsData,
         stints,
         posts,
         tags,

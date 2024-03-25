@@ -20,7 +20,12 @@ import Educations from '../components/Educations';
 import Education from '../components/Education';
 import Jobs from '../components/Jobs';
 import Job from '../components/Job';
-import Contacts from '../components/Contacts';
+import ContactsPersons from '../components/ContactsPersons';
+import ContactPerson from '../components/ContactPerson';
+import ContactsCompanies from '../components/ContactsCompanies';
+import ContactCompany from '../components/ContactCompany';
+import ContactGroups from '../components/ContactGroups';
+import ContactGroup from '../components/ContactGroup';
 import Regions from '../components/Regions';
 import Region from '../components/Region';
 import Posts from '../components/Posts';
@@ -151,9 +156,49 @@ const routes = [
                 component: FinancialSupport,
             },
             {
-                path: 'contacts',
-                name: 'contacts',
-                component: Contacts,
+                path: 'contacts/company',
+                name: 'contacts/company',
+                component: ContactsCompanies,
+            },
+            {
+                path: 'contacts/company/add',
+                name: 'contacts_company_add',
+                component: ContactCompany,
+            },
+            {
+                path: 'contacts/company/:id/edit',
+                name: 'contacts_company_edit',
+                component: ContactCompany,
+            },
+            {
+                path: 'contacts/person',
+                name: 'contacts/person',
+                component: ContactsPersons,
+            },
+            {
+                path: 'contacts/person/add',
+                name: 'contacts_person_add',
+                component: ContactPerson,
+            },
+            {
+                path: 'contacts/person/:id/edit',
+                name: 'contacts_person_edit',
+                component: ContactPerson,
+            },
+            {
+                path: 'contact-groups',
+                name: 'contact_groups',
+                component: ContactGroups,
+            },
+            {
+                path: 'contact-groups/add',
+                name: 'contact_groups_add',
+                component: ContactGroup,
+            },
+            {
+                path: 'contact-groups/:id/edit',
+                name: 'contact_groups_edit',
+                component: ContactGroup,
             },
             {
                 path: 'regions',

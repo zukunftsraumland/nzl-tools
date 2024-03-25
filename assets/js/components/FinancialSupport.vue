@@ -334,173 +334,173 @@
 
 <script>
 import {mapGetters, mapState} from 'vuex';
-    import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
-    import TagSelector from './TagSelector';
-    import ImageSelector from './ImageSelector';
-    import FileSelector from './FileSelector';
-    import { DatePicker } from 'v-calendar';
-    import Modal from './Modal';
-    import {translateField} from '../utils/filters';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import TagSelector from './TagSelector';
+import ImageSelector from './ImageSelector';
+import FileSelector from './FileSelector';
+import { DatePicker } from 'v-calendar';
+import Modal from './Modal';
+import {translateField} from '../utils/filters';
 
-    export default {
-        data() {
-            return {
-                locale: 'de',
-                financialSupport: {
-                    position: 10000,
-                    isPublic: false,
-                    name: '',
-                    description: '',
-                    additionalInformation: '',
-                    policies: '',
-                    application: '',
-                    inclusionCriteria: '',
-                    exclusionCriteria: '',
-                    financingRatio: '',
-                    res: '',
-                    startDate: null,
-                    endDate: null,
-                    links: [],
-                    logo: null,
-                    authorities: [],
-                    states: [],
-                    beneficiaries: [],
-                    topics: [],
-                    projectTypes: [],
-                    instruments: [],
-                    geographicRegions: [],
-                    contacts: [],
-                    translations: {
-                        fr: {
-                            links: [],
-                            contacts: [],
-                        },
-                        it: {
-                            links: [],
-                            contacts: [],
-                        },
+export default {
+    data() {
+        return {
+            locale: 'de',
+            financialSupport: {
+                position: 10000,
+                isPublic: false,
+                name: '',
+                description: '',
+                additionalInformation: '',
+                policies: '',
+                application: '',
+                inclusionCriteria: '',
+                exclusionCriteria: '',
+                financingRatio: '',
+                res: '',
+                startDate: null,
+                endDate: null,
+                links: [],
+                logo: null,
+                authorities: [],
+                states: [],
+                beneficiaries: [],
+                topics: [],
+                projectTypes: [],
+                instruments: [],
+                geographicRegions: [],
+                contacts: [],
+                translations: {
+                    fr: {
+                        links: [],
+                        contacts: [],
+                    },
+                    it: {
+                        links: [],
+                        contacts: [],
                     },
                 },
-                modal: null,
-                editor: ClassicEditor,
-                editorConfig: {
-                    basicEntities: false,
-                    toolbar: {
-                        items: [
-                            'heading',
-                            '|',
-                            'bold',
-                            'italic',
-                            'link',
-                            '|',
-                            'numberedList',
-                            'bulletedList',
-                            'insertTable',
-                            '|',
-                            'undo',
-                            'redo',
-                        ]
+            },
+            modal: null,
+            editor: ClassicEditor,
+            editorConfig: {
+                basicEntities: false,
+                toolbar: {
+                    items: [
+                        'heading',
+                        '|',
+                        'bold',
+                        'italic',
+                        'link',
+                        '|',
+                        'numberedList',
+                        'bulletedList',
+                        'insertTable',
+                        '|',
+                        'undo',
+                        'redo',
+                    ]
+                }
+            },
+        };
+    },
+    components: {
+        TagSelector,
+        ImageSelector,
+        FileSelector,
+        DatePicker,
+        Modal,
+    },
+    computed: {
+        ...mapState({
+            selectedFinancialSupport: state => state.financialSupports.financialSupport,
+            authorities: state => state.authorities.all,
+            states: state => state.states.all,
+            beneficiaries: state => state.beneficiaries.all,
+            topics: state => state.topics.all,
+            projectTypes: state => state.projectTypes.all,
+            instruments: state => state.instruments.all,
+            geographicRegions: state => state.geographicRegions.all,
+        }),
+        ...mapGetters({
+            getAuthorityById: 'authorities/getById',
+        }),
+    },
+    methods: {
+        clickDelete () {
+            this.modal = {
+                title: 'Eintrag löschen',
+                description: 'Sind Sie sicher dass Sie diesen Eintrag unwiderruflich löschen möchten?',
+                actions: [
+                    {
+                        label: 'Endgültig löschen',
+                        class: 'error',
+                        onClick: () => {
+                            this.$store.dispatch('financialSupports/delete', this.financialSupport.id).then(() => {
+                                this.$router.push('/financial-supports');
+                            });
+                        }
+                    },
+                    {
+                        label: 'Abbrechen',
+                        class: 'warning',
+                        onClick: () => {
+                            this.modal = null;
+                        }
                     }
-                },
+                ],
             };
         },
-        components: {
-            TagSelector,
-            ImageSelector,
-            FileSelector,
-            DatePicker,
-            Modal,
+        clickCancel () {
+            this.$router.push('/financial-supports');
         },
-        computed: {
-            ...mapState({
-                selectedFinancialSupport: state => state.financialSupports.financialSupport,
-                authorities: state => state.authorities.all,
-                states: state => state.states.all,
-                beneficiaries: state => state.beneficiaries.all,
-                topics: state => state.topics.all,
-                projectTypes: state => state.projectTypes.all,
-                instruments: state => state.instruments.all,
-                geographicRegions: state => state.geographicRegions.all,
-            }),
-            ...mapGetters({
-                getAuthorityById: 'authorities/getById',
-            }),
-        },
-        methods: {
-            clickDelete () {
-                this.modal = {
-                    title: 'Eintrag löschen',
-                    description: 'Sind Sie sicher dass Sie diesen Eintrag unwiderruflich löschen möchten?',
-                    actions: [
-                        {
-                            label: 'Endgültig löschen',
-                            class: 'error',
-                            onClick: () => {
-                                this.$store.dispatch('financialSupports/delete', this.financialSupport.id).then(() => {
-                                    this.$router.push('/financial-supports');
-                                });
-                            }
-                        },
-                        {
-                            label: 'Abbrechen',
-                            class: 'warning',
-                            onClick: () => {
-                                this.modal = null;
-                            }
-                        }
-                    ],
-                };
-            },
-            clickCancel () {
-                this.$router.push('/financial-supports');
-            },
-            clickSave() {
+        clickSave() {
 
-                if(!this.financialSupport.startDate) {
-                    this.financialSupport.startDate = null;
-                }
+            if(!this.financialSupport.startDate) {
+                this.financialSupport.startDate = null;
+            }
 
-                if(!this.financialSupport.endDate) {
-                    this.financialSupport.endDate = null;
-                }
+            if(!this.financialSupport.endDate) {
+                this.financialSupport.endDate = null;
+            }
 
-                if(this.financialSupport.id) {
-                    return this.$store.dispatch('financialSupports/update', this.financialSupport).then(() => {
-                        this.$router.push('/financial-supports');
-                    });
-                }
-
-                this.$store.dispatch('financialSupports/create', this.financialSupport).then(() => {
+            if(this.financialSupport.id) {
+                return this.$store.dispatch('financialSupports/update', this.financialSupport).then(() => {
                     this.$router.push('/financial-supports');
                 });
-            },
-            reload() {
-                if(this.$route.params.id) {
-                    this.$store.commit('financialSupports/set', {});
-                    this.$store.dispatch('financialSupports/load', this.$route.params.id).then(() => {
-                        this.financialSupport = {...this.selectedFinancialSupport};
-                    });
-                }
-            },
-            clickAddLink() {
-                (this.locale === 'de' ? this.financialSupport.links : this.financialSupport.translations[this.locale].links).push({
-                    value: '',
-                    label: '',
-                });
-            },
-            clickRemoveLink(index) {
-                let link = (this.locale === 'de' ? this.financialSupport.links : this.financialSupport.translations[this.locale].links).splice(index, 1)[0];
-            },
-            clickAddContact() {
-                (this.locale === 'de' ? this.financialSupport.contacts : this.financialSupport.translations[this.locale].contacts).push({});
-            },
-            clickRemoveContact(index) {
-                let contact = (this.locale === 'de' ? this.financialSupport.contacts : this.financialSupport.translations[this.locale].contacts).splice(index, 1)[0];
-            },
-            translateField,
+            }
+
+            this.$store.dispatch('financialSupports/create', this.financialSupport).then(() => {
+                this.$router.push('/financial-supports');
+            });
         },
-        created () {
-            this.reload();
-        }
+        reload() {
+            if(this.$route.params.id) {
+                this.$store.commit('financialSupports/set', {});
+                this.$store.dispatch('financialSupports/load', this.$route.params.id).then(() => {
+                    this.financialSupport = {...this.selectedFinancialSupport};
+                });
+            }
+        },
+        clickAddLink() {
+            (this.locale === 'de' ? this.financialSupport.links : this.financialSupport.translations[this.locale].links).push({
+                value: '',
+                label: '',
+            });
+        },
+        clickRemoveLink(index) {
+            let link = (this.locale === 'de' ? this.financialSupport.links : this.financialSupport.translations[this.locale].links).splice(index, 1)[0];
+        },
+        clickAddContact() {
+            (this.locale === 'de' ? this.financialSupport.contacts : this.financialSupport.translations[this.locale].contacts).push({});
+        },
+        clickRemoveContact(index) {
+            let contact = (this.locale === 'de' ? this.financialSupport.contacts : this.financialSupport.translations[this.locale].contacts).splice(index, 1)[0];
+        },
+        translateField,
+    },
+    created () {
+        this.reload();
     }
+}
 </script>

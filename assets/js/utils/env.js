@@ -28,6 +28,7 @@ export default {
             PLUGIN_ENABLE_EDUCATIONS: process.env.PLUGIN_ENABLE_EDUCATIONS === 'true',
             PLUGIN_ENABLE_JOBS: process.env.PLUGIN_ENABLE_JOBS === 'true',
             PLUGIN_ENABLE_CONTACTS: process.env.PLUGIN_ENABLE_CONTACTS === 'true',
+            PLUGIN_ENABLE_CONTACT_GROUPS: process.env.PLUGIN_ENABLE_CONTACT_GROUPS === 'true',
             PLUGIN_ENABLE_REGIONS: process.env.PLUGIN_ENABLE_REGIONS === 'true',
             PLUGIN_ENABLE_POSTS: process.env.PLUGIN_ENABLE_POSTS === 'true',
 

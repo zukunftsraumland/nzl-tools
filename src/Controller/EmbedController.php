@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Contact;
 use App\Entity\Education;
 use App\Entity\Event;
 use App\Entity\Project;
@@ -310,6 +311,29 @@ class EmbedController extends AbstractController
     public function iframePosts(): Response
     {
         return $this->render('embed/iframe/posts.html.twig', []);
+    }
+
+    #[Route('/contacts/documentation.html', name: 'contacts_documentation')]
+    public function contactsDocumentation(string $host, string $instanceId): Response
+    {
+        $converter = new GithubFlavoredMarkdownConverter([
+            'html_input' => 'strip',
+            'allow_unsafe_links' => true,
+        ]);
+        $markdown = file_get_contents(__DIR__.'/../../documentation/contacts-embed.md');
+        $markdown = str_replace('%HOST%', $host, $markdown);
+        $markdown = str_replace('%INSTANCE_ID%', $instanceId, $markdown);
+
+        return $this->render('embed/documentation.html.twig', [
+            'title' => $instanceId.'Contacts Documentation',
+            'documentation' => $converter->convert($markdown),
+        ]);
+    }
+
+    #[Route('/iframe/contacts-{_locale}.html', name: 'iframe_contacts')]
+    public function iframeContacts(): Response
+    {
+        return $this->render('embed/iframe/contacts.html.twig', []);
     }
 
 }

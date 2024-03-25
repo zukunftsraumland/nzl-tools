@@ -34,7 +34,7 @@
         "dev-server": "encore dev-server",
         "dev": "encore dev",
         "watch": "encore dev --watch",
-        "build": "encore production --config webpack.config.app.js --progress && encore production --config webpack.config.embed-projects.js --progress && encore production --config webpack.config.embed-events.js --progress && encore production --config webpack.config.embed-educations.js --progress && encore production --config webpack.config.embed-jobs.js --progress && encore production --config webpack.config.embed-regions.js --progress && encore production --config webpack.config.embed-posts.js --progress"
+        "build": "encore production --config webpack.config.app.js --progress && encore production --config webpack.config.embed-projects.js --progress && encore production --config webpack.config.embed-events.js --progress && encore production --config webpack.config.embed-educations.js --progress && encore production --config webpack.config.embed-jobs.js --progress && encore production --config webpack.config.embed-regions.js --progress && encore production --config webpack.config.embed-posts.js --progress && encore production --config webpack.config.embed-contacts.js --progress"
     },
     "dependencies": {
         "mapbox-gl": "^2.11.0"

@@ -124,23 +124,63 @@
                     </ul>
                 </li>
                 <li v-if="hasRole('ROLE_EDITOR') && $env.PLUGIN_ENABLE_CONTACTS">
-                    <router-link to="/contacts" :class="{'router-link-parent-active': this.$route.path.startsWith('/contacts')}">
+                    <router-link to="/contacts/person" :class="{'router-link-parent-active': this.$route.path.startsWith('/contacts/person')}">
                         <span class="material-icons">person</span>
-                        <span class="label">Kontakte</span>
+                        <span class="label">Personen</span>
                     </router-link>
                     <ul>
                         <li>
-                            <router-link to="/contacts">
+                            <router-link to="/contacts/person">
                                 <span class="material-icons">list</span>
                                 <span class="label">Liste anzeigen</span>
                             </router-link>
                         </li>
-                        <!--<li>
-                            <router-link to="/contacts/add">
+                        <li>
+                            <router-link to="/contacts/person/add">
                                 <span class="material-icons">create</span>
                                 <span class="label">Neuen Eintrag erfassen</span>
                             </router-link>
-                        </li>-->
+                        </li>
+                    </ul>
+                </li>
+                <li v-if="hasRole('ROLE_EDITOR') && $env.PLUGIN_ENABLE_CONTACTS">
+                    <router-link to="/contacts/company" :class="{'router-link-parent-active': this.$route.path.startsWith('/contacts/company')}">
+                        <span class="material-icons">business</span>
+                        <span class="label">Organisationen</span>
+                    </router-link>
+                    <ul>
+                        <li>
+                            <router-link to="/contacts/company">
+                                <span class="material-icons">list</span>
+                                <span class="label">Liste anzeigen</span>
+                            </router-link>
+                        </li>
+                        <li>
+                            <router-link to="/contacts/company/add">
+                                <span class="material-icons">create</span>
+                                <span class="label">Neuen Eintrag erfassen</span>
+                            </router-link>
+                        </li>
+                    </ul>
+                </li>
+                <li v-if="hasRole('ROLE_EDITOR') && $env.PLUGIN_ENABLE_CONTACT_GROUPS">
+                    <router-link to="/contact-groups" :class="{'router-link-parent-active': this.$route.path.startsWith('/contact-groups')}">
+                        <span class="material-icons">group</span>
+                        <span class="label">Kontaktgruppen</span>
+                    </router-link>
+                    <ul>
+                        <li>
+                            <router-link to="/contact-groups">
+                                <span class="material-icons">list</span>
+                                <span class="label">Liste anzeigen</span>
+                            </router-link>
+                        </li>
+                        <li>
+                            <router-link to="/contact-groups/add">
+                                <span class="material-icons">create</span>
+                                <span class="label">Neuen Eintrag erfassen</span>
+                            </router-link>
+                        </li>
                     </ul>
                 </li>
                 <li v-if="hasRole('ROLE_EDITOR') && $env.PLUGIN_ENABLE_REGIONS">
@@ -302,7 +342,6 @@ import {mapGetters, mapState} from 'vuex';
                         this.$store.dispatch('beneficiaries/loadAll').then(() => this.loadingProgress += 1),
                         this.$store.dispatch('projectTypes/loadAll').then(() => this.loadingProgress += 1),
                         this.$store.dispatch('cities/loadAll').then(() => this.loadingProgress += 1),
-                        this.$store.dispatch('contacts/loadAll').then(() => this.loadingProgress += 1),
                         this.$store.dispatch('contactGroups/loadAll').then(() => this.loadingProgress += 1),
                         this.$store.dispatch('stints/loadAll').then(() => this.loadingProgress += 1),
                         this.$store.dispatch('tags/loadAll').then(() => this.loadingProgress += 1),

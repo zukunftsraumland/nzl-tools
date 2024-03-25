@@ -63,7 +63,7 @@
                     </div>
                 </div>
 
-                <div class="row">
+                <div class="row" v-if="contacts.length">
                     <div class="col-md-9">
                         <label for="contacts">Kontakte</label>
                         <tag-selector id="contacts" :model="region.contacts"
@@ -248,6 +248,10 @@ export default {
         },
     },
     created () {
+        if(!this.contacts.length) {
+            this.$store.dispatch('contacts/loadAll');
+        }
+
         this.reload();
     }
 }

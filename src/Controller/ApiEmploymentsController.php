@@ -21,6 +21,13 @@ class ApiEmploymentsController extends AbstractController
     
     #[Route(path: '', name: 'index', methods: ['GET'])]
     #[OA\Parameter(
+        name: 'ids[]',
+        description: 'Set specific ids to select',
+        in: 'query',
+        required: false,
+        schema: new OA\Schema(type: 'array', items: new OA\Items(type: 'integer')),
+    )]
+    #[OA\Parameter(
         name: 'term',
         description: 'Search term',
         in: 'query',
@@ -70,13 +77,27 @@ class ApiEmploymentsController extends AbstractController
         $qb = $em->createQueryBuilder();
 
         $qb
-            ->select('c')
-            ->from(Employment::class, 'c')
+            ->select('e')
+            ->from(Employment::class, 'e')
         ;
+
+        if($request->get('ids') && !is_array($request->get('ids'))) {
+            $qb
+                ->andWhere('e.id IN (:ids)')
+                ->setParameter('ids', array_map('trim', explode(',', $request->get('ids'))))
+            ;
+        }
+
+        if($request->get('ids') && is_array($request->get('ids'))) {
+            $qb
+                ->andWhere('e.id IN (:ids)')
+                ->setParameter('ids', $request->get('ids'))
+            ;
+        }
 
         if($request->get('term')) {
             $qb
-                ->andWhere('(c.role LIKE :term)')
+                ->andWhere('(e.role LIKE :term)')
                 ->setParameter('term', '%'.$request->get('term').'%');
         }
 
@@ -105,14 +126,14 @@ class ApiEmploymentsController extends AbstractController
                 }
 
                 $qb
-                    ->addOrderBy('c.'.$orderBy, $direction)
+                    ->addOrderBy('e.'.$orderBy, $direction)
                 ;
 
             }
 
         } else {
             $qb
-                ->addOrderBy('c.id', 'ASC')
+                ->addOrderBy('e.id', 'ASC')
             ;
         }
 

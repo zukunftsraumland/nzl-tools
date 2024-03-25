@@ -328,10 +328,6 @@ export default {
 
     },
 
-    created() {
-
-    },
-
 };
 
 </script>

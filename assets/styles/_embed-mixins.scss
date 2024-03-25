@@ -54,6 +54,18 @@
         }
     }
 
+    & &-actions {
+        display: flex;
+        flex-wrap: wrap;
+        column-gap: .8em;
+        row-gap: 1em;
+        padding: 1.5em 0;
+
+        .button {
+            padding: .5em .8em;
+        }
+    }
+
     & &-button {
         line-height: 1em;
         padding: .5em 1em;
@@ -538,6 +550,11 @@
         padding: calc(var(--#{$instance-id}-gutter-width) * 2);
         padding-top: 0;
 
+        &.grow {
+            flex-grow: 1;
+            max-width: unset;
+        }
+
         .is-responsive & {
             @include mobile {
                 flex-basis: 100%;
@@ -642,6 +659,13 @@
             img {
                 width: 100%;
                 border-radius: var(--#{$instance-id}-border-radius-2);
+            }
+        }
+
+        &-description {
+
+            ul {
+                padding-left: 1.5em;
             }
         }
     }

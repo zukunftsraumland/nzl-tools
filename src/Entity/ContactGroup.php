@@ -5,6 +5,7 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use OpenApi\Attributes as OA;
+use Doctrine\Common\Collections\ArrayCollection;
 
 /**
  * ContactGroup
@@ -58,6 +59,32 @@ class ContactGroup
     #[Groups(['contact_group'])]
     private $name;
 
+    #[ORM\ManyToOne(targetEntity: 'ContactGroup', inversedBy: 'children')]
+    #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id')]
+    #[Groups(['contact_group'])]
+    private ?ContactGroup $parent = null;
+
+    /**
+     * @var \Doctrine\Common\Collections\Collection
+     */
+    #[ORM\OneToMany(targetEntity: 'ContactGroup', mappedBy: 'parent')]
+    #[Groups(['contact_group_children'])]
+    private $children;
+
+    /**
+     * @var \Doctrine\Common\Collections\Collection
+     */
+    #[ORM\ManyToMany(targetEntity: 'Contact', mappedBy: 'contactGroups')]
+    #[Groups(['contact_group'])]
+    private $contacts;
+
+    #[ORM\ManyToMany(targetEntity: 'Employment', inversedBy: 'contactGroups')]
+    #[ORM\JoinTable(name: 'pv_contact_group_employment')]
+    #[ORM\JoinColumn(name: 'contact_group_id', referencedColumnName: 'id')]
+    #[ORM\InverseJoinColumn(name: 'employment_id', referencedColumnName: 'id')]
+    #[Groups(['contact_group'])]
+    private $employments;
+
     #[ORM\Column(name: 'tpoint_id', type: 'integer', nullable: true)]
     #[Groups(['contact_group'])]
     private $tpointId;
@@ -91,6 +118,13 @@ class ContactGroup
         new OA\Property(property: 'it', type: 'string'),
     ], type: 'object')]
     private $translations = [];
+
+    public function __construct()
+    {
+        $this->children = new ArrayCollection();
+        $this->contacts = new ArrayCollection();
+        $this->employments = new ArrayCollection();
+    }
 
     /**
      * Get id
@@ -222,12 +256,171 @@ class ContactGroup
         return $this->name;
     }
 
+    public function getParent(): ?ContactGroup
+    {
+        return $this->parent;
+    }
+
+    public function setParent(?ContactGroup $parent): self
+    {
+        $this->parent = $parent;
+
+        return $this;
+    }
+
+    /**
+     * Get children
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getChildren()
+    {
+        return $this->children;
+    }
+
+    /**
+     * Set children
+     *
+     * @return ContactGroup
+     */
+    public function setChildren($children) {
+        $this->children = $children;
+
+        return $this;
+    }
+
+    /**
+     * Add to children
+     *
+     * @param $child
+     * @return ContactGroup
+     */
+    public function addChild($child)
+    {
+        if (!$this->children->contains($child)) {
+            $this->children->add($child);
+            $child->setParent($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Remove children
+     *
+     * @param $child
+     */
+    public function removeChild($child)
+    {
+        if ($this->children->contains($child)) {
+            $this->children->removeElement($child);
+
+            if ($child->getParent() === $this) {
+                $child->setParent(null);
+            }
+        }
+    }
+
+    /**
+     * Get contacts
+     *
+     * @return array
+     */
+    public function getContacts() {
+        return array_values($this->contacts->toArray());
+    }
+
+    /**
+     * Set contacts
+     *
+     * @return self
+     */
+    public function setContacts($contacts) {
+        $this->contacts = $contacts;
+
+        return $this;
+    }
+
+    /**
+     * Add to contacts
+     *
+     * @param $contact
+     * @return self
+     */
+    public function addContact($contact) {
+        if (!$this->contacts->contains($contact)) {
+            $this->contacts->add($contact);
+            $contact->addContactGroup($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Remove contacts
+     *
+     * @param $contact
+     */
+    public function removeContact($contact) {
+        if ($this->contacts->contains($contact)) {
+            $this->contacts->removeElement($contact);
+            $contact->removeContactGroup($this);
+        }
+    }
+
+    /**
+     * Get employments
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getEmployments() {
+        return $this->employments;
+    }
+
+    /**
+     * Set employments
+     *
+     * @return self
+     */
+    public function setEmployments($employments) {
+        $this->employments = $employments;
+
+        return $this;
+    }
+
+    /**
+     * Add to employments
+     *
+     * @param $employment
+     * @return self
+     */
+    public function addEmployment($employment) {
+        if (!$this->employments->contains($employment)) {
+            $this->employments->add($employment);
+            $employment->addContactGroup($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Remove employments
+     *
+     * @param $employment
+     */
+    public function removeEmployment($employment) {
+        if ($this->employments->contains($employment)) {
+            $this->employments->removeElement($employment);
+            $employment->removeContactGroup($this);
+        }
+    }
+
     /**
      * Set tpointId
      *
      * @param int|null $tpointId
      *
-     * @return self
+     * @return Contact
      */
     public function setTpointId($tpointId)
     {
@@ -251,7 +444,7 @@ class ContactGroup
      *
      * @param string $tpointChecksum
      *
-     * @return self
+     * @return ContactGroup
      */
     public function setTpointChecksum($tpointChecksum)
     {

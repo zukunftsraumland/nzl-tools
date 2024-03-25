@@ -60,6 +60,8 @@ const actions = {
                 commit('insert', response.data);
                 commit('set', response.data);
             }
+
+            return response.data;
         });
     },
 
@@ -77,6 +79,8 @@ const actions = {
                 commit('update', response.data);
                 commit('set', response.data);
             }
+
+            return response.data;
         });
     },
 
@@ -85,6 +89,8 @@ const actions = {
         return api.contacts.delete(id).then((response) => {
             commit('loaders/hideLoader', 'contacts/'+id, { root: true });
             commit('remove', id);
+
+            return response.data;
         });
     },
 

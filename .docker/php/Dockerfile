@@ -27,7 +27,7 @@ RUN wget --quiet -O - /tmp/pubkey.gpg https://dl.yarnpkg.com/debian/pubkey.gpg |
 RUN printf '[PHP]\ndate.timezone = "Europe/Vienna"\n' > /usr/local/etc/php/conf.d/tzone.ini
 
 # set memory_limit
-RUN printf '[PHP]\nmemory_limit = 512M\n' > /usr/local/etc/php/conf.d/memory_limit.ini
+RUN printf '[PHP]\nmemory_limit = 1G\n' > /usr/local/etc/php/conf.d/memory_limit.ini
 
 # install pdo
 RUN docker-php-ext-install pdo pdo_mysql

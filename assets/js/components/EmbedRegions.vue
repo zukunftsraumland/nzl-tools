@@ -83,8 +83,8 @@
                                     <ContactAddress v-if="contact.type === 'person'"
                                                     :locale="locale"
                                                     :person="contact"
-                                                    :employment="employments.find(e => e.id === contact.employments[0]?.id)"
-                                                    :company="contacts.find(c => c.id === employments.find(e => e.id === contact.employments[0]?.id)?.company?.id)"></ContactAddress>
+                                                    :employment="employments.find(e => e.id === contact.officialEmployment?.id)"
+                                                    :company="contacts.find(c => c.id === employments.find(e => e.id === contact.officialEmployment?.id)?.company?.id)"></ContactAddress>
 
                                 </div>
 

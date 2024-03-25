@@ -46,11 +46,15 @@ class Contact
     #[Groups(['contact'])]
     private $companyName;
 
+    #[ORM\Column(name: 'specification', type: 'string', length: 128, nullable: true)]
+    #[Groups(['contact'])]
+    private $specification;
+
     #[ORM\Column(name: 'gender', type: 'string', length: 32, nullable: true)]
     #[Groups(['contact'])]
     private $gender;
 
-    #[ORM\Column(name: 'academic_title', type: 'string', length: 32, nullable: true)]
+    #[ORM\Column(name: 'academic_title', type: 'string', length: 128, nullable: true)]
     #[Groups(['contact'])]
     private $academicTitle;
 
@@ -73,6 +77,21 @@ class Contact
     #[ORM\Column(name: 'city', type: 'string', length: 128, nullable: true)]
     #[Groups(['contact'])]
     private $city;
+
+    #[ORM\ManyToOne(targetEntity: 'Country')]
+    #[ORM\JoinColumn(name: 'country_id', referencedColumnName: 'id')]
+    #[Groups(['contact'])]
+    private ?Country $country = null;
+
+    #[ORM\ManyToOne(targetEntity: 'State')]
+    #[ORM\JoinColumn(name: 'state_id', referencedColumnName: 'id')]
+    #[Groups(['contact'])]
+    private ?State $state = null;
+
+    #[ORM\ManyToOne(targetEntity: 'Language')]
+    #[ORM\JoinColumn(name: 'language_id', referencedColumnName: 'id')]
+    #[Groups(['contact'])]
+    private ?Language $language = null;
 
     #[ORM\Column(name: 'email', type: 'string', length: 128, nullable: true)]
     #[Groups(['contact'])]
@@ -98,9 +117,18 @@ class Contact
     #[Groups(['contact'])]
     private $tpointChecksum;
 
+    #[ORM\Column(name: 'tpoint_uid', type: 'string', length: 128, nullable: true)]
+    #[Groups(['contact'])]
+    private $tpointUid;
+
     #[ORM\Column(name: 'context', type: 'string', length: 255, nullable: true)]
     #[Groups(['contact'])]
     private $context;
+
+    #[ORM\ManyToOne(targetEntity: 'Employment')]
+    #[ORM\JoinColumn(name: 'official_employment_id', referencedColumnName: 'id')]
+    #[Groups(['contact'])]
+    private ?Employment $officialEmployment = null;
 
     #[ORM\Column(name: 'translations', type: 'json')]
     #[Groups(['contact'])]
@@ -110,12 +138,22 @@ class Contact
     ], type: 'object')]
     private $translations = [];
 
+    #[ORM\ManyToOne(targetEntity: 'Contact', inversedBy: 'children')]
+    #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id')]
+    #[Groups(['contact'])]
+    private ?Contact $parent = null;
+
+    /**
+     * @var \Doctrine\Common\Collections\Collection
+     */
+    #[ORM\OneToMany(targetEntity: 'Contact', mappedBy: 'parent')]
+    #[Groups(['contact_children'])]
+    private $children;
+
     /**
      * @var \Doctrine\Common\Collections\Collection
      */
     #[ORM\OneToMany(targetEntity: 'Employment', cascade: ['persist', 'remove'], orphanRemoval: true, mappedBy: 'employee')]
-    #[ORM\JoinColumn(name: 'id', referencedColumnName: 'employee_id')]
-    #[ORM\InverseJoinColumn(name: 'employee_id', referencedColumnName: 'id')]
     #[Groups(['contact'])]
     private $employments;
 
@@ -123,15 +161,13 @@ class Contact
      * @var \Doctrine\Common\Collections\Collection
      */
     #[ORM\OneToMany(targetEntity: 'Employment', cascade: ['persist', 'remove'], orphanRemoval: true, mappedBy: 'company')]
-    #[ORM\JoinColumn(name: 'id', referencedColumnName: 'company_id')]
-    #[ORM\InverseJoinColumn(name: 'company_id', referencedColumnName: 'id')]
     #[Groups(['contact'])]
     private $employees;
 
     /**
      * @var \Doctrine\Common\Collections\Collection
      */
-    #[ORM\ManyToMany(targetEntity: 'ContactGroup')]
+    #[ORM\ManyToMany(targetEntity: 'ContactGroup', inversedBy: 'contacts')]
     #[ORM\JoinTable(name: 'pv_contact_contact_group')]
     #[ORM\JoinColumn(name: 'contact_id', referencedColumnName: 'id')]
     #[ORM\InverseJoinColumn(name: 'contact_group_id', referencedColumnName: 'id')]
@@ -286,6 +322,30 @@ class Contact
     public function getCompanyName()
     {
         return $this->companyName;
+    }
+
+    /**
+     * Set specification
+     *
+     * @param string $specification
+     *
+     * @return Contact
+     */
+    public function setSpecification($specification)
+    {
+        $this->specification = $specification;
+
+        return $this;
+    }
+
+    /**
+     * Get specification
+     *
+     * @return string
+     */
+    public function getSpecification()
+    {
+        return $this->specification;
     }
 
     /**
@@ -456,6 +516,42 @@ class Contact
         return $this->city;
     }
 
+    public function getCountry(): ?Country
+    {
+        return $this->country;
+    }
+
+    public function setCountry(?Country $country): self
+    {
+        $this->country = $country;
+
+        return $this;
+    }
+
+    public function getState(): ?State
+    {
+        return $this->state;
+    }
+
+    public function setState(?State $state): self
+    {
+        $this->state = $state;
+
+        return $this;
+    }
+
+    public function getLanguage(): ?Language
+    {
+        return $this->language;
+    }
+
+    public function setLanguage(?Language $language): self
+    {
+        $this->language = $language;
+
+        return $this;
+    }
+
     /**
      * Set email
      *
@@ -601,6 +697,30 @@ class Contact
     }
 
     /**
+     * Set tpointUid
+     *
+     * @param string $tpointUid
+     *
+     * @return Contact
+     */
+    public function setTpointUid($tpointUid)
+    {
+        $this->tpointUid = $tpointUid;
+
+        return $this;
+    }
+
+    /**
+     * Get tpointUid
+     *
+     * @return string
+     */
+    public function getTpointUid()
+    {
+        return $this->tpointUid;
+    }
+
+    /**
      * Set context
      *
      * @param string $context
@@ -622,6 +742,18 @@ class Contact
     public function getContext()
     {
         return $this->context;
+    }
+
+    public function getOfficialEmployment(): ?Employment
+    {
+        return $this->officialEmployment;
+    }
+
+    public function setOfficialEmployment(?Employment $officialEmployment): self
+    {
+        $this->officialEmployment = $officialEmployment;
+
+        return $this;
     }
 
     /**
@@ -672,6 +804,71 @@ class Contact
         return $this->translations;
     }
 
+    public function getParent(): ?Contact
+    {
+        return $this->parent;
+    }
+
+    public function setParent(?Contact $parent): self
+    {
+        $this->parent = $parent;
+
+        return $this;
+    }
+
+    /**
+     * Get children
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getChildren()
+    {
+        return $this->children;
+    }
+
+    /**
+     * Set children
+     *
+     * @return Contact
+     */
+    public function setChildren($children) {
+        $this->children = $children;
+
+        return $this;
+    }
+
+    /**
+     * Add to children
+     *
+     * @param $child
+     * @return Contact
+     */
+    public function addChild($child)
+    {
+        if (!$this->children->contains($child)) {
+            $this->children->add($child);
+            $child->setParent($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Remove children
+     *
+     * @param $child
+     */
+    public function removeChild($child)
+    {
+        if ($this->children->contains($child)) {
+            $this->children->removeElement($child);
+
+            if ($child->getParent() === $this) {
+                $child->setParent(null);
+            }
+        }
+    }
+
     /**
      * Get employees
      *
@@ -704,7 +901,7 @@ class Contact
     /**
      * Set employments
      *
-     * @return self
+     * @return Contact
      */
     public function setEmployments($employments) {
         $this->employments = $employments;
@@ -741,6 +938,7 @@ class Contact
     public function addContactGroup($contactGroup) {
         if (!$this->contactGroups->contains($contactGroup)) {
             $this->contactGroups->add($contactGroup);
+            $contactGroup->addContact($this);
         }
 
         return $this;
@@ -749,10 +947,13 @@ class Contact
     /**
      * Remove contactGroups
      *
-     * @param $contactGroups
+     * @param $contactGroup
      */
-    public function removeContactGroup($contactGroups) {
-        $this->contactGroups->removeElement($contactGroups);
+    public function removeContactGroup($contactGroup) {
+        if ($this->contactGroups->contains($contactGroup)) {
+            $this->contactGroups->removeElement($contactGroup);
+            $contactGroup->removeContact($this);
+        }
     }
 }
 

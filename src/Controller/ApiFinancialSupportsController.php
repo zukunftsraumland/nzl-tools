@@ -173,40 +173,23 @@ class ApiFinancialSupportsController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        // expecting the font dir to have *.ttf fonts and using the following naming convention:
-        // <font_name>_<font_weight>.ttf, e.g.:
-        // helveticaneue_r.ttf, helveticaneue_b.ttf
-
-        $fontsDir = __DIR__.'/../../assets/fonts';
-        $fontData = [];
-        $defaultFont = null;
-
-        foreach(glob($fontsDir.'/*.ttf') as $font) {
-            list($fontName, $fontWeight) = explode('_', basename($font, '.ttf'), 2);
-
-            if(!array_key_exists($fontName, $fontData)) {
-                $fontData[$fontName] = [];
-            }
-
-            $fontData[$fontName][strtoupper($fontWeight)] = $fontName.'_'.$fontWeight.'.ttf';
-
-            if(!$defaultFont) {
-                $defaultFont = $fontName;
-            }
-        }
-
         $mpdf = new Mpdf([
             'fontDir' => [
-                $fontsDir.'/',
+                __DIR__.'/../../assets/fonts/',
             ],
-            'fontdata' => $fontData,
+            'fontdata' => [
+                'helveticaneue' => [
+                    'R' => 'helveticaneue.ttf',
+                    'B' => 'helveticaneuebold.ttf',
+                ]
+            ],
             'margin_left' => 20,
             'margin_right' => 15,
             'margin_top' => 20,
             'margin_bottom' => 25,
             'margin_header' => 10,
             'margin_footer' => 10,
-            'default_font' => $defaultFont,
+            'default_font' => 'helveticaneue',
         ]);
 
         $mpdf->SetTitle(PvTrans::translate($financialSupport, 'name', $request->getLocale()));
