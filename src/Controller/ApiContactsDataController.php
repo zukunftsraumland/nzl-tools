@@ -129,6 +129,7 @@ class ApiContactsDataController extends AbstractController
         $qb
             ->select('c')
             ->from(Contact::class, 'c')
+            ->distinct()
         ;
 
         if($request->get('ids') && !is_array($request->get('ids'))) {
@@ -146,9 +147,11 @@ class ApiContactsDataController extends AbstractController
         }
 
         if($request->get('term')) {
-            $qb
-                ->andWhere('(c.id LIKE :term OR c.companyName LIKE :term OR c.firstName LIKE :term OR c.lastName LIKE :term OR c.translations LIKE :term OR c.gender LIKE :term OR c.street LIKE :term OR c.zipCode LIKE :term OR c.city LIKE :term OR c.email LIKE :term OR c.phone LIKE :term OR c.website LIKE :term OR c.description LIKE :term)')
-                ->setParameter('term', '%'.$request->get('term').'%');
+            foreach(explode(' ', (string)$request->get('term')) as $term) {
+                $qb
+                    ->andWhere('(c.id LIKE :term OR c.companyName LIKE :term OR c.firstName LIKE :term OR c.lastName LIKE :term OR c.translations LIKE :term OR c.gender LIKE :term OR c.street LIKE :term OR c.zipCode LIKE :term OR c.city LIKE :term OR c.email LIKE :term OR c.phone LIKE :term OR c.website LIKE :term OR c.description LIKE :term)')
+                    ->setParameter('term', '%'.$term.'%');
+            }
         }
 
         if($request->get('type') && is_array($request->get('type')) && count($request->get('type'))) {
@@ -187,6 +190,10 @@ class ApiContactsDataController extends AbstractController
                 ->andWhere(implode(' OR ', $statusQuery))
             ;
 
+        }
+
+        if(!$this->isGranted('ROLE_EDITOR')) {
+            $qb->andWhere('c.isPublic = TRUE');
         }
 
         if($request->get('contactGroup') && is_array($request->get('contactGroup')) && count($request->get('contactGroup'))) {
@@ -354,6 +361,8 @@ class ApiContactsDataController extends AbstractController
                 $typeOther => [
                     'id',
                     'name',
+                    'companyName',
+                    'specification',
                     'street',
                     'zipCode',
                     'city',

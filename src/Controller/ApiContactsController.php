@@ -130,6 +130,10 @@ class ApiContactsController extends AbstractController
             ->from(Contact::class, 'c')
         ;
 
+        if(!$this->isGranted('ROLE_EDITOR')) {
+            $qb->andWhere('c.isPublic = TRUE');
+        }
+
         if($request->get('ids') && !is_array($request->get('ids'))) {
             $qb
                 ->andWhere('c.id IN (:ids)')
@@ -330,6 +334,10 @@ class ApiContactsController extends AbstractController
     {
         $contact = $em->getRepository(Contact::class)
             ->find($request->get('id'));
+
+        if(!$this->isGranted('ROLE_EDITOR') && !$contact->getIsPublic()) {
+            throw $this->createNotFoundException();
+        }
 
         $result = $normalizer->normalize($contact, null, [
             'groups' => ['id', 'contact'],

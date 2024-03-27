@@ -71,6 +71,8 @@
                                 <div class="contact-groups-component-tree-structure-container-actions">
                                     <a class="button" :href="getExportURL(element.group.id)" download v-if="getContactSubGroups(element.group.id)?.length && selectedElements[element.group.id]?.length"><span class="material-icons">file_download</span></a>
                                     <span class="material-icons" @click.stop="clickContactGroup(element.group)">edit</span>
+                                    <span class="material-icons" v-if="!element.group.isPublic">visibility_off</span>
+                                    <span class="material-icons" v-else>visibility</span>
                                 </div>
 
                             </div>
@@ -91,7 +93,8 @@
                                                 <input id="active" type="checkbox" :class="{ disabled: !childElement.contacts?.length }"
                                                        :checked="selectedElements[element.group.id]?.find(group => group.id === childElement.id)" @change="clickToggleSelected($event, childElement, element.group.id, childElement.id)">
                                                 <span class="material-icons" @click.stop="clickContactGroup(childElement)">edit</span>
-                                                <!--span class="material-icons clear" @click="clickDeleteContactGroup(childElement)">clear</span-->
+                                                <span class="material-icons" v-if="!childElement.isPublic">visibility_off</span>
+                                                <span class="material-icons" v-else>visibility</span>
                                                 <i v-if="childElement.contacts?.length">[ Mitglieder: {{ childElement.contacts.length }} ]</i>
                                                 <i v-else>[ Keine Mitglieder ]</i>
                                             </div>

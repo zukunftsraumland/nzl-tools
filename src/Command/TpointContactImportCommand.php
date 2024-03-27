@@ -34,8 +34,8 @@ class TpointContactImportCommand extends Command
     {
         $this
             ->setDescription('Import tpoint data')
-            ->addOption('contacts-json', null, InputOption::VALUE_REQUIRED, 'Path to contacts.json file')
-            ->addOption('contact-groups-json', null, InputOption::VALUE_REQUIRED, 'Path to contact-groups.json file')
+            ->addOption('contacts-json-dir', null, InputOption::VALUE_REQUIRED, 'Path to contacts.json directory')
+            ->addOption('contact-groups-json-dir', null, InputOption::VALUE_REQUIRED, 'Path to contact-groups.json directory')
         ;
     }
 
@@ -43,8 +43,32 @@ class TpointContactImportCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $contactsData = json_decode(file_get_contents($input->getOption('contacts-json')), true);
-        $contactGroupsData = json_decode(file_get_contents($input->getOption('contact-groups-json')), true);
+        $contactsData = [];
+        $contactGroupsData = [];
+
+        $locales = ['de', 'fr', 'it'];
+
+        foreach($locales as $locale) {
+
+            if(!isset($contactsData[$locale])) {
+                $contactsData[$locale] = [];
+            }
+
+            foreach(glob($input->getOption('contacts-json-dir').'/'.$locale.'/*.json') as $file) {
+                $contactsData[$locale] = array_merge($contactsData[$locale], json_decode(file_get_contents($file), true));
+            }
+
+            if(!isset($contactGroupsData[$locale])) {
+                $contactGroupsData[$locale] = [];
+            }
+
+            foreach(glob($input->getOption('contact-groups-json-dir').'/'.$locale.'/*.json') as $file) {
+                $contactGroupsData[$locale] = array_merge($contactGroupsData[$locale], json_decode(file_get_contents($file), true));
+            }
+
+        }
+
+        $io->info(sprintf('Memory usage after file loading %s', (memory_get_usage() / 1024 / 1024) . 'MB'));
 
         $createdParentContactGroups = 0;
         $updatedParentContactGroups = 0;
@@ -63,8 +87,9 @@ class TpointContactImportCommand extends Command
         $deletedEmployments = 0;
 
         $parentGroupNames = [];
+        $parentGroupNameTranslations = [];
 
-        foreach($contactGroupsData as $contactGroup) {
+        foreach($contactGroupsData[$locales[0]] as $index => $contactGroup) {
 
             $parentGroupName = $contactGroup['groupingTitle'] ?? null;
 
@@ -76,6 +101,14 @@ class TpointContactImportCommand extends Command
 
             if(!in_array($parentGroupName, $parentGroupNames)) {
                 $parentGroupNames[] = $parentGroupName;
+
+                foreach(array_slice($locales, 1) as $locale) {
+                    if(!isset($parentGroupNameTranslations[$locale])) {
+                        $parentGroupNameTranslations[$locale] = [];
+                    }
+
+                    $parentGroupNameTranslations[$locale][] = explode('_', $contactGroupsData[$locale][$index]['groupingTitle'])[1];
+                }
             }
         }
 
@@ -94,20 +127,23 @@ class TpointContactImportCommand extends Command
                 $contactGroup->setCreatedAt(new \DateTime());
             }
 
+            $translations = [];
+
+            foreach(array_slice($locales, 1) as $locale) {
+                if(!isset($translations[$locale])) {
+                    $translations[$locale] = [];
+                }
+
+                $translations[$locale]['name'] = $parentGroupNameTranslations[$locale][$index];
+            }
+
             $contactGroup
                 ->setUpdatedAt(new \DateTime())
                 ->setPosition($position)
                 ->setIsPublic(false)
                 ->setName($name)
                 ->setParent($parent)
-                ->setTranslations([
-                    'fr' => [
-                        'name' => null,
-                    ],
-                    'it' => [
-                        'name' => null,
-                    ],
-                ])
+                ->setTranslations($translations)
             ;
 
             if($contactGroup->getId()) {
@@ -123,7 +159,7 @@ class TpointContactImportCommand extends Command
         $io->success(sprintf('Successfully updated %s parent contact groups :)', $updatedParentContactGroups));
         $io->success(sprintf('Successfully created %s parent contact groups :)', $createdParentContactGroups));
 
-        foreach($contactGroupsData as $index => $contactGroup) {
+        foreach($contactGroupsData[$locales[0]] as $index => $contactGroup) {
             $position = $index + count($parentGroupNames);
             $isPublic = false;
             $name = $contactGroup['label'] ?? false;
@@ -157,20 +193,23 @@ class TpointContactImportCommand extends Command
                 $contactGroup->setCreatedAt(new \DateTime());
             }
 
+            $translations = [];
+
+            foreach(array_slice($locales, 1) as $locale) {
+                if(!isset($translations[$locale])) {
+                    $translations[$locale] = [];
+                }
+
+                $translations[$locale]['name'] = $contactGroupsData[$locale][$index]['label'];
+            }
+
             $contactGroup
                 ->setUpdatedAt(new \DateTime())
                 ->setPosition($position)
                 ->setIsPublic($isPublic)
                 ->setName($name)
                 ->setParent($parent)
-                ->setTranslations([
-                    'fr' => [
-                        'name' => null,
-                    ],
-                    'it' => [
-                        'name' => null,
-                    ],
-                ])
+                ->setTranslations($translations)
             ;
 
             if($contactGroup->getId()) {
@@ -183,10 +222,12 @@ class TpointContactImportCommand extends Command
             $this->doctrine->getManager()->flush();
         }
 
+        $io->info(sprintf('Memory usage after contact group import %s', (memory_get_usage() / 1024 / 1024) . 'MB'));
+
         $io->success(sprintf('Successfully updated %s contact groups :)', $updatedContactGroups));
         $io->success(sprintf('Successfully created %s contact groups :)', $createdContactGroups));
 
-        foreach($contactsData as $contact) {
+        foreach($contactsData[$locales[0]] as $index => $contact) {
 
             $uid = $contact['v_card_uid'];
             $isPublic = $contact['public'];
@@ -230,6 +271,10 @@ class TpointContactImportCommand extends Command
                     }
 
                     if($info['information_group']['type'] === 'http') {
+                        $website = $info['value'];
+                    }
+
+                    if($info['information_group']['type'] === 'https') {
                         $website = $info['value'];
                     }
                 }
@@ -278,7 +323,7 @@ class TpointContactImportCommand extends Command
 
             $contactGroups = [];
 
-            foreach($contactGroupsData as $contactGroupData) {
+            foreach($contactGroupsData[$locales[0]] as $contactGroupData) {
 
                 if(isset($contactGroupData['contactCollection'])) {
 
@@ -322,6 +367,20 @@ class TpointContactImportCommand extends Command
                 $contact->setCreatedAt(new \DateTime());
             }
 
+            $translations = [];
+
+            foreach(array_slice($locales, 1) as $locale) {
+                if(!isset($translations[$locale])) {
+                    $translations[$locale] = [];
+                }
+
+                $translations[$locale]['companyName'] = $contactsData[$locale][$index]['company_name'] ?? '';
+                $translations[$locale]['specification'] = $contactsData[$locale][$index]['company_specification'] ?? '';
+                $translations[$locale]['city'] = $contactsData[$locale][$index]['city'] ?? '';
+                $translations[$locale]['website'] = $contactsData[$locale][$index]['website'] ?? '';
+                $translations[$locale]['description'] = $contactsData[$locale][$index]['priorities_of_research'] ?? '';
+            }
+
             $contact
                 ->setUpdatedAt(new \DateTime())
                 ->setIsPublic($isPublic)
@@ -344,14 +403,7 @@ class TpointContactImportCommand extends Command
                 ->setWebsite($website)
                 ->setContactGroups($contactGroups)
                 ->setParent(null)
-                ->setTranslations([
-                    'fr' => [
-                        'name' => null,
-                    ],
-                    'it' => [
-                        'name' => null,
-                    ],
-                ])
+                ->setTranslations($translations)
             ;
 
             if($contact->getId()) {
@@ -364,10 +416,12 @@ class TpointContactImportCommand extends Command
             $this->doctrine->getManager()->flush();
         }
 
+        $io->info(sprintf('Memory usage after contact import %s', (memory_get_usage() / 1024 / 1024) . 'MB'));
+
         $io->success(sprintf('Successfully updated %s contacts :)', $updatedContacts));
         $io->success(sprintf('Successfully created %s contacts :)', $createdContacts));
 
-        foreach($contactsData as $contactData) {
+        foreach($contactsData[$locales[0]] as $index => $contactData) {
 
             if(isset($contactData['employment_collection'])) {
 
@@ -383,7 +437,7 @@ class TpointContactImportCommand extends Command
 
                 $officialEmployment = null;
 
-                foreach($contactData['employment_collection'] as $index => $employmentCollection) {
+                foreach($contactData['employment_collection'] as $employmentIndex => $employmentCollection) {
                     $company = null;
                     $employee = null;
 
@@ -418,20 +472,23 @@ class TpointContactImportCommand extends Command
                         $employment->setCreatedAt(new \DateTime());
                     }
 
+                    $translations = [];
+
+                    foreach(array_slice($locales, 1) as $locale) {
+                        if(!isset($translations[$locale])) {
+                            $translations[$locale] = [];
+                        }
+
+                        $translations[$locale]['role'] = $employmentIndex === 0 ? ($contactsData[$locale][$index]['business_function'] ?? '') : '';
+                    }
+
                     $employment
                         ->setUpdatedAt(new \DateTime())
                         ->setCompany($company)
                         ->setEmployee($employee)
                         ->setPosition(10000)
-                        ->setRole($contactData['business_function'] ?? null)
-                        ->setTranslations([
-                            'fr' => [
-                                'name' => null,
-                            ],
-                            'it' => [
-                                'name' => null,
-                            ],
-                        ])
+                        ->setRole($employmentIndex === 0 ? ($contactData['business_function'] ?? '') : '')
+                        ->setTranslations($translations)
                     ;
 
                     if($employment->getId()) {
@@ -443,7 +500,7 @@ class TpointContactImportCommand extends Command
                     $this->doctrine->getManager()->persist($employment);
                     $this->doctrine->getManager()->flush();
 
-                    if($index === 0) {
+                    if($employmentIndex === 0) {
                         $officialEmployment = $this->doctrine->getRepository(Employment::class)->findOneBy([
                             'employee' => $employment->getEmployee(),
                             'company' => $employment->getCompany(),
@@ -466,6 +523,8 @@ class TpointContactImportCommand extends Command
                 }
             }
         }
+
+        $io->info(sprintf('Memory usage after employment import %s', (memory_get_usage() / 1024 / 1024) . 'MB'));
 
         $io->success(sprintf('Successfully updated %s employments :)', $updatedEmployments));
         $io->success(sprintf('Successfully created %s employments :)', $createdEmployments));

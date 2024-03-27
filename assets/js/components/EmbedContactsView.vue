@@ -25,10 +25,11 @@
                     <template v-if="contact.type === 'person'&& officialEmployment?.id && officialEmployment?.company?.id">
 
                         <p>
-                            <b>{{ translateField(officialEmployment.company, 'name', locale) }}</b><br><br>
+                            <strong>{{ translateField(officialEmployment.company, 'companyName', locale) }}</strong><br>
                             <template v-if="officialEmployment.company.specification">
                                 {{ translateField(officialEmployment.company, 'specification', locale) }}<br>
                             </template>
+                            <br>
                             <template v-if="officialEmployment.company.street">
                                 {{ officialEmployment.company.street }}<br>
                             </template>
@@ -82,11 +83,6 @@
             </div>
 
             <div class="embed-contacts-view-sidebar">
-
-                <template v-if="getLanguageById(contact.language?.id)">
-                    <h3>{{ $t('Sprache', locale) }}</h3>
-                    <div>{{ translateField(getLanguageById(contact.language.id), 'name', locale) }}</div>
-                </template>
 
                 <div class="embed-contacts-view-actions" v-if="contact.email || contact.phone">
 

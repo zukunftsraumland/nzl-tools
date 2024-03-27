@@ -31,7 +31,7 @@
             <div class="contact-component-form-section">
 
                 <div class="row">
-                    <div class="col-md-3" v-if="locale === 'de'">
+                    <div class="col-md-4" v-if="locale === 'de'">
                         <label for="companyName">Name</label>
                         <input id="companyName" type="text" class="form-control" v-model="contact.companyName" :placeholder="translate('companyName', contact)">
                     </div>
@@ -39,7 +39,7 @@
                         <label for="companyName">Name (Übersetzung {{ locale.toUpperCase() }})</label>
                         <input id="companyName" type="text" class="form-control" v-model="contact.translations[locale].companyName" :placeholder="translate('companyName', contact)">
                     </div>
-                    <div class="col-md-3" v-if="locale === 'de'">
+                    <div class="col-md-4" v-if="locale === 'de'">
                         <label for="specification">Zusatzangabe Fa./Inst.</label>
                         <input id="specification" type="text" class="form-control" v-model="contact.specification" :placeholder="translate('specification', contact)">
                     </div>

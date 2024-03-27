@@ -118,8 +118,8 @@
 
                         <h1 class="embed-contacts-list-item-content-title">
                             {{ contact.academicTitle }} {{ translateField(contact, 'name', locale) }}
-                            <template v-if="contact.type === 'person' && contact.officialEmployment?.id">
-                                <br><span class="embed-contacts-list-item-content-subtitle">{{ getOfficialEmployment(contact)?.company.name }}</span>
+                            <template v-if="contact.type === 'person' && contact.officialEmployment?.id && getOfficialEmployment(contact)?.company">
+                                <br><span class="embed-contacts-list-item-content-subtitle">{{ translateField(getOfficialEmployment(contact)?.company, 'companyName', locale) }}</span>
                             </template>
                         </h1>
 
@@ -264,8 +264,8 @@ export default {
                 return state.states.all
                     .filter(e => !e.context || e.context === 'contact')
                     .map(this.$clientOptions?.middleware?.mapStates || (e => e))
-                    .filter(this.$clientOptions?.middleware?.filterStates  || (e => e.isPublic))
-                    .sort(this.$clientOptions?.middleware?.sortStates  || ((a, b) => a.name - b.name));
+                    .filter(this.$clientOptions?.middleware?.filterStates || (e => e.isPublic))
+                    .sort(this.$clientOptions?.middleware?.sortStates || ((a, b) => translateField(a, 'name', this.locale).localeCompare(translateField(b, 'name', this.locale))));
             },
             contactGroupsParents: function (state) {
                 return state.contactGroups.filtered

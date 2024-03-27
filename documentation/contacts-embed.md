@@ -95,15 +95,12 @@ Basic styles can be overwritten using CSS variables:
             }
         ],
         middleware: {
-            mapLocations: country => ({ ...country, name: country.name === 'Foo' ? 'Bar' : country.name }),
-            filterLocations: country => country.id !== 1,
-            sortLocations: (a, b) => a.name.localeCompare(b.name),
-            // mapLanguages
-            // filterLanguages
-            // sortLanguages
-            // mapLocations
-            // filterLocations
-            // sortLocations
+            mapStates: state => ({ ...state, name: state.name === 'Foo' ? 'Bar' : state.name }),
+            filterStates: state => state.id !== 1,
+            sortStates: (a, b) => a.name.localeCompare(b.name),
+            // mapContactGroups
+            // filterContactGroups
+            // sortContactGroups
         },
     });
 </script>
