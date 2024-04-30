@@ -115,6 +115,8 @@
                 </tbody>
             </table>
 
+            <br><a @click="clickLoadMore()" class="button" v-if="!isLoadedFully">Mehr Einträge laden</a>
+
         </div>
 
     </div>
@@ -129,13 +131,16 @@
     export default {
         data () {
             return {
+                events: [],
                 term: '',
                 filters: [],
+                limit: 100,
+                offset: 0,
+                isLoadedFully: false,
             };
         },
         computed: {
             ...mapState({
-                events: state => state.events.filtered,
                 topics: state => state.topics.all,
                 languages: state => state.languages.all,
                 locations: state => state.locations.all,
@@ -164,10 +169,33 @@
                     params[filter.type].push(filter.value);
                 });
 
+                params.limit = this.limit;
+                params.offset = this.offset;
+                params.orderBy = ['startDate'];
+                params.orderDirection = ['DESC'];
+
                 return params;
             },
             reloadEvents () {
-                return this.$store.dispatch('events/loadFiltered', this.getFilterParams());
+                this.isLoadedFully = false;
+                this.offset = 0;
+                return this.$store.dispatch('events/loadFiltered', this.getFilterParams()).then((events) => {
+                    this.events = [
+                        ...events,
+                    ];
+                });
+            },
+            clickLoadMore () {
+                this.offset += this.limit;
+                this.$store.dispatch('events/loadFiltered', this.getFilterParams()).then((events) => {
+                    if(!events.length) {
+                        this.isLoadedFully = true;
+                    }
+                    this.events = [
+                        ...this.events,
+                        ...events,
+                    ];
+                });
             },
             clickEvent (event) {
                 this.$router.push({

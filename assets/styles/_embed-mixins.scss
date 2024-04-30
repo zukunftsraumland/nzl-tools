@@ -616,6 +616,36 @@
             }
 
         }
+
+        &-videos {
+            display: flex;
+            flex-direction: column;
+            row-gap: 1em;
+
+            &-video {
+
+                .youtube-embed {
+                    position: relative;
+                    width: 83.33%;
+                    background: $grey-light;
+
+                    &::before {
+                        content: "";
+                        display: block;
+                        padding-bottom: 66.666%;
+                    }
+
+                    iframe {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        border: 0;
+                    }
+                }
+            }
+        }
     }
 
     &-sidebar {

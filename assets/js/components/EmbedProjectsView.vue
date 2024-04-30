@@ -78,6 +78,18 @@
 
             </div>
 
+            <div class="embed-projects-view-content-videos" v-if="translateField(project, 'videos', locale)?.length">
+
+                <div class="embed-projects-view-content-videos-video" v-for="video in translateField(project, 'videos', locale)">
+
+                    <div class="youtube-embed" v-if="parseYoutubeId(video.url)">
+                        <iframe width="560" height="315" :src="'https://www.youtube-nocookie.com/embed/'+parseYoutubeId(video.url)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+
+                </div>
+
+            </div>
+
             <div v-if="templateHook('projectContentAfter', project)" v-html="templateHook('projectContentAfter', project)"></div>
 
         </div>
@@ -324,6 +336,11 @@ export default {
             let index = images.findIndex(i => i.id === this.lightboxImage.id);
 
             this.lightboxImage = images[index+1] || images[0];
+        },
+
+        parseYoutubeId(url) {
+            const result = (url || '').split(/(vi\/|v=|\/v\/|youtu\.be\/|\/embed\/)/);
+            return (result[2] !== undefined) ? result[2].split(/[^0-9a-z_\-]/i)[0] : false;
         },
 
     },
