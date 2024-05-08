@@ -520,6 +520,13 @@ class ChmosService {
             'lng'               => null,
         ];
 
+        if(in_array('Programm San Gottardo', $chmosProject['kanton'])) {
+            $normalizedProject['programs'] = array_merge($normalizedProject['programs'], [$this->normalizeProgram('NRP-San Gottardo')]);
+            $normalizedProject['states'] = array_values(array_filter($normalizedProject['states'], function ($p) {
+                return $p['name'] !== 'Programm San Gottardo';
+            }));
+        }
+
         foreach($chmosProject['attachments'] as $attachment) {
 
             if(!$attachment['oeffentlich']) {
@@ -677,6 +684,14 @@ class ChmosService {
             $normalizedProject['lng'] = $lng;
 
             break; // break loop if one coordinate already found
+        }
+
+        if(array_key_exists('gdeLat', $chmosProject)) {
+            $normalizedProject['lat'] = $chmosProject['gdeLat'];
+        }
+
+        if(array_key_exists('gdeLong', $chmosProject)) {
+            $normalizedProject['lng'] = $chmosProject['gdeLong'];
         }
 
         return $normalizedProject;

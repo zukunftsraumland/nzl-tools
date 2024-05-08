@@ -66,9 +66,9 @@ class ChmosPatchCommand extends Command
 
         $projects = $qb->getQuery()->getResult();
 
-        $projects = array_filter($projects, function ($project) {
+        $projects = array_values(array_filter($projects, function ($project) {
             return $project->getProjectCode();
-        });
+        }));
 
         if(!$input->getOption('properties')) {
             $io->error('You must provide at least one property.');
@@ -78,11 +78,25 @@ class ChmosPatchCommand extends Command
         $properties = array_map('trim', explode(',', $input->getOption('properties')));
 
         $count = 0;
+        $errorCount = 0;
 
         foreach($projects as $project) {
-            if($this->chmosService->performProjectPatch($project, $properties)) {
-                $count++;
+            try {
+                if($this->chmosService->performProjectPatch($project, $properties)) {
+                    $count++;
+                    $io->info(sprintf('Patch of project %s succeeded..', $project->getProjectCode()));
+                }
+            } catch (\Throwable $exception) {
+                $errorCount++;
+                $io->error(sprintf('Patch of project %s failed..', $project->getProjectCode()));
+
             }
+        }
+
+        if($errorCount > 0) {
+            $io->warning(sprintf('CHMOS patch partially failed. %s of %s projects were patched, while %s failed to patch successfully.', $count, count($projects), $errorCount));
+
+            return 1;
         }
 
         $io->success(sprintf('CHMOS patch completed. %s of %s projects were patched.', $count, count($projects)));
