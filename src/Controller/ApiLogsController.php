@@ -37,7 +37,7 @@ class ApiLogsController extends AbstractController
     #[OA\Tag(name: 'Logs')]
     public function pixel(Request $request, LogService $logService): Response
     {
-        $payload = json_decode(rawurldecode(base64_decode($request->get('d'))), true);
+        $payload = json_decode($request->get('d'), true);
 
         $response = new Response();
         $response->setContent(base64_decode('R0lGODlhAQABAJAAAP8AAAAAACH5BAUQAAAALAAAAAABAAEAAAICBAEAOw=='));

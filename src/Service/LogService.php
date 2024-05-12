@@ -133,7 +133,7 @@ class LogService {
             ->setContext('Telemetry')
             ->setCategory($payload['category'])
             ->setAction($payload['action'])
-            ->setValue($payload['value'])
+            ->setValue(json_encode($payload['value']))
             ->setReferer($this->requestStack->getCurrentRequest()->headers->get('Referer'))
             ->setUsername($this->security->getUser() ? $this->security->getUser()->getUserIdentifier() : null)
             ->setFingerprint(md5($fingerprint))

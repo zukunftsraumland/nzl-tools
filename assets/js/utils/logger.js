@@ -5,7 +5,7 @@ export const track = async (category = null, action = null, value = null) => {
         await api.logs.pixel({
             category,
             action,
-            value: (typeof value === 'string') ? value : JSON.stringify(value)
+            value,
         });
         return true;
     } catch (e) {

@@ -36,7 +36,7 @@ export default {
 
     pixel(payload) {
         let img = new Image(1, 1);
-        img.src = endpoint+'/pixel?d='+encodeURIComponent(btoa(encodeURIComponent(JSON.stringify(payload))));
+        img.src = endpoint+'/pixel?d='+encodeURIComponent(JSON.stringify(payload));
 
         return img.decode();
     },
