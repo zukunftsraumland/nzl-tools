@@ -16,6 +16,7 @@
                     <a @click="locale = 'de'" class="button" :class="{primary: locale === 'de'}">DE</a>
                     <a @click="locale = 'fr'" class="button" :class="{primary: locale === 'fr'}">FR</a>
                     <a @click="locale = 'it'" class="button" :class="{primary: locale === 'it'}">IT</a>
+                    <a class="button" @click="clickDuplicate()" v-if="event.id">Duplizieren</a>
                     <a class="button error" @click="clickDelete()" v-if="event.id">Löschen</a>
                     <a class="button warning" @click="clickCancel()">Abbrechen</a>
                     <a class="button primary" @click="clickSave()">Speichern</a>
@@ -505,6 +506,9 @@
             }),
         },
         methods: {
+            clickDuplicate() {
+                this.$router.replace('/events/add?copy='+this.event.id);
+            },
             clickDelete () {
                 this.modal = {
                     title: 'Eintrag löschen',
@@ -570,6 +574,17 @@
                             this.event.translations['it'].videos = [];
                         }
                     });
+
+                    return;
+                }
+
+                if(this.$route.query?.copy) {
+                    this.$store.dispatch('events/load', this.$route.query?.copy).then((event) => {
+                        if(event) {
+                            this.event = JSON.parse(JSON.stringify({...event}));
+                            delete this.event.id;
+                        }
+                    })
                 }
             },
             clickAddProgram() {

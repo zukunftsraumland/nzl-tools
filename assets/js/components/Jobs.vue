@@ -11,6 +11,7 @@
             </transition>
 
             <div class="jobs-component-title-actions">
+                <button class="button" @click="toggleArchive">Archiv {{ showArchive ? 'ausblenden' : 'anzeigen' }}</button>
                 <router-link :to="'/jobs/add'" class="button primary">Neuen Eintrag erstellen</router-link>
             </div>
 
@@ -80,6 +81,7 @@ export default {
             filters: [],
             isSortChanged: false,
             sortChangeProgress: 0,
+            showArchive: 0,
         };
     },
     components: {
@@ -101,8 +103,13 @@ export default {
             this.saveFilter();
             this.reloadJobs();
         },
+        toggleArchive() {
+            this.showArchive = !this.showArchive ? 1 : 0;
+            this.reloadJobs();
+        },
         getFilterParams () {
             let params = {};
+            params.archive = this.showArchive;
             params.term = this.term;
 
             this.filters.forEach((filter) => {
