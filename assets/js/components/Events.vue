@@ -171,8 +171,6 @@
 
                 params.limit = this.limit;
                 params.offset = this.offset;
-                params.orderBy = ['startDate'];
-                params.orderDirection = ['DESC'];
 
                 return params;
             },
