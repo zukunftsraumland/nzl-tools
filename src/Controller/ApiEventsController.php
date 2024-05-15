@@ -202,7 +202,7 @@ class ApiEventsController extends AbstractController
 
             foreach($request->get('orderBy') as $key => $orderBy) {
 
-                if(!in_array($orderBy, ['id', 'createdAt', 'updatedAt'])) {
+                if(!in_array($orderBy, ['id', 'createdAt', 'updatedAt', 'startDate', 'endDate'])) {
                     continue;
                 }
 
