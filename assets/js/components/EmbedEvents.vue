@@ -317,7 +317,10 @@ export default {
                 params[filter.type].push(filter.entity?.id || filter.entity?.name);
             }
 
-            params.type = this.type;
+            if(this.type === 'regiosuisse') {
+                params.type = ['regiosuisse', 'fsk', 'cafe-r', 'einstiegskurs', 'konferenz', 'wissenschaftsforum'];
+            }
+
             params.archive = this.archive;
             params.limit = this.limit;
             params.offset = this.offset;

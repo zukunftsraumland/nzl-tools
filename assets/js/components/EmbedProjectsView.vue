@@ -78,9 +78,9 @@
 
             </div>
 
-            <div class="embed-projects-view-content-videos" v-if="translateField(project, 'videos', locale)?.length">
+            <div class="embed-projects-view-content-videos" v-if="(translateField(project, 'videos', locale) || []).length > 1">
 
-                <div class="embed-projects-view-content-videos-video" v-for="video in translateField(project, 'videos', locale)">
+                <div class="embed-projects-view-content-videos-video" v-for="video in (translateField(project, 'videos', locale) || [])">
 
                     <div class="youtube-embed" v-if="parseYoutubeId(video.url)">
                         <iframe width="560" height="315" :src="'https://www.youtube-nocookie.com/embed/'+parseYoutubeId(video.url)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
