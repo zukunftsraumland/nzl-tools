@@ -572,7 +572,7 @@ export default {
 
             this.term = this.getUrlParams()['term'];
             this.type = this.getUrlParams()['type'];
-            this.archive = this.getUrlParams()['archive'];
+            this.archive = this.getUrlParams()['archive'] ? this.getUrlParams()['archive'] : 0;
 
             let filters = [];
 
@@ -643,7 +643,7 @@ export default {
         }
 
         if(this.history && this.getUrlParams()['archive']) {
-            this.archive = this.getUrlParams()['archive'];
+            this.archive = this.getUrlParams()['archive'] ? this.getUrlParams()['archive'] : 0;
         }
 
         this.reload();
