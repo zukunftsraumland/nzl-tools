@@ -181,6 +181,8 @@ class ProjectService {
             ->setInstruments(new ArrayCollection())
             ->setBusinessSectors(new ArrayCollection())
             ->setTranslations($payload['translations'] ?: [])
+            ->setLat($payload['lat'] ?? null)
+            ->setLng($payload['lng'] ?? null)
         ;
 
         foreach($payload['countries'] as $item) {
