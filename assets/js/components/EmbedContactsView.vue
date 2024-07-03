@@ -10,6 +10,19 @@
                 <p v-if="contact.type === 'person' && officialEmployment?.role"><i>{{ translateField(officialEmployment, 'role', locale) }}</i></p>
                 <p v-if="contact.type === 'company' && contact.specification"><i>{{ translateField(contact, 'specification', locale) }}</i></p>
 
+                <template v-if="contact.type === 'person'&& officialEmployment?.id && officialEmployment?.company?.id">
+
+                    <p>
+                        <template v-if="contact.phone">
+                            {{ $t('Tel.', locale) }}: <a :href="'tel:'+contact.phone">{{ contact.phone }}</a><br>
+                        </template>
+                        <template v-if="contact.email">
+                            {{ $t('Mail', locale) }}: <a :href="'mailto:'+contact.email">{{ contact.email }}</a><br>
+                        </template>
+                    </p>
+
+                </template>
+
                 <a class="embed-contacts-view-header-close" @click="clickClose()"></a>
 
             </div>
@@ -82,16 +95,7 @@
 
             </div>
 
-            <div class="embed-contacts-view-sidebar">
-
-                <div class="embed-contacts-view-actions" v-if="contact.email || contact.phone">
-
-                    <a class="embed-contacts-view-button button" :href="'mailto:'+contact.email" v-if="contact.email">{{ $t('Mail schreiben', locale) }}</a>
-                    <a class="embed-contacts-view-button button" :href="'tel:'+contact.phone" v-if="contact.phone">{{ $t('Anrufen', locale) }}</a>
-
-                </div>
-
-            </div>
+            <div class="embed-contacts-view-sidebar"></div>
 
         </template>
 
