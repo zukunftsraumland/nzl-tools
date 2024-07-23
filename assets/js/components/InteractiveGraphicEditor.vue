@@ -106,7 +106,7 @@
 
             },
             clickSvgElement (target) {
-                this.$refs.svg.querySelectorAll('svg '+this.selector).forEach((e) => {
+                this.$refs.svg.querySelectorAll('svg '+this.selector+', svg '+this.selector+' *').forEach((e) => {
                     e.classList.remove('active');
                 });
 
