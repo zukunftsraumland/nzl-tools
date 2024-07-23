@@ -133,6 +133,11 @@
                         'transition: all .25s;' +
                     '}';
 
+                style += '.interactive-graphic-editor-component svg ' + this.selector + ' * ' +
+                    '{' +
+                        'pointer-events: auto;' +
+                    '}';
+
                 style += '.interactive-graphic-editor-component svg ' + this.selector + ':hover ' +
                     '{' +
                         'opacity: 1;' +
