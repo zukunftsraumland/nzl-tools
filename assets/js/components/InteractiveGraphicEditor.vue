@@ -92,11 +92,17 @@
         methods: {
             clickSvg (event) {
 
-                if(!event.target.matches(this.selector)) {
+                let target = event.target;
+
+                if(!target.matches(this.selector) && !target.matches(this.selector+' *')) {
                     return;
                 }
 
-                this.clickSvgElement(event.target);
+                if(!target.matches(this.selector)) {
+                    target = event.target.closest(this.selector);
+                }
+
+                this.clickSvgElement(target);
 
             },
             clickSvgElement (target) {
