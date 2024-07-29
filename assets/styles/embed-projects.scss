@@ -124,8 +124,8 @@
     @include embed-transitions('embed-projects');
 }
 
-.embed-projects.column-count-2,
-.embed-projects.column-count-1
+.column-count-2 .embed-projects,
+.column-count-1 .embed-projects
 {
     .embed-projects-filters-input,
     .embed-projects-filters-select,
@@ -154,7 +154,7 @@
     }
 }
 
-.embed-projects.column-count-1 {
+.column-count-1 .embed-projects {
 
     .embed-projects-filters-input,
     .embed-projects-filters-select,
