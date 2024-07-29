@@ -124,6 +124,66 @@
     @include embed-transitions('embed-projects');
 }
 
+.embed-projects.column-count-2,
+.embed-projects.column-count-1
+{
+    .embed-projects-filters-input,
+    .embed-projects-filters-select,
+    .embed-projects-search-input,
+    .embed-projects-search-select,
+    .embed-projects-list-item {
+        flex: 0 0 calc(50% - var(--regiosuisse-gutter-width));
+        margin-left: 0;
+        margin-right: calc(var(--regiosuisse-gutter-width));
+    }
+
+    .embed-projects-filters-list {
+        padding-left: 0;
+    }
+
+    @include mobile {
+        &.is-responsive .embed-projects-filters-input,
+        &.is-responsive .embed-projects-filters-select,
+        &.is-responsive .embed-projects-filters-toggle,
+        &.is-responsive .embed-projects-search-input,
+        &.is-responsive .embed-projects-search-select,
+        &.is-responsive .embed-projects-search-toggle,
+        &.is-responsive .embed-projects-list-item {
+            flex-basis: 100%;
+        }
+    }
+}
+
+.embed-projects.column-count-1 {
+
+    .embed-projects-filters-input,
+    .embed-projects-filters-select,
+    .embed-projects-search-input,
+    .embed-projects-search-select,
+    .embed-projects-list-item {
+        flex: 0 0 calc(100% - var(--regiosuisse-gutter-width));
+        margin-left: 0;
+        margin-right: calc(var(--regiosuisse-gutter-width));
+    }
+
+    .embed-projects-filters-list {
+        padding-left: 0;
+    }
+
+    @include mobile {
+        &.is-responsive .embed-projects-filters-input,
+        &.is-responsive .embed-projects-filters-select,
+        &.is-responsive .embed-projects-filters-toggle,
+        &.is-responsive .embed-projects-search-input,
+        &.is-responsive .embed-projects-search-select,
+        &.is-responsive .embed-projects-search-toggle,
+        &.is-responsive .embed-projects-list-item {
+            flex-basis: 100%;
+        }
+    }
+
+}
+
 .embed-projects-view {
     @include embed-base;
     @include embed-view;
