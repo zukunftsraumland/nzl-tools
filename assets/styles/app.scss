@@ -77,8 +77,8 @@ a {
   color: $error;
 }
 
-.regiosuisse {
-  color: $color-regiosuisse;
+.nzl-color {
+  color: $color-nzl;
 }
 
 .chmos {
@@ -612,6 +612,8 @@ label {
     &-title {
       padding: .5em;
       color: $theme-color-2;
+      display: grid;
+      grid-template-columns: 1fr auto;
 
       .date {
         color: $color-4;
@@ -619,14 +621,13 @@ label {
       }
 
       &-dismiss {
-        display: none;
-        color: $error;
-        margin-left: .25em;
+        color: #F6F6F6;
+        align-self: flex-end;
       }
     }
 
     &:hover &-title-dismiss {
-      display: inline-block;
+      color: $error;
     }
 
     &-info {
@@ -787,7 +788,7 @@ label {
     &-level-parent {
 
       & > li {
-        background-color: rgba($color-regiosuisse, .05);
+        background-color: rgba($color-nzl, .05);
         padding: 1.5em 1em;
 
         &.draft {
@@ -839,7 +840,7 @@ label {
         cursor: pointer;
 
         .material-icons {
-          color: $color-regiosuisse;
+          color: $color-nzl;
           z-index: 1;
         }
       }
@@ -851,7 +852,7 @@ label {
         text-align: right;
 
         .button {
-          background-color: rgba($color-regiosuisse, .5);
+          background-color: rgba($color-nzl, .5);
           margin-left: 1em;
           padding: .3em .5em;
         }

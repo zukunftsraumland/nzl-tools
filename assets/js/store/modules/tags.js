@@ -29,6 +29,14 @@ const actions = {
         });
     },
 
+    // New action to create a tag
+    create ({ commit }, tagName) {
+        return api.tags.create({ name: tagName }).then((response) => {
+            commit('addTag', response.data);
+            return response.data;  // return the created tag
+        });
+    },
+
 };
 
 // mutations
@@ -40,6 +48,11 @@ const mutations = {
 
     set (state, tag) {
         state.tag = tag;
+    },
+
+    // New mutation to add a new tag to the state
+    addTag (state, tag) {
+        state.all.push(tag);
     },
 
 };

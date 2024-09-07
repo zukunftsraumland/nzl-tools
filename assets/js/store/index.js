@@ -35,6 +35,7 @@ import contactsData from './modules/contacts-data';
 import stints from './modules/stints';
 import posts from './modules/posts';
 import tags from './modules/tags';
+import localWorkgroups from './modules/local-workgroups';
 
 //const debug = process.env.NODE_ENV !== 'production';
 const debug = false;
@@ -77,6 +78,7 @@ export default createStore({
         stints,
         posts,
         tags,
+        localWorkgroups,
     },
     strict: debug,
     plugins: debug ? [createLogger()] : []

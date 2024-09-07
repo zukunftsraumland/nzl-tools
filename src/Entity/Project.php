@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use OpenApi\Attributes as OA;
@@ -68,6 +69,71 @@ class Project
     #[ORM\Column(name: 'lng', type: 'string', length: 255, nullable: true)]
     #[Groups(['project'])]
     private $lng;
+
+    #[ORM\ManyToOne(targetEntity: 'App\Entity\LocalWorkgroup')]
+    #[ORM\JoinColumn(name: 'local_workgroup_id', referencedColumnName: 'id', nullable: true)]
+    #[Groups(['project'])]
+    private $localWorkgroup;
+
+    #[ORM\Column(name: 'cooperation_project_at', type: 'boolean', nullable: true)]
+    #[Groups(['project'])]
+    private $cooperationProjectAt = false;
+
+    #[ORM\Column(name: 'cooperation_project_eu', type: 'boolean', nullable: true)]
+    #[Groups(['project'])]
+    private $cooperationProjectEu = false;
+
+    #[ORM\Column(name: 'case_study', type: 'boolean', nullable: true)]
+    #[Groups(['project'])]
+    private $caseStudy = false;
+
+    #[ORM\Column(name: 'exemplary', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $exemplary = null;
+
+    #[ORM\Column(name: 'initial_context', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $initialContext = null;
+
+    #[ORM\Column(name:'initial_context_goals', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $initialContextGoals = null;
+
+    #[ORM\Column(name: 'additional_value', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $additionalValue = null;
+
+    #[ORM\Column(name: 'additional_value_result', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $additionalValueResult = null;
+
+    #[ORM\Column(name: 'innovations', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $innovations = null;
+
+    #[ORM\Column(name: 'integration_young_citizen', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $integrationYoungCitizen = null;
+
+    #[ORM\Column(name: 'integration_female_citizen', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $integrationFemaleCitizen = null;
+
+    #[ORM\Column(name: 'integration_minorities', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $integrationMinorities = null;
+
+    #[ORM\Column(name: 'learning_experience', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $learningExperience = null;
+
+    #[ORM\Column(name: 'transferable', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $transferable = null;
+
+    #[ORM\Column(name: 'transfer_details', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $transferDetails = null;
 
     /**
      * @var \Doctrine\Common\Collections\Collection
@@ -278,7 +344,7 @@ class Project
         $this->states = new ArrayCollection();
         $this->programs = new ArrayCollection();
         $this->instruments = new ArrayCollection();
-        $this->businessSector = new ArrayCollection();
+        // $this->businessSector = new ArrayCollection();
     }
 
     /**
@@ -1210,6 +1276,248 @@ class Project
     public function getSearchIndex() : ?string
     {
         return $this->searchIndex;
+    }
+
+    /**
+     * Get the local workgroup.
+     *
+     * @return LocalWorkgroup|null
+     */
+    public function getLocalWorkgroup(): ?LocalWorkgroup
+    {
+        return $this->localWorkgroup;
+    }
+
+    /**
+     * Set the local workgroup.
+     *
+     * @param LocalWorkgroup|null $localWorkgroup
+     * @return self
+     */
+    public function setLocalWorkgroup(?LocalWorkgroup $localWorkgroup): self
+    {
+        $this->localWorkgroup = $localWorkgroup;
+
+        return $this;
+    }
+
+    /**
+     * Check if the project is a case study.
+     *
+     * @return bool
+     */
+    public function isCaseStudy(): bool
+    {
+        return $this->caseStudy;
+    }
+
+    /**
+     * Set the project as a case study.
+     *
+     * @param bool $caseStudy
+     * @return self
+     */
+    public function setCaseStudy(bool $caseStudy): self
+    {
+        $this->caseStudy = $caseStudy;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of cooperationProjectAt.
+     *
+     * @return bool|null
+     */
+    public function getcooperationProjectAt(): ?bool
+    {
+        return $this->cooperationProjectAt;
+    }
+
+    /**
+     * Set the value of cooperationProjectAt.
+     *
+     * @param bool|null $cooperationProjectAt
+     * @return self
+     */
+    public function setcooperationProjectAt(?bool $cooperationProjectAt): self
+    {
+        $this->cooperationProjectAt = $cooperationProjectAt;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of cooperationProjectEu.
+     *
+     * @return bool|null
+     */
+    public function getcooperationProjectEu(): ?bool
+    {
+        return $this->cooperationProjectEu;
+    }
+
+    /**
+     * Set the value of cooperationProjectEu.
+     *
+     * @param bool|null $cooperationProjectEu
+     * @return self
+     */
+    public function setcooperationProjectEu(?bool $cooperationProjectEu): self
+    {
+        $this->cooperationProjectEu = $cooperationProjectEu;
+
+        return $this;
+    }
+
+    /**
+     * Set the value of exemplary.
+     *
+     * @param string|null $exemplary
+     * @return self
+     */
+    public function getExemplary(): ?string
+    {
+        return $this->exemplary;
+    }
+
+    public function setExemplary(?string $exemplary): static
+    {
+        $this->exemplary = $exemplary;
+
+        return $this;
+    }
+
+    public function getInitialContext(): ?string
+    {
+        return $this->initialContext;
+    }
+
+    public function setInitialContext(?string $initialContext): static
+    {
+        $this->initialContext = $initialContext;
+
+        return $this;
+    }
+
+    public function getInitialContextGoals(): ?string
+    {
+        return $this->initialContextGoals;
+    }
+
+    public function setInitialContextGoals(?string $initialContextGoals): static
+    {
+        $this->initialContextGoals = $initialContextGoals;
+
+        return $this;
+    }
+
+    public function getAdditionalValue(): ?string
+    {
+        return $this->additionalValue;
+    }
+
+    public function setAdditionalValue(?string $additionalValue): static
+    {
+        $this->additionalValue = $additionalValue;
+
+        return $this;
+    }
+
+    public function getAdditionalValueResult(): ?string
+    {
+        return $this->additionalValueResult;
+    }
+
+    public function setAdditionalValueResult(?string $additionalValueResult): static
+    {
+        $this->additionalValueResult = $additionalValueResult;
+
+        return $this;
+    }
+
+    public function getInnovations(): ?string
+    {
+        return $this->innovations;
+    }
+
+    public function setInnovations(?string $innovations): static
+    {
+        $this->innovations = $innovations;
+
+        return $this;
+    }
+
+    public function getIntegrationYoungCitizen(): ?string
+    {
+        return $this->integrationYoungCitizen;
+    }
+
+    public function setIntegrationYoungCitizen(?string $integrationYoungCitizen): static
+    {
+        $this->integrationYoungCitizen = $integrationYoungCitizen;
+
+        return $this;
+    }
+
+    public function getIntegrationFemaleCitizen(): ?string
+    {
+        return $this->integrationFemaleCitizen;
+    }
+
+    public function setIntegrationFemaleCitizen(?string $integrationFemaleCitizen): static
+    {
+        $this->integrationFemaleCitizen = $integrationFemaleCitizen;
+
+        return $this;
+    }
+
+    public function getIntegrationMinorities(): ?string
+    {
+        return $this->integrationMinorities;
+    }
+
+    public function setIntegrationMinorities(?string $integrationMinorities): static
+    {
+        $this->integrationMinorities = $integrationMinorities;
+
+        return $this;
+    }
+
+    public function getLearningExperience(): ?string
+    {
+        return $this->learningExperience;
+    }
+
+    public function setLearningExperience(?string $learningExperience): static
+    {
+        $this->learningExperience = $learningExperience;
+
+        return $this;
+    }
+
+    public function getTransferable(): ?string
+    {
+        return $this->transferable;
+    }
+
+    public function setTransferable(?string $transferable): static
+    {
+        $this->transferable = $transferable;
+
+        return $this;
+    }
+
+    public function getTransferDetails(): ?string
+    {
+        return $this->transferDetails;
+    }
+
+    public function setTransferDetails(?string $transferDetails): static
+    {
+        $this->transferDetails = $transferDetails;
+
+        return $this;
     }
 }
 

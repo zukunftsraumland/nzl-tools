@@ -117,6 +117,20 @@ class ApiProjectsController extends AbstractController
         schema: new OA\Schema(type: 'array', items: new OA\Items(type: 'string')),
     )]
     #[OA\Parameter(
+        name: 'localWorkgroup',
+        description: 'Include only specific local workgroups(both name or id are valid values)',
+        in: 'query',
+        required: false,
+        schema: new OA\Schema(type: 'string'),
+    )]
+    #[OA\Parameter(
+        name: 'caseStudy',
+        description: 'Return only case studies',
+        in: 'query',
+        required: false,
+        schema: new OA\Schema(type: 'boolean'),
+    )]
+    #[OA\Parameter(
         name: 'status[]',
         description: 'Return projects by status',
         in: 'query',
@@ -174,10 +188,18 @@ class ApiProjectsController extends AbstractController
         $qb
             ->select('p')
             ->from(Project::class, 'p')
+            ->leftJoin('p.localWorkgroup', 'lw')
         ;
         
         if(!$this->isGranted('ROLE_EDITOR')) {
             $qb->andWhere('p.isPublic = TRUE');
+        }
+
+        if ($request->query->has('caseStudy')) {
+            if($request->query->getBoolean('caseStudy')) {
+                $qb->andWhere('p.caseStudy = :caseStudy')
+                ->setParameter('caseStudy', $request->query->getBoolean('caseStudy'));
+            }
         }
 
         if($request->get('ids') && !is_array($request->get('ids'))) {
@@ -196,7 +218,7 @@ class ApiProjectsController extends AbstractController
         
         if($request->get('term')) {
             $qb
-                ->andWhere('(p.searchIndex LIKE :term OR p.title LIKE :term OR p.description LIKE :term OR p.translations LIKE :term)')
+                ->andWhere('(p.searchIndex LIKE :term OR p.title LIKE :term OR p.description LIKE :term OR p.translations LIKE :term OR lw.name LIKE :term)')
                 ->setParameter('term', '%'.$request->get('term').'%');
         }
         
@@ -537,8 +559,7 @@ class ApiProjectsController extends AbstractController
     )]
     #[OA\Tag(name: 'Projects')]
     #[Security(name: 'cookieAuth')]
-    public function update(Request $request, EntityManagerInterface $em, NormalizerInterface $normalizer,
-                           ProjectService $projectService): JsonResponse
+    public function update(Request $request, EntityManagerInterface $em, NormalizerInterface $normalizer, ProjectService $projectService): JsonResponse
     {
         $project = $em->getRepository(Project::class)
             ->find($request->get('id'));
@@ -739,10 +760,9 @@ class ApiProjectsController extends AbstractController
 
                 foreach($project->getFinancing() as $financing) {
                     $financialMapping = [
-                        'costsFederation' => 'Förderung Bund',
-                        'costsCanton' => 'Förderung Kanton(e)',
-                        'costsExternal' => 'Finanzierung Dritte',
-                        'costsEU' => 'Gesamtkosten EU',
+                        'costsFederation' => 'GAP Strategieplan',
+                        'costsCanton' => 'Private und Eigenmittel',
+                        'costsExternal' => 'Andere Finanzquellen',
                     ];
                     if(!array_key_exists($financing['id'], $financialMapping)) {
                         continue;

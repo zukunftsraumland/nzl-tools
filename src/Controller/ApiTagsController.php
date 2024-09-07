@@ -60,4 +60,24 @@ class ApiTagsController extends AbstractController
         return $this->json($result);
     }
 
+
+    #[Route(path: '/create', name: 'create', methods: ['POST'])]
+    public function create(Request $request, EntityManagerInterface $em, NormalizerInterface $normalizer): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        $tag = new Tag();
+        $tag->setName($data['name']);
+        $tag->setIsPublic(true);
+        $tag->setCreatedAt(new \DateTime());
+        $tag->setUpdatedAt(new \DateTime());
+        // $tag->setContext($data['context'] ? $data['context'] : 'project');
+        $em->persist($tag);
+        $em->flush();
+    
+        $result = $normalizer->normalize($tag, null, ['groups' => ['id', 'tag']]);
+    
+        return $this->json($result);
+    }
+    
+
 }

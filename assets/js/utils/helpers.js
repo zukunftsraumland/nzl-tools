@@ -27,7 +27,7 @@ export default {
                 return moment(from).format('DD.MM.YYYY HH:mm')+' - '+moment(to).format('DD.MM.YYYY HH:mm');
             },
 
-            formatCurrency(value, currency = 'CHF') {
+            formatCurrency(value, currency = '€') {
                 return parseFloat(value)
                   .toLocaleString('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })+' '+currency;
             },

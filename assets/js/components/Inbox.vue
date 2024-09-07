@@ -40,7 +40,7 @@
         <div class="inbox-component-section" v-if="$env.PROJECTS_ENABLE_STATES">
 
             <div class="inbox-component-section-title">
-                <h2>Kantone</h2>
+                <h2>Bundesland</h2>
             </div>
 
             <div class="inbox-component-section-content">

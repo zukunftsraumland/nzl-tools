@@ -16,7 +16,7 @@
                 <div class="date">{{ formatDate(item.createdAt) }}</div>
             </div>
             <div class="inbox-card-component-content-info">
-                <div class="source regiosuisse" v-if="item.source === 'regiosuisse'">REGIOSUISSE</div>
+                <div class="source nzl-color" v-if="item.source === 'regiosuisse'">NZL</div>
                 <div class="source chmos" v-if="item.source === 'chmos'">CHMOS</div>
                 <div class="source blw" v-if="item.source === 'blw'">BLW</div>
                 <div class="source xls" v-if="item.source === 'xls'">XLS</div>

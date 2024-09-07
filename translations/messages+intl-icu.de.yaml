@@ -15,7 +15,7 @@ Thema: Thema
 Projekttyp: Projekttyp
 Unterstützungsarten: Unterstützungsarten
 'Geographische Region': 'Geographische Region'
-Kanton: 'Kanton'
+Kanton: 'Projektregion'
 Programm: 'Programm'
 Suchbegriff: 'Suchbegriff'
 Projektstart: 'Projektstart'
@@ -63,3 +63,6 @@ Ort: 'Ort'
 'Mail schreiben': 'Mail schreiben'
 'Anrufen': 'Anrufen'
 'Sprache': 'Sprache'
+GAP Strategieplan: 'GAP Strategieplan'
+Private und Eigenmittel: 'Private und Eigenmittel'
+Andere Finanzquellen: 'Andere Finanzquellen'

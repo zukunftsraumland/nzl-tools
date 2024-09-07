@@ -32,6 +32,7 @@ import contactsData from './modules/contacts-data';
 import stints from './modules/stints';
 import posts from './modules/posts';
 import tags from './modules/tags';
+import localWorkgroups from './modules/local-workgroups';
 
 export default {
     logs,
@@ -68,4 +69,5 @@ export default {
     stints,
     posts,
     tags,
+    localWorkgroups,
 }

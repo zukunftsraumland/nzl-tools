@@ -11,6 +11,7 @@ use App\Entity\State;
 use App\Entity\Tag;
 use App\Entity\Topic;
 use App\Util\PvTrans;
+use App\Entity\LocalWorkgroup;
 use Doctrine\Common\Collections\ArrayCollection;
 use App\Entity\Inbox;
 use App\Entity\Project;
@@ -183,7 +184,22 @@ class ProjectService {
             ->setTranslations($payload['translations'] ?: [])
             ->setLat($payload['lat'] ?? null)
             ->setLng($payload['lng'] ?? null)
-        ;
+            ->setLocalWorkgroup(!empty($payload['localWorkgroup']) ? $this->em->getRepository(LocalWorkgroup::class)->find($payload['localWorkgroup']) : null)
+            ->setCooperationProjectAt($payload['cooperationProjectAt'] ?? false)
+            ->setCooperationProjectEu($payload['cooperationProjectEu'] ?? false)
+            ->setCaseStudy($payload['caseStudy'] ?? false)
+            ->setExemplary($payload['exemplary'] ?? '')
+            ->setInitialContext($payload['initialContext']?? '')
+            ->setInitialContextGoals($payload['initialContextGoals']?? '')
+            ->setAdditionalValue($payload['additionalValue']?? '')
+            ->setAdditionalValueResult($payload['additionalValueResult']?? '')
+            ->setInnovations($payload['innovations']?? '')
+            ->setIntegrationYoungCitizen($payload['integrationYoungCitizen']?? '')
+            ->setIntegrationFemaleCitizen($payload['integrationFemaleCitizen']?? '')
+            ->setIntegrationMinorities($payload['integrationMinorities']?? '')
+            ->setLearningExperience($payload['learningExperience']?? '')
+            ->setTransferable($payload['transferable']?? '')
+            ->setTransferDetails($payload['transferDetails']?? '');
 
         foreach($payload['countries'] as $item) {
             $entity = null;

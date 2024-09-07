@@ -323,8 +323,7 @@ import {mapGetters, mapState} from 'vuex';
             reload() {
                 this.isLoading = true;
                 this.loadingProgress = 0;
-                this.loadingTotal = 19;
-
+                this.loadingTotal = 20;
                 Promise.all(
                     [
                         this.$store.dispatch('users/loadMe').then(() => this.loadingProgress += 1),
@@ -345,6 +344,7 @@ import {mapGetters, mapState} from 'vuex';
                         this.$store.dispatch('contactGroups/loadAll').then(() => this.loadingProgress += 1),
                         this.$store.dispatch('stints/loadAll').then(() => this.loadingProgress += 1),
                         this.$store.dispatch('tags/loadAll').then(() => this.loadingProgress += 1),
+                        this.$store.dispatch('localWorkgroups/loadAll').then(() => this.loadingProgress += 1),
                     ]
                 ).then(() => {
                     this.isLoading = false;
