@@ -16,8 +16,13 @@ use Doctrine\Common\Collections\ArrayCollection;
 use App\Entity\Inbox;
 use App\Entity\Project;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Entity\LEPeriod;
+use App\Entity\LEFundingCategory;
+use App\Entity\LEFundingArticle;
+use App\Entity\LEFundingMethod;
 
-class ProjectService {
+class ProjectService
+{
 
     protected $em;
 
@@ -28,8 +33,8 @@ class ProjectService {
 
     public function validateFields($payload, $fields = [])
     {
-        foreach($fields as $field) {
-            if(!array_key_exists($field, $payload)) {
+        foreach ($fields as $field) {
+            if (!array_key_exists($field, $payload)) {
                 return [
                     [
                         'field' => $field,
@@ -43,7 +48,7 @@ class ProjectService {
 
     public function validateProjectPayload($payload)
     {
-        if(($errors = $this->validateFields($payload, [
+        if (($errors = $this->validateFields($payload, [
             'title',
             'isPublic',
             'projectCode',
@@ -87,13 +92,13 @@ class ProjectService {
         $this->em->persist($project);
         $this->em->flush();
 
-        if(array_key_exists('inboxId', $payload) && $payload['inboxId']) {
+        if (array_key_exists('inboxId', $payload) && $payload['inboxId']) {
             /** @var Inbox $inbox */
             $inbox = $this->em->getRepository(Inbox::class)->find($payload['inboxId']);
 
-            if(array_key_exists('merge', $payload) && $payload['merge']) {
+            if (array_key_exists('merge', $payload) && $payload['merge']) {
                 $inbox->setIsMerged(true);
-            } elseif($inbox->getStatus() !== 'deleted') {
+            } elseif ($inbox->getStatus() !== 'deleted') {
                 $inbox->setInternalId($project->getId());
                 $inbox->setStatus('update');
             }
@@ -118,13 +123,13 @@ class ProjectService {
         $this->em->persist($project);
         $this->em->flush();
 
-        if(array_key_exists('inboxId', $payload) && $payload['inboxId']) {
+        if (array_key_exists('inboxId', $payload) && $payload['inboxId']) {
             /** @var Inbox $inbox */
             $inbox = $this->em->getRepository(Inbox::class)->find($payload['inboxId']);
 
-            if(array_key_exists('merge', $payload) && $payload['merge']) {
+            if (array_key_exists('merge', $payload) && $payload['merge']) {
                 $inbox->setIsMerged(true);
-            } elseif($inbox->getStatus() !== 'deleted') {
+            } elseif ($inbox->getStatus() !== 'deleted') {
                 $inbox->setInternalId($project->getId());
                 $inbox->setStatus('update');
             }
@@ -144,7 +149,7 @@ class ProjectService {
     {
         $inboxItems = $this->em->getRepository(Inbox::class)->findBy(['internalId' => $project->getId()]);
 
-        foreach($inboxItems as $inboxItem) {
+        foreach ($inboxItems as $inboxItem) {
             $inboxItem->setIsMerged(true);
             $inboxItem->setMergedAt(new \DateTime());
         }
@@ -189,129 +194,185 @@ class ProjectService {
             ->setCooperationProjectEu($payload['cooperationProjectEu'] ?? false)
             ->setCaseStudy($payload['caseStudy'] ?? false)
             ->setExemplary($payload['exemplary'] ?? '')
-            ->setInitialContext($payload['initialContext']?? '')
-            ->setInitialContextGoals($payload['initialContextGoals']?? '')
-            ->setAdditionalValue($payload['additionalValue']?? '')
-            ->setAdditionalValueResult($payload['additionalValueResult']?? '')
-            ->setInnovations($payload['innovations']?? '')
-            ->setIntegrationYoungCitizen($payload['integrationYoungCitizen']?? '')
-            ->setIntegrationFemaleCitizen($payload['integrationFemaleCitizen']?? '')
-            ->setIntegrationMinorities($payload['integrationMinorities']?? '')
-            ->setLearningExperience($payload['learningExperience']?? '')
-            ->setTransferable($payload['transferable']?? '')
-            ->setTransferDetails($payload['transferDetails']?? '');
+            ->setInitialContext($payload['initialContext'] ?? '')
+            ->setInitialContextGoals($payload['initialContextGoals'] ?? '')
+            ->setAdditionalValue($payload['additionalValue'] ?? '')
+            ->setAdditionalValueResult($payload['additionalValueResult'] ?? '')
+            ->setInnovations($payload['innovations'] ?? '')
+            ->setIntegrationYoungCitizen($payload['integrationYoungCitizen'] ?? '')
+            ->setIntegrationFemaleCitizen($payload['integrationFemaleCitizen'] ?? '')
+            ->setIntegrationMinorities($payload['integrationMinorities'] ?? '')
+            ->setLearningExperience($payload['learningExperience'] ?? '')
+            ->setTransferable($payload['transferable'] ?? '')
+            ->setTransferDetails($payload['transferDetails'] ?? '')
+            ->setSynergy($payload['synergy'] ?? false)
+            ->setSynergyGoal($payload['synergyGoal'] ?? '')
+            ->setSynergyFundTags(new ArrayCollection())
+            ->setSynergyGoalTags(new ArrayCollection());
 
-        foreach($payload['countries'] as $item) {
+        foreach ($payload['countries'] as $item) {
             $entity = null;
-            if(array_key_exists('id', $item) && $item['id']) {
+            if (array_key_exists('id', $item) && $item['id']) {
                 $entity = $this->em->getRepository(Country::class)->find($item['id']);
             }
-            if(!$entity && array_key_exists('name', $item)) {
+            if (!$entity && array_key_exists('name', $item)) {
                 $entity = $this->em->getRepository(Country::class)
                     ->findOneBy(['name' => $item['name']]);
             }
-            if($entity) {
+            if ($entity) {
                 $project->addCountry($entity);
             }
         }
 
-        foreach($payload['states'] as $item) {
+        foreach ($payload['states'] as $item) {
             $entity = null;
-            if(array_key_exists('id', $item) && $item['id']) {
+            if (array_key_exists('id', $item) && $item['id']) {
                 $entity = $this->em->getRepository(State::class)->find($item['id']);
             }
-            if(!$entity && array_key_exists('name', $item)) {
+            if (!$entity && array_key_exists('name', $item)) {
                 $entity = $this->em->getRepository(State::class)
                     ->findOneBy(['name' => $item['name']]);
             }
-            if($entity) {
+            if ($entity) {
                 $project->addState($entity);
             }
         }
 
-        foreach($payload['topics'] as $item) {
+        foreach ($payload['topics'] as $item) {
             $entity = null;
-            if(array_key_exists('id', $item) && $item['id']) {
+            if (array_key_exists('id', $item) && $item['id']) {
                 $entity = $this->em->getRepository(Topic::class)->find($item['id']);
             }
-            if(!$entity && array_key_exists('name', $item)) {
+            if (!$entity && array_key_exists('name', $item)) {
                 $entity = $this->em->getRepository(Topic::class)
                     ->findOneBy(['name' => $item['name']]);
             }
-            if($entity) {
+            if ($entity) {
                 $project->addTopic($entity);
             }
         }
 
-        foreach($payload['tags'] as $item) {
+        foreach ($payload['tags'] as $item) {
             $entity = null;
-            if(array_key_exists('id', $item) && $item['id']) {
+            if (array_key_exists('id', $item) && $item['id']) {
                 $entity = $this->em->getRepository(Tag::class)->find($item['id']);
             }
-            if(!$entity && array_key_exists('name', $item)) {
+            if (!$entity && array_key_exists('name', $item)) {
                 $entity = $this->em->getRepository(Tag::class)
                     ->findOneBy(['name' => $item['name']]);
             }
-            if($entity) {
+            if ($entity) {
                 $project->addTag($entity);
             }
         }
 
-        foreach($payload['geographicRegions'] as $item) {
+        foreach ($payload['geographicRegions'] as $item) {
             $entity = null;
-            if(array_key_exists('id', $item) && $item['id']) {
+            if (array_key_exists('id', $item) && $item['id']) {
                 $entity = $this->em->getRepository(GeographicRegion::class)->find($item['id']);
             }
-            if(!$entity && array_key_exists('name', $item)) {
+            if (!$entity && array_key_exists('name', $item)) {
                 $entity = $this->em->getRepository(GeographicRegion::class)
                     ->findOneBy(['name' => $item['name']]);
             }
-            if($entity) {
+            if ($entity) {
                 $project->addGeographicRegion($entity);
             }
         }
 
-        foreach($payload['programs'] as $item) {
+        foreach ($payload['programs'] as $item) {
             $entity = null;
-            if(array_key_exists('id', $item) && $item['id']) {
+            if (array_key_exists('id', $item) && $item['id']) {
                 $entity = $this->em->getRepository(Program::class)->find($item['id']);
             }
-            if(!$entity && array_key_exists('name', $item)) {
+            if (!$entity && array_key_exists('name', $item)) {
                 $entity = $this->em->getRepository(Program::class)
                     ->findOneBy(['name' => $item['name']]);
             }
-            if($entity) {
+            if ($entity) {
                 $project->addProgram($entity);
             }
         }
 
-        foreach($payload['instruments'] as $item) {
+        foreach ($payload['instruments'] as $item) {
             $entity = null;
-            if(array_key_exists('id', $item) && $item['id']) {
+            if (array_key_exists('id', $item) && $item['id']) {
                 $entity = $this->em->getRepository(Instrument::class)->find($item['id']);
             }
-            if(!$entity && array_key_exists('name', $item)) {
+            if (!$entity && array_key_exists('name', $item)) {
                 $entity = $this->em->getRepository(Instrument::class)
                     ->findOneBy(['name' => $item['name']]);
             }
-            if($entity) {
+            if ($entity) {
                 $project->addInstrument($entity);
             }
         }
 
-        foreach($payload['businessSectors'] as $item) {
+        foreach ($payload['businessSectors'] as $item) {
             $entity = null;
-            if(array_key_exists('id', $item) && $item['id']) {
+            if (array_key_exists('id', $item) && $item['id']) {
                 $entity = $this->em->getRepository(BusinessSector::class)->find($item['id']);
             }
-            if(!$entity && array_key_exists('name', $item)) {
+            if (!$entity && array_key_exists('name', $item)) {
                 $entity = $this->em->getRepository(BusinessSector::class)
                     ->findOneBy(['name' => $item['name']]);
             }
-            if($entity) {
+            if ($entity) {
                 $project->addBusinessSector($entity);
             }
         }
+
+        $project->getLocalWorkgroups()->clear();
+        if (!empty($payload['localWorkgroups'])) {
+            foreach ($payload['localWorkgroups'] as $item) {
+                $localWorkgroup = $this->em->getRepository(LocalWorkgroup::class)->find($item['id'] ?? null);
+                if ($localWorkgroup) {
+                    $project->addLocalWorkgroup($localWorkgroup);
+                }
+            }
+        }
+
+        $project->getSynergyFundTags()->clear();
+        if (!empty($payload['synergyFundTags'])) {
+
+            foreach ($payload['synergyFundTags'] as $item) {
+                $synergyFundTag = $this->em->getRepository(Tag::class)->find($item['id'] ?? null);
+                if ($synergyFundTag) {
+                    $project->addSynergyFundTag($synergyFundTag);
+                }
+            }
+        }
+        $project->getSynergyGoalTags()->clear();
+        if (!empty($payload['synergyGoalTags'])) {
+
+            foreach ($payload['synergyGoalTags'] as $item) {
+                $synergyGoalTag = $this->em->getRepository(Tag::class)->find($item['id'] ?? null);
+                if ($synergyGoalTag) {
+                    $project->addSynergyGoalTag($synergyGoalTag);
+                }
+            }
+        }
+        $lePeriod = isset($payload['lePeriod']) 
+        ? $this->em->getRepository(LEPeriod::class)->find(is_array($payload['lePeriod']) ? $payload['lePeriod']['id'] : $payload['lePeriod'])
+        : null;
+    
+        $leFundingCategory = isset($payload['leFundingCategory']) 
+            ? $this->em->getRepository(LEFundingCategory::class)->find(is_array($payload['leFundingCategory']) ? $payload['leFundingCategory']['id'] : $payload['leFundingCategory'])
+            : null;
+        
+        $leFundingArticle = isset($payload['leFundingArticle']) 
+            ? $this->em->getRepository(LEFundingArticle::class)->find(is_array($payload['leFundingArticle']) ? $payload['leFundingArticle']['id'] : $payload['leFundingArticle'])
+            : null;
+        
+        $leFundingMethod = isset($payload['leFundingMethod']) 
+            ? $this->em->getRepository(LEFundingMethod::class)->find(is_array($payload['leFundingMethod']) ? $payload['leFundingMethod']['id'] : $payload['leFundingMethod'])
+            : null;
+    
+        // Create or update project with the retrieved values
+        $project->setLePeriod($lePeriod);
+        $project->setLeFundingCategory($leFundingCategory);
+        $project->setLeFundingArticle($leFundingArticle);
+        $project->setLeFundingMethod($leFundingMethod);
 
         $project->setSearchIndex($this->buildSearchIndex($project));
 
@@ -325,36 +386,33 @@ class ProjectService {
 
         $searchIndex[] = $project->getProjectCode();
 
-        foreach(['de', 'fr', 'it'] as $locale) {
+        foreach (['de', 'fr', 'it'] as $locale) {
 
             $searchIndex[] = PvTrans::translate($project, 'title', $locale);
             $searchIndex[] = PvTrans::translate($project, 'description', $locale);
             $searchIndex[] = html_entity_decode(strip_tags(PvTrans::translate($project, 'description', $locale)));
 
-            foreach(PvTrans::translate($project, 'contacts', $locale) as $contact) {
+            foreach (PvTrans::translate($project, 'contacts', $locale) as $contact) {
                 $searchIndex[] = implode(', ', array_filter($contact));
             }
 
-            foreach($project->getTopics() as $e) {
+            foreach ($project->getTopics() as $e) {
                 $searchIndex[] = PvTrans::translate($e, 'name', $locale);
             }
 
-            foreach($project->getPrograms() as $e) {
-                $searchIndex[] = PvTrans::translate($e, 'longName', $locale).' ('.PvTrans::translate($e, 'name', $locale).')';
+            foreach ($project->getPrograms() as $e) {
+                $searchIndex[] = PvTrans::translate($e, 'longName', $locale) . ' (' . PvTrans::translate($e, 'name', $locale) . ')';
             }
 
-            foreach($project->getStates() as $e) {
+            foreach ($project->getStates() as $e) {
                 $searchIndex[] = PvTrans::translate($e, 'name', $locale);
             }
 
-            foreach($project->getInstruments() as $e) {
+            foreach ($project->getInstruments() as $e) {
                 $searchIndex[] = PvTrans::translate($e, 'name', $locale);
             }
-
         }
 
         return implode(PHP_EOL, array_unique(array_filter($searchIndex)));
-
     }
-
 }

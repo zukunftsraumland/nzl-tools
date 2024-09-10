@@ -250,7 +250,13 @@
             <td>{{ project.projectCode || "-" }}</td>
             <td>{{ translateField(project, "title") }}</td>
             <td>
-              <span v-if="project.caseStudy" class="case-study-icon" style="margin-left: 8px">CS</span>
+              <span v-if="project.caseStudy" class="case-study-icon" style="margin-left: 8px">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"
+                  class="bi bi-star-fill" viewBox="0 0 16 16">
+                  <path
+                    d="M3.612 15.443 4.2 10.73.798 7.073l4.824-.696L8 1.288l2.378 5.089 4.824.696-3.402 3.656.588 4.712L8 13.187l-4.388 2.256z" />
+                </svg>
+              </span>
             </td>
             <td v-if="$env.PROJECTS_ENABLE_START_DATE">
               {{ project.startDate ? project.startDate.substr(0, 4) : "" }}
@@ -274,7 +280,7 @@
             <td>
               {{
                 project.localWorkgroup
-                  ? getLocalWorkgroupById(project.localWorkgroup.id).name
+                  ? getLocalWorkgroupById(project.localWorkgroup.id)?.name
                   : ""
               }}
             </td>
@@ -498,8 +504,10 @@ export default {
 }
 
 .case-study-icon {
-  min-height: 24px;
-  min-width: 24px;
+  height: 25px;
+  max-height: 25px;
+  width: 25px;
+  max-width: 25px;
   background-color: #5077b2;
   /* Blue background */
   color: white;
@@ -512,6 +520,11 @@ export default {
   font-weight: bold;
   font-size: 12px;
   text-align: center;
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
 }
 
 .austria-tag {

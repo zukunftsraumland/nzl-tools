@@ -7,6 +7,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use OpenApi\Attributes as OA;
+use Doctrine\Common\Collections\Collection;
 
 /**
  * Project
@@ -75,6 +76,11 @@ class Project
     #[Groups(['project'])]
     private $localWorkgroup;
 
+    #[ORM\ManyToMany(targetEntity: 'App\Entity\LocalWorkgroup')]
+    #[ORM\JoinTable(name: 'pv_project_local_workgroups')]
+    #[Groups(['project'])]
+    private Collection $localWorkgroups;
+
     #[ORM\Column(name: 'cooperation_project_at', type: 'boolean', nullable: true)]
     #[Groups(['project'])]
     private $cooperationProjectAt = false;
@@ -82,6 +88,14 @@ class Project
     #[ORM\Column(name: 'cooperation_project_eu', type: 'boolean', nullable: true)]
     #[Groups(['project'])]
     private $cooperationProjectEu = false;
+
+    #[ORM\Column(name: 'synergy', type: 'boolean', nullable: true)]
+    #[Groups(['project'])]
+    private $synergy = false;
+
+    #[ORM\Column(name: 'synergyGoal', type: 'boolean', nullable: true)]
+    #[Groups(['project'])]
+    private $synergyGoal = false;
 
     #[ORM\Column(name: 'case_study', type: 'boolean', nullable: true)]
     #[Groups(['project'])]
@@ -95,7 +109,7 @@ class Project
     #[Groups(['project'])]
     private ?string $initialContext = null;
 
-    #[ORM\Column(name:'initial_context_goals', type: Types::TEXT, nullable: true)]
+    #[ORM\Column(name: 'initial_context_goals', type: Types::TEXT, nullable: true)]
     #[Groups(['project'])]
     private ?string $initialContextGoals = null;
 
@@ -154,6 +168,46 @@ class Project
     #[ORM\InverseJoinColumn(name: 'tag_id', referencedColumnName: 'id')]
     #[Groups(['project'])]
     private $tags;
+
+    #[ORM\ManyToOne(targetEntity: LEPeriod::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['project'])]
+    private ?LEPeriod $lePeriod = null;
+    
+    #[ORM\ManyToOne(targetEntity: LEFundingCategory::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['project'])]
+    private ?LEFundingCategory $leFundingCategory = null;
+    
+    #[ORM\ManyToOne(targetEntity: LEFundingArticle::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['project'])]
+    private ?LEFundingArticle $leFundingArticle = null;
+    
+    #[ORM\ManyToOne(targetEntity: LEFundingMethod::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['project'])]
+    private ?LEFundingMethod $leFundingMethod = null;
+
+    /**
+     * @var \Doctrine\Common\Collections\Collection
+     */
+    #[ORM\ManyToMany(targetEntity: 'Tag')]
+    #[ORM\JoinTable(name: 'pv_project_synergy_fund_tags')]
+    #[ORM\JoinColumn(name: 'project_id', referencedColumnName: 'id')]
+    #[ORM\InverseJoinColumn(name: 'tag_id', referencedColumnName: 'id')]
+    #[Groups(['project'])]
+    private $synergyFundTags;
+
+    /**
+     * @var \Doctrine\Common\Collections\Collection
+     */
+    #[ORM\ManyToMany(targetEntity: 'Tag')]
+    #[ORM\JoinTable(name: 'pv_project_synergy_goal_tags')]
+    #[ORM\JoinColumn(name: 'project_id', referencedColumnName: 'id')]
+    #[ORM\InverseJoinColumn(name: 'tag_id', referencedColumnName: 'id')]
+    #[Groups(['project'])]
+    private $synergyGoalTags;
 
     /**
      * @var \Doctrine\Common\Collections\Collection
@@ -345,6 +399,11 @@ class Project
         $this->programs = new ArrayCollection();
         $this->instruments = new ArrayCollection();
         // $this->businessSector = new ArrayCollection();
+        $this->localWorkgroups = new ArrayCollection();
+        $this->lePeriod = null;
+        $this->leFundingCategory = null;
+        $this->leFundingArticle = null;
+        $this->leFundingMethod = null;
     }
 
     /**
@@ -651,7 +710,8 @@ class Project
      *
      * @return \Doctrine\Common\Collections\Collection
      */
-    public function getTopics() {
+    public function getTopics()
+    {
         return $this->topics;
     }
 
@@ -660,7 +720,8 @@ class Project
      *
      * @return $this
      */
-    public function setTopics($topics) {
+    public function setTopics($topics)
+    {
         $this->topics = $topics;
 
         return $this;
@@ -672,7 +733,8 @@ class Project
      * @param $topic
      * @return Project
      */
-    public function addTopic($topic) {
+    public function addTopic($topic)
+    {
         if (!$this->topics->contains($topic)) {
             $this->topics->add($topic);
         }
@@ -685,7 +747,8 @@ class Project
      *
      * @param $topics
      */
-    public function removeTopic($topics) {
+    public function removeTopic($topics)
+    {
         $this->topics->removeElement($topics);
     }
 
@@ -694,7 +757,8 @@ class Project
      *
      * @return \Doctrine\Common\Collections\Collection
      */
-    public function getTags() {
+    public function getTags()
+    {
         return $this->tags;
     }
 
@@ -703,7 +767,8 @@ class Project
      *
      * @return $this
      */
-    public function setTags($tags) {
+    public function setTags($tags)
+    {
         $this->tags = $tags;
 
         return $this;
@@ -715,7 +780,8 @@ class Project
      * @param $tag
      * @return Project
      */
-    public function addTag($tag) {
+    public function addTag($tag)
+    {
         if (!$this->tags->contains($tag)) {
             $this->tags->add($tag);
         }
@@ -728,7 +794,8 @@ class Project
      *
      * @param $tags
      */
-    public function removeTag($tags) {
+    public function removeTag($tags)
+    {
         $this->tags->removeElement($tags);
     }
 
@@ -737,7 +804,8 @@ class Project
      *
      * @return \Doctrine\Common\Collections\Collection
      */
-    public function getGeographicRegions() {
+    public function getGeographicRegions()
+    {
         return $this->geographicRegions;
     }
 
@@ -746,7 +814,8 @@ class Project
      *
      * @return $this
      */
-    public function setGeographicRegions($geographicRegions) {
+    public function setGeographicRegions($geographicRegions)
+    {
         $this->geographicRegions = $geographicRegions;
 
         return $this;
@@ -758,7 +827,8 @@ class Project
      * @param $geographicRegion
      * @return Project
      */
-    public function addGeographicRegion($geographicRegion) {
+    public function addGeographicRegion($geographicRegion)
+    {
         if (!$this->geographicRegions->contains($geographicRegion)) {
             $this->geographicRegions->add($geographicRegion);
         }
@@ -771,7 +841,8 @@ class Project
      *
      * @param $geographicRegion
      */
-    public function removeGeographicRegion($geographicRegion) {
+    public function removeGeographicRegion($geographicRegion)
+    {
         $this->geographicRegions->removeElement($geographicRegion);
     }
 
@@ -780,7 +851,8 @@ class Project
      *
      * @return \Doctrine\Common\Collections\Collection
      */
-    public function getCountries() {
+    public function getCountries()
+    {
         return $this->countries;
     }
 
@@ -789,7 +861,8 @@ class Project
      *
      * @return $this
      */
-    public function setCountries($countries) {
+    public function setCountries($countries)
+    {
         $this->countries = $countries;
 
         return $this;
@@ -801,7 +874,8 @@ class Project
      * @param $country
      * @return Project
      */
-    public function addCountry($country) {
+    public function addCountry($country)
+    {
         if (!$this->countries->contains($country)) {
             $this->countries->add($country);
         }
@@ -814,7 +888,8 @@ class Project
      *
      * @param $countries
      */
-    public function removeCountry($countries) {
+    public function removeCountry($countries)
+    {
         $this->countries->removeElement($countries);
     }
 
@@ -823,7 +898,8 @@ class Project
      *
      * @return \Doctrine\Common\Collections\Collection
      */
-    public function getStates() {
+    public function getStates()
+    {
         return $this->states;
     }
 
@@ -832,7 +908,8 @@ class Project
      *
      * @return $this
      */
-    public function setStates($states) {
+    public function setStates($states)
+    {
         $this->states = $states;
 
         return $this;
@@ -844,7 +921,8 @@ class Project
      * @param $state
      * @return Project
      */
-    public function addState($state) {
+    public function addState($state)
+    {
         if (!$this->states->contains($state)) {
             $this->states->add($state);
         }
@@ -857,7 +935,8 @@ class Project
      *
      * @param $state
      */
-    public function removeState($state) {
+    public function removeState($state)
+    {
         $this->states->removeElement($state);
     }
 
@@ -866,7 +945,8 @@ class Project
      *
      * @return \Doctrine\Common\Collections\Collection
      */
-    public function getPrograms() {
+    public function getPrograms()
+    {
         return $this->programs;
     }
 
@@ -875,7 +955,8 @@ class Project
      *
      * @return $this
      */
-    public function setPrograms($programs) {
+    public function setPrograms($programs)
+    {
         $this->programs = $programs;
 
         return $this;
@@ -887,7 +968,8 @@ class Project
      * @param $program
      * @return Project
      */
-    public function addProgram($program) {
+    public function addProgram($program)
+    {
         if (!$this->programs->contains($program)) {
             $this->programs->add($program);
         }
@@ -900,7 +982,8 @@ class Project
      *
      * @param $program
      */
-    public function removeProgram($program) {
+    public function removeProgram($program)
+    {
         $this->programs->removeElement($program);
     }
 
@@ -909,7 +992,8 @@ class Project
      *
      * @return \Doctrine\Common\Collections\Collection
      */
-    public function getInstruments() {
+    public function getInstruments()
+    {
         return $this->instruments;
     }
 
@@ -918,7 +1002,8 @@ class Project
      *
      * @return $this
      */
-    public function setInstruments($instruments) {
+    public function setInstruments($instruments)
+    {
         $this->instruments = $instruments;
 
         return $this;
@@ -930,7 +1015,8 @@ class Project
      * @param $instrument
      * @return Project
      */
-    public function addInstrument($instrument) {
+    public function addInstrument($instrument)
+    {
         if (!$this->instruments->contains($instrument)) {
             $this->instruments->add($instrument);
         }
@@ -943,7 +1029,8 @@ class Project
      *
      * @param $instrument
      */
-    public function removeInstrument($instrument) {
+    public function removeInstrument($instrument)
+    {
         $this->instruments->removeElement($instrument);
     }
 
@@ -952,7 +1039,8 @@ class Project
      *
      * @return \Doctrine\Common\Collections\Collection
      */
-    public function getBusinessSectors() {
+    public function getBusinessSectors()
+    {
         return $this->businessSectors;
     }
 
@@ -961,7 +1049,8 @@ class Project
      *
      * @return $this
      */
-    public function setBusinessSectors($businessSectors) {
+    public function setBusinessSectors($businessSectors)
+    {
         $this->businessSectors = $businessSectors;
 
         return $this;
@@ -973,7 +1062,8 @@ class Project
      * @param $businessSector
      * @return Project
      */
-    public function addBusinessSector($businessSector) {
+    public function addBusinessSector($businessSector)
+    {
         if (!$this->businessSectors->contains($businessSector)) {
             $this->businessSectors->add($businessSector);
         }
@@ -986,7 +1076,8 @@ class Project
      *
      * @param $businessSector
      */
-    public function removeBusinessSector($businessSector) {
+    public function removeBusinessSector($businessSector)
+    {
         $this->businessSectors->removeElement($businessSector);
     }
 
@@ -1273,7 +1364,7 @@ class Project
      *
      * @return string|null
      */
-    public function getSearchIndex() : ?string
+    public function getSearchIndex(): ?string
     {
         return $this->searchIndex;
     }
@@ -1298,6 +1389,34 @@ class Project
     {
         $this->localWorkgroup = $localWorkgroup;
 
+        return $this;
+    }
+
+    /**
+     * @return Collection|LocalWorkgroup[]
+     */
+    public function getLocalWorkgroups(): Collection
+    {
+        return $this->localWorkgroups;
+    }
+
+    public function addLocalWorkgroup(LocalWorkgroup $localWorkgroup): self
+    {
+        if (!$this->localWorkgroups->contains($localWorkgroup)) {
+            $this->localWorkgroups[] = $localWorkgroup;
+        }
+        return $this;
+    }
+
+    public function removeLocalWorkgroup(LocalWorkgroup $localWorkgroup): self
+    {
+        $this->localWorkgroups->removeElement($localWorkgroup);
+        return $this;
+    }
+
+    public function setLocalWorkgroups(Collection $localWorkgroups): self
+    {
+        $this->localWorkgroups = $localWorkgroups;
         return $this;
     }
 
@@ -1371,15 +1490,255 @@ class Project
     }
 
     /**
-     * Set the value of exemplary.
+     * Check if the project has a synergy to other EU policies.
      *
-     * @param string|null $exemplary
+     * @return bool
+     */
+    public function isSynergy(): bool
+    {
+        return $this->synergy;
+    }
+
+    /**
+     * Set the project synergy to other EU policies.
+     *
+     * @param bool $synergy
      * @return self
+     */
+    public function setSynergy(bool $synergy): self
+    {
+        $this->synergy = $synergy;
+
+        return $this;
+    }
+
+    /**
+     * Check if the project goal contributes to other european or international policies.
+     *
+     * @return bool
+     */
+    public function isSynergyGoal(): bool
+    {
+        return $this->synergyGoal;
+    }
+
+    /**
+     * Set the project goal contributes to other european or international policies.
+     *
+     * @param bool $synergyGoal
+     * @return self
+     */
+    public function setSynergyGoal(bool $synergyGoal): self
+    {
+        $this->synergyGoal = $synergyGoal;
+
+        return $this;
+    }
+
+    /**
+     * Get synergyFundTags
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getSynergyFundTags(): Collection
+    {
+        return $this->synergyFundTags;
+    }
+
+    /**
+     * Set synergyFundTags
+     *
+     * @param \Doctrine\Common\Collections\Collection $synergyFundTags
+     * @return $this
+     */
+    public function setSynergyFundTags(Collection $synergyFundTags): self
+    {
+        $this->synergyFundTags = $synergyFundTags;
+
+        return $this;
+    }
+
+    /**
+     * Add a synergy fund tag
+     *
+     * @param Tag $synergyFundTag
+     * @return $this
+     */
+    public function addSynergyFundTag(Tag $synergyFundTag): self
+    {
+        if (!$this->synergyFundTags->contains($synergyFundTag)) {
+            $this->synergyFundTags[] = $synergyFundTag;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Remove a synergy fund tag
+     *
+     * @param Tag $synergyFundTag
+     */
+    public function removeSynergyFundTag(Tag $synergyFundTag): void
+    {
+        $this->synergyFundTags->removeElement($synergyFundTag);
+    }
+
+    /**
+     * Get synergyGoalTags
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getSynergyGoalTags(): Collection
+    {
+        return $this->synergyGoalTags;
+    }
+
+    /**
+     * Set synergyGoalTags
+     *
+     * @param \Doctrine\Common\Collections\Collection $synergyGoalTags
+     * @return $this
+     */
+    public function setSynergyGoalTags(Collection $synergyGoalTags): self
+    {
+        $this->synergyGoalTags = $synergyGoalTags;
+
+        return $this;
+    }
+
+    /**
+     * Add a synergy goal tag
+     *
+     * @param Tag $synergyGoalTag
+     * @return $this
+     */
+    public function addSynergyGoalTag(Tag $synergyGoalTag): self
+    {
+        if (!$this->synergyGoalTags->contains($synergyGoalTag)) {
+            $this->synergyGoalTags[] = $synergyGoalTag;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Remove a synergy goal tag
+     *
+     * @param Tag $synergyGoalTag
+     */
+    public function removeSynergyGoalTag(Tag $synergyGoalTag): void
+    {
+        $this->synergyGoalTags->removeElement($synergyGoalTag);
+    }
+
+    /**
+     * Set lePeriod
+     *
+     * @param LEPeriod $lePeriod
+     *
+     * @return Project
+     */
+    public function setLePeriod(?LEPeriod $lePeriod): static
+    {
+        $this->lePeriod = $lePeriod;
+
+        return $this;
+    }
+
+    /**
+     * Get lePeriod
+     *
+     * @return LEPeriod
+     */
+    public function getLePeriod(): ?LEPeriod
+    {
+        return $this->lePeriod;
+    }
+
+    /**
+     * Set leFundingCategory
+     *
+     * @param LEFundingCategory $leFundingCategory
+     *
+     * @return Project
+     */
+    public function setLEFundingCategory($leFundingCategory): static
+    {
+        $this->leFundingCategory = $leFundingCategory;
+
+        return $this;
+    }
+
+    /**
+     * Get leFundingCategory
+     *
+     * @return LEFundingCategory
+     */
+    public function getLEFundingCategory(): ?LEFundingCategory
+    {
+        return $this->leFundingCategory;
+    }
+
+    /**
+     * Set leFundingArticle
+     *
+     * @param LEFundingArticle $leFundingArticle
+     *
+     * @return Project
+     */
+    public function setLEFundingArticle($leFundingArticle): static
+    {
+        $this->leFundingArticle = $leFundingArticle;
+
+        return $this;
+    }
+
+    /**
+     * Get leFundingArticle
+     *
+     * @return LEFundingArticle
+     */
+    public function getLEFundingArticle(): ?LEFundingArticle
+    {
+        return $this->leFundingArticle;
+    }
+
+    /**
+     * Set leFundingMethod
+     *
+     * @param LEFundingMethod $leFundingMethod
+     *
+     * @return Project
+     */
+    public function getLEFundingMethod(): ?LEFundingMethod
+    {
+        return $this->leFundingMethod;
+    }
+
+    /**
+     * Get leFundingMethod
+     *
+     * @return LEFundingMethod
+     */
+    public function setLEFundingMethod($leFundingMethod): static
+    {
+        $this->leFundingMethod = $leFundingMethod;
+
+        return $this;
+    }
+
+    /**
+     * Set exemplary
+     *
+     * @param string $exemplary
+     *
+     * @return Project
      */
     public function getExemplary(): ?string
     {
         return $this->exemplary;
     }
+
 
     public function setExemplary(?string $exemplary): static
     {
@@ -1520,4 +1879,3 @@ class Project
         return $this;
     }
 }
-

@@ -67,6 +67,7 @@ class ApiTagsController extends AbstractController
         $data = json_decode($request->getContent(), true);
         $tag = new Tag();
         $tag->setName($data['name']);
+        $tag->setContext($data['context']);
         $tag->setIsPublic(true);
         $tag->setCreatedAt(new \DateTime());
         $tag->setUpdatedAt(new \DateTime());

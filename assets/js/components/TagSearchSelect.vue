@@ -2,9 +2,9 @@
   <div class="tag-selector-component">
     <!-- Selected Tags -->
     <div class="tag-selector-component-selection">
-      <div v-for="tag in groupOptions" :key="tag.id" class="tag-selector-component-selection-tag">
+      <div @click="removeTag(tag)" v-for="tag in groupOptions" :key="tag.id"
+        class="tag-selector-component-selection-tag">
         {{ tag.name || "Unnamed Tag" }}
-        <span @click="removeTag(tag)" class="remove-tag">x</span>
       </div>
     </div>
 
@@ -13,7 +13,7 @@
       @input="filterTags" @blur="hideDropdown" placeholder="Schlagworte suchen oder erstellen..." />
 
     <!-- Dropdown for available options -->
-    <div class="tag-selector-component-options" v-if="isDropdownVisible && filteredOptions.length">
+    <div class="tag-selector-component-options" v-if="isDropdownVisible && filteredOptions.length || searchTerm">
       <div class="tag-selector-component-options-option" v-for="option in filteredOptions" :key="option.id"
         @mousedown="selectTag(option)">
         {{ option.name }}
@@ -39,6 +39,10 @@ export default {
       type: Array,
       default: () => [],
     },
+    context: {
+      type: String,
+      default: "",
+    },
   },
   data() {
     return {
@@ -48,16 +52,21 @@ export default {
     };
   },
   mounted() {
-    this.filteredOptions = this.options;
+    this.filteredOptions = this.options.filter(
+      (option) => !this.model.some((selectedTag) => selectedTag.id === option.id)
+    );
   },
   methods: {
     filterTags() {
       if (this.searchTerm.trim()) {
         this.filteredOptions = this.options.filter((option) =>
-          option.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+          option.name.toLowerCase().includes(this.searchTerm.toLowerCase()) &&
+          !this.model.some((selectedTag) => selectedTag.id === option.id)
         );
       } else {
-        this.filteredOptions = this.options;
+        this.filteredOptions = this.options.filter(
+          (option) => !this.model.some((selectedTag) => selectedTag.id === option.id)
+        );
       }
     },
     selectTag(tag) {
@@ -67,6 +76,9 @@ export default {
       }
       this.searchTerm = "";
       this.isDropdownVisible = false;
+      this.filteredOptions = this.options.filter(
+        (option) => !this.model.some((selectedTag) => selectedTag.id === option.id)
+      );
     },
     removeTag(tag) {
       const index = this.model.findIndex((selectedTag) => selectedTag.id === tag.id);
@@ -74,10 +86,13 @@ export default {
         this.model.splice(index, 1);
         this.$emit("change", [...this.model]);
       }
+      this.filteredOptions = this.options.filter(
+        (option) => !this.model.some((selectedTag) => selectedTag.id === option.id)
+      );
     },
     createTag() {
       axios
-        .post("/api/v1/tags/create", { name: this.searchTerm })
+        .post("/api/v1/tags/create", { name: this.searchTerm, context: this.context })
         .then((response) => {
           const newTag = response.data;
           if (newTag && newTag.name) {
@@ -86,7 +101,9 @@ export default {
             this.$emit("change", [...this.model]);
           }
           this.searchTerm = "";
-          this.filteredOptions = this.options;
+          this.filteredOptions = this.options.filter(
+            (option) => !this.model.some((selectedTag) => selectedTag.id === option.id)
+          );
           this.isDropdownVisible = false;
         })
         .catch((error) => {
@@ -95,7 +112,9 @@ export default {
     },
     showDropdown() {
       this.isDropdownVisible = true;
-      this.filteredOptions = this.options; // Ensure all options are shown when dropdown is first opened
+      this.filteredOptions = this.options.filter(
+        (option) => !this.model.some((selectedTag) => selectedTag.id === option.id)
+      );
     },
     hideDropdown() {
       setTimeout(() => {
@@ -127,13 +146,18 @@ export default {
 };
 </script>
 
+
 <style scoped>
 .tag-selector-component {
   position: relative;
+  width: 100%;
+  max-width: 500px;
 }
 
 .tag-selector-component-selection {
   margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
 }
 
 .tag-selector-component-selection-tag {
@@ -141,8 +165,14 @@ export default {
   color: white;
   padding: 5px 10px;
   border-radius: 0.25em;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   margin-right: 5px;
+  margin-bottom: 5px;
+}
+
+.tag-selector-component-selection-tag:hover {
+  background-color: #CC0000;
 }
 
 .remove-tag {
@@ -151,14 +181,16 @@ export default {
 }
 
 .tag-selector-component-selection-search {
-  width: 90% !important;
-  padding: 5px;
-  margin: 10px;
+  width: 98% !important;
+  padding: 8px;
+  border: 1px solid #5077b2;
+  border-radius: 0.25em;
+  margin-bottom: 10px;
+  box-sizing: border-box;
 }
 
 .tag-selector-component-options {
   position: absolute;
-  left: -1px;
   background-color: white;
   border: 1px solid #5077b2;
   border-radius: 0.25em;
@@ -166,24 +198,38 @@ export default {
   max-height: 200px;
   overflow-y: auto;
   z-index: 1;
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  box-sizing: border-box;
 }
 
 .tag-selector-component-options-option {
-  padding: 10px;
+  padding: 5px 10px;
+  margin: 5px;
+  border-radius: 0.25em;
+  border: 1px solid #5077b2;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
 }
 
 .tag-selector-component-options-option:hover {
   background-color: #5077b2;
+  color: white;
 }
 
 .create-new-tag {
-  padding: 10px;
+  padding: 5px 10px;
+  margin: 5px;
   font-weight: bold;
+  border-radius: 0.25em;
+  border: 1px solid #5077b2;
   cursor: pointer;
 }
 
 .create-new-tag:hover {
   background-color: #5077b2;
+  color: white;
 }
 </style>

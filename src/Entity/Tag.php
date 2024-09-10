@@ -230,7 +230,7 @@ class Tag
 
     /**
      * Get context
-     *
+     * context can be 'tag', 'synergyFundTag', synergyGoalTag
      * @return string
      */
     public function getContext()
