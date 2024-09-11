@@ -39,8 +39,8 @@ const embedSassVariables = `
     $app-env: "${env.APP_ENV}";
     $instance-id: "${env.INSTANCE_ID}";
     $instance-name: "${env.INSTANCE_NAME}";
-    $primary-color: #B4BE00;
-    $secondary-color: #D3E292;
+    $primary-color: #5077B2;
+    $secondary-color: #6382af;
     $black: #000;
     $white: #FFF;
     $grey-light: #d9d9d9;

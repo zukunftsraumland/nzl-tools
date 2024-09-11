@@ -2,23 +2,44 @@
   <div class="tag-selector-component">
     <!-- Selected Tags -->
     <div class="tag-selector-component-selection">
-      <div @click="removeTag(tag)" v-for="tag in groupOptions" :key="tag.id"
-        class="tag-selector-component-selection-tag">
+      <div
+        @click="removeTag(tag)"
+        v-for="tag in groupOptions"
+        :key="tag.id"
+        class="tag-selector-component-selection-tag"
+      >
         {{ tag.name || "Unnamed Tag" }}
       </div>
     </div>
 
     <!-- Search Input -->
-    <input class="tag-selector-component-selection-search" type="text" v-model="searchTerm" @focus="showDropdown"
-      @input="filterTags" @blur="hideDropdown" placeholder="Schlagworte suchen oder erstellen..." />
+    <input
+      class="tag-selector-component-selection-search"
+      type="text"
+      v-model="searchTerm"
+      @focus="showDropdown"
+      @input="filterTags"
+      @blur="hideDropdown"
+      placeholder="Schlagworte suchen oder erstellen..."
+    />
 
     <!-- Dropdown for available options -->
-    <div class="tag-selector-component-options" v-if="isDropdownVisible && filteredOptions.length || searchTerm">
-      <div class="tag-selector-component-options-option" v-for="option in filteredOptions" :key="option.id"
-        @mousedown="selectTag(option)">
+    <div
+      class="tag-selector-component-options"
+      v-if="(isDropdownVisible && filteredOptions.length) || searchTerm"
+    >
+      <div
+        class="tag-selector-component-options-option"
+        v-for="option in filteredOptions"
+        :key="option.id"
+        @mousedown="selectTag(option)"
+      >
         {{ option.name }}
       </div>
-      <div class="tag-selector-component-options-option" v-if="!isTagExists && searchTerm">
+      <div
+        class="tag-selector-component-options-option"
+        v-if="!isTagExists && searchTerm"
+      >
         <span @mousedown="createTag" class="create-new-tag">Add "{{ searchTerm }}"</span>
       </div>
     </div>
@@ -59,9 +80,10 @@ export default {
   methods: {
     filterTags() {
       if (this.searchTerm.trim()) {
-        this.filteredOptions = this.options.filter((option) =>
-          option.name.toLowerCase().includes(this.searchTerm.toLowerCase()) &&
-          !this.model.some((selectedTag) => selectedTag.id === option.id)
+        this.filteredOptions = this.options.filter(
+          (option) =>
+            option.name.toLowerCase().includes(this.searchTerm.toLowerCase()) &&
+            !this.model.some((selectedTag) => selectedTag.id === option.id)
         );
       } else {
         this.filteredOptions = this.options.filter(
@@ -146,7 +168,6 @@ export default {
 };
 </script>
 
-
 <style scoped>
 .tag-selector-component {
   position: relative;
@@ -172,7 +193,7 @@ export default {
 }
 
 .tag-selector-component-selection-tag:hover {
-  background-color: #CC0000;
+  background-color: #cc0000;
 }
 
 .remove-tag {

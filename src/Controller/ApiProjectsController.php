@@ -475,7 +475,7 @@ class ApiProjectsController extends AbstractController
             ->find($request->get('id'));
 
         $result = $normalizer->normalize($project, null, [
-            'groups' => ['id', 'project', 'topic', 'program', 'instrument', 'state', 'country', 'geographic_region', 'business_sector'],
+            'groups' => ['id', 'project', 'topic', 'program', 'instrument', 'state', 'country', 'geographic_region', 'business_sector', 'tag'],
         ]);
 
         return $this->json($result);

@@ -2,12 +2,12 @@
 
 namespace App\Entity;
 
-use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\DBAL\Types\Types;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 use OpenApi\Attributes as OA;
-use Doctrine\Common\Collections\Collection;
 
 /**
  * Project
@@ -172,22 +172,22 @@ class Project
     #[ORM\ManyToOne(targetEntity: LEPeriod::class)]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['project'])]
-    private ?LEPeriod $lePeriod = null;
+    private ?LEPeriod $lePeriod;
     
     #[ORM\ManyToOne(targetEntity: LEFundingCategory::class)]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['project'])]
-    private ?LEFundingCategory $leFundingCategory = null;
+    private ?LEFundingCategory $leFundingCategory;
     
     #[ORM\ManyToOne(targetEntity: LEFundingArticle::class)]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['project'])]
-    private ?LEFundingArticle $leFundingArticle = null;
+    private ?LEFundingArticle $leFundingArticle;
     
     #[ORM\ManyToOne(targetEntity: LEFundingMethod::class)]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['project'])]
-    private ?LEFundingMethod $leFundingMethod = null;
+    private ?LEFundingMethod $leFundingMethod;
 
     /**
      * @var \Doctrine\Common\Collections\Collection

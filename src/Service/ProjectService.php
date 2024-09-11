@@ -368,7 +368,6 @@ class ProjectService
             ? $this->em->getRepository(LEFundingMethod::class)->find(is_array($payload['leFundingMethod']) ? $payload['leFundingMethod']['id'] : $payload['leFundingMethod'])
             : null;
     
-        // Create or update project with the retrieved values
         $project->setLePeriod($lePeriod);
         $project->setLeFundingCategory($leFundingCategory);
         $project->setLeFundingArticle($leFundingArticle);

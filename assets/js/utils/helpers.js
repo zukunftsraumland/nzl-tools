@@ -32,6 +32,12 @@ export default {
                   .toLocaleString('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })+' '+currency;
             },
 
+            formatPercent(percent, total, currency = '€') {
+                const roundedPercent = Math.round(percent * 100) / 100;
+                const roundedTotal = Math.round(total * 100) / 100;
+                return (roundedPercent + "%" + " (~" + roundedTotal / 100 * roundedPercent + " " + currency + ")");
+            },
+
             stripHTML(html) {
                 let tmp = document.createElement('div');
                 tmp.innerHTML = html;

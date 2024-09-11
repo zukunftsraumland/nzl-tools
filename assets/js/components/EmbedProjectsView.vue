@@ -9,104 +9,105 @@
     </div>
 
     <div class="embed-projects-view-content">
-      <div
-        class="embed-projects-view-content-text"
-        v-html="translateField(project, 'description', locale)"
-      ></div>
+      <div class="embed-projects-view-content-text" v-html="translateField(project, 'description', locale)"></div>
 
-        <div v-if="project.exemplary">
+      <div v-if="project.exemplary">
         <h4>Was macht dieses Projekt besonders nachahmenswert?</h4>
         <div class="embed-projects-view-content-text" v-html="project.exemplary"></div>
-        </div>
+      </div>
 
-        <div v-if="project.initialContext">
+      <div v-if="project.initialContext">
         <h4>Kontext</h4>
         <div class="embed-projects-view-content-text" v-html="project.initialContext"></div>
-        </div>
+      </div>
 
-        <div v-if="project.initialContextGoals">
+      <div v-if="project.initialContextGoals">
         <h4>Ziele</h4>
         <div class="embed-projects-view-content-text" v-html="project.initialContextGoals"></div>
-        </div>
+      </div>
 
-        <div v-if="project.additionalValue">
+      <div v-if="project.additionalValue">
         <h4>Mehrwert durch Vernetzung</h4>
         <div class="embed-projects-view-content-text" v-html="project.additionalValue"></div>
-        </div>
+      </div>
 
-        <div v-if="project.additionalValueResult">
+      <div v-if="project.additionalValueResult">
         <h4>Mehrwert durch Vernetzung Ergebnisse</h4>
         <div class="embed-projects-view-content-text" v-html="project.additionalValueResult"></div>
-        </div>
+      </div>
 
-        <div v-if="project.innovations">
+      <div v-if="project.innovations">
         <h4>Innovation</h4>
         <div class="embed-projects-view-content-text" v-html="project.innovations"></div>
-        </div>
+      </div>
 
-        <div v-if="project.integrationYoungCitizen">
+      <div v-if="project.integrationYoungCitizen">
         <h4>Einbeziehung junger Menschen</h4>
         <div class="embed-projects-view-content-text" v-html="project.integrationYoungCitizen"></div>
-        </div>
+      </div>
 
-        <div v-if="project.integrationFemaleCitizen">
+      <div v-if="project.integrationFemaleCitizen">
         <h4>Einbeziehung von Frauen</h4>
         <div class="embed-projects-view-content-text" v-html="project.integrationFemaleCitizen"></div>
-        </div>
+      </div>
 
-        <div v-if="project.integrationMinorities">
+      <div v-if="project.integrationMinorities">
         <h4>Inklusion</h4>
         <div class="embed-projects-view-content-text" v-html="project.integrationMinorities"></div>
-        </div>
+      </div>
 
-        <div v-if="project.learningExperience">
+      <div v-if="project.learningExperience">
         <h4>Die wichtigsten Lernerfahrungen</h4>
         <div class="embed-projects-view-content-text" v-html="project.learningExperience"></div>
-        </div>
+      </div>
+      <!-- Synergy Fund Tag -->
+      <div v-if="project.synergyFundTags.lenght > 0">
+        <h4>Synergien mit anderen EU-Politiken (GAP und andere EU Förderquellen)</h4>
+        <ul>
+          <li v-for="tag in project.synergyFundTags">
+            <span>{{ tag.name }}</span>
+          </li>
+        </ul>
+      </div>
 
-        <div v-if="project.transferable">
+      <!-- Synergy Goal Tag -->
+      <div v-if="project.synergyGoalTags.length > 0">
+        <h4>Dieses Projekt trägt zu Zielen folgenden europäischen und internationalen Politiken bei:</h4>
+        <ul>
+          <li v-for="tag in project.synergyGoalTags">
+            <span>{{ tag.name }}</span>
+          </li>
+        </ul>
+      </div>
+      <div v-if="project.transferable">
         <h4>Übertragbarkeit</h4>
         <div class="embed-projects-view-content-text" v-html="project.transferable"></div>
-        </div>
+      </div>
 
-        <div v-if="project.transferDetails">
+      <div v-if="project.transferDetails">
         <h4>Dieses Projekt wurde kopiert von:</h4>
         <div class="embed-projects-view-content-text" v-html="project.transferDetails"></div>
-        </div>
+      </div>
 
 
-      <div
-        class="embed-projects-view-content-downloads"
-        v-if="translateField(project, 'files', locale)?.length"
-      >
+      <div class="embed-projects-view-content-downloads" v-if="translateField(project, 'files', locale)?.length">
         <h4>{{ $t("Downloads", locale) }}</h4>
-        <div
-          class="embed-projects-view-content-downloads-download"
-          v-for="(file, index) in translateField(project, 'files', locale)"
-        >
-          <a
-            :href="$env.HOST + '/api/v1/files/download/' + file.id + '.' + file.extension"
-            download
-          >
+        <div class="embed-projects-view-content-downloads-download"
+          v-for="(file, index) in translateField(project, 'files', locale)">
+          <a :href="$env.HOST + '/api/v1/files/download/' + file.id + '.' + file.extension" download>
             {{ file.description || "Datei " + (index + 1) }}
           </a>
         </div>
       </div>
 
-      <div
-        class="embed-projects-view-content-contacts"
-        v-if="translateField(project, 'contacts', locale)?.length"
-      >
+      <div class="embed-projects-view-content-contacts" v-if="translateField(project, 'contacts', locale)?.length">
         <h4>{{ $t("Kontakt", locale) }}</h4>
 
-        <div
-          class="embed-projects-view-content-contacts-contact"
-          v-for="contact in translateField(project, 'contacts', locale)"
-        >
+        <div class="embed-projects-view-content-contacts-contact"
+          v-for="contact in translateField(project, 'contacts', locale)">
           <p>
             <template v-if="contact.name">
-              <strong>{{ contact.name }}</strong
-              ><br />
+              <strong>{{ contact.name }}</strong><br />
             </template>
             <template v-if="contact.firstName && contact.lastName">
               {{ contact.title || "" }} {{ contact.firstName }} {{ contact.lastName
@@ -118,89 +119,61 @@
               {{ contact.zipCode || "" }} {{ contact.city || "" }}<br />
             </template>
             <template v-if="contact.phone">
-              <a :href="'tel:' + contact.phone">{{ contact.phone }}</a
-              ><br />
+              <a :href="'tel:' + contact.phone">{{ contact.phone }}</a><br />
             </template>
             <template v-if="contact.email">
-              <a :href="'mailto:' + contact.email">{{ contact.email }}</a
-              ><br />
+              <a :href="'mailto:' + contact.email">{{ contact.email }}</a><br />
             </template>
             <template v-if="contact.website && contact.website.startsWith('http')">
               <a :href="contact.website" target="_blank">{{
                 contact.website.split("://", 2)[1]
-              }}</a
-              ><br />
+              }}</a><br />
             </template>
             <template v-if="contact.website && !contact.website.startsWith('http')">
               <a :href="'http://' + contact.website" target="_blank">{{
                 contact.website
-              }}</a
-              ><br />
+              }}</a><br />
             </template>
           </p>
         </div>
       </div>
 
-      <div
-        class="embed-projects-view-content-gallery"
-        v-if="(translateField(project, 'images', locale) || []).length > 1"
-      >
-        <div
-          class="embed-projects-view-content-gallery-image"
-          v-for="image in (translateField(project, 'images', locale) || []).slice(1)"
-        >
+      <div class="embed-projects-view-content-gallery"
+        v-if="(translateField(project, 'images', locale) || []).length > 1">
+        <div class="embed-projects-view-content-gallery-image"
+          v-for="image in (translateField(project, 'images', locale) || []).slice(1)">
           <a @click="clickShowImage(image)">
-            <img
-              :src="$env.HOST + '/api/v1/files/view/' + image.id + '.' + image.extension"
-              alt=""
-            />
+            <img :src="$env.HOST + '/api/v1/files/view/' + image.id + '.' + image.extension" alt="" />
           </a>
         </div>
       </div>
 
-      <div
-        class="embed-projects-view-content-videos"
-        v-if="(translateField(project, 'videos', locale) || []).length > 1"
-      >
-        <div
-          class="embed-projects-view-content-videos-video"
-          v-for="video in translateField(project, 'videos', locale) || []"
-        >
+      <div class="embed-projects-view-content-videos"
+        v-if="(translateField(project, 'videos', locale) || []).length > 1">
+        <div class="embed-projects-view-content-videos-video"
+          v-for="video in translateField(project, 'videos', locale) || []">
           <div class="youtube-embed" v-if="parseYoutubeId(video.url)">
-            <iframe
-              width="560"
-              height="315"
-              :src="'https://www.youtube-nocookie.com/embed/' + parseYoutubeId(video.url)"
-              frameborder="0"
+            <iframe width="560" height="315"
+              :src="'https://www.youtube-nocookie.com/embed/' + parseYoutubeId(video.url)" frameborder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-            ></iframe>
+              allowfullscreen></iframe>
           </div>
         </div>
       </div>
 
-      <div
-        v-if="templateHook('projectContentAfter', project)"
-        v-html="templateHook('projectContentAfter', project)"
-      ></div>
+      <div v-if="templateHook('projectContentAfter', project)" v-html="templateHook('projectContentAfter', project)">
+      </div>
     </div>
 
     <div class="embed-projects-view-sidebar">
-      <div
-        v-if="templateHook('projectSidebarImage', project)"
-        v-html="templateHook('projectSidebarImage', project)"
-      ></div>
+      <div v-if="templateHook('projectSidebarImage', project)" v-html="templateHook('projectSidebarImage', project)">
+      </div>
 
       <template v-else>
-        <div
-          class="embed-projects-view-sidebar-image"
-          v-for="image in (translateField(project, 'images', locale) || []).slice(0, 1)"
-        >
+        <div class="embed-projects-view-sidebar-image"
+          v-for="image in (translateField(project, 'images', locale) || []).slice(0, 1)">
           <a @click="clickShowImage(image)">
-            <img
-              :src="$env.HOST + '/api/v1/files/view/' + image.id + '.' + image.extension"
-              alt=""
-            />
+            <img :src="$env.HOST + '/api/v1/files/view/' + image.id + '.' + image.extension" alt="" />
           </a>
         </div>
       </template>
@@ -214,18 +187,12 @@
         <h3>{{ $t("Thema", locale) }}</h3>
         <p v-html="topicsHTML"></p>
       </template>
-      <p
-        class="embed-projects-view-content-tags"
-        v-if="translateField(project, 'tags', locale)?.length"
-      >
-        <h4>{{ $t("Tags", locale) }}</h4>
+      <p class="embed-projects-view-content-tags" v-if="translateField(project, 'tags', locale)?.length">
+      <h3>{{ $t("Tags", locale) }}</h3>
 
-        <div
-          class="embed-projects-view-content-tags-tag"
-          v-for="tag in translateField(project, 'tags', locale)"
-        >
-          <span>{{ tag.id }}</span>
-        </div>
+      <div class="embed-projects-view-content-tags-tag" v-for="tag in project.tags.filter((tag) => tag.context === 'tag')">
+        <span>{{ tag.name }}</span>
+      </div>
       </p>
       <template v-if="programsHTML">
         <h3>{{ $t("Programm", locale) }}</h3>
@@ -260,7 +227,7 @@
         <h3 v-if="financing.id === 'costsExternal'">
           {{ $t("Andere Finanzquellen", locale) }}
         </h3>
-        <p>{{ $helpers.formatCurrency(financing.value) }}</p>
+        <p>{{ $helpers.formatPercent(financing.value, project.projectCosts) }}</p>
       </template>
 
       <template v-if="linksHTML">
@@ -268,46 +235,32 @@
         <p v-html="linksHTML"></p>
       </template>
 
-      <div
-        v-if="templateHook('projectSidebarAfter', project)"
-        v-html="templateHook('projectSidebarAfter', project)"
-      ></div>
+      <div v-if="templateHook('projectSidebarAfter', project)" v-html="templateHook('projectSidebarAfter', project)">
+      </div>
     </div>
 
     <transition name="embed-projects-view-lightbox" mode="out-in">
-      <div
-        class="embed-projects-view-lightbox"
-        v-if="lightboxImage"
-        @click="clickHideImage()"
-      >
-        <div
-          class="embed-projects-view-lightbox-content"
-          :style="{
-            backgroundImage:
-              'url(' +
-              $env.HOST +
-              '/api/v1/files/view/' +
-              lightboxImage.id +
-              '.' +
-              lightboxImage.extension +
-              ')',
-          }"
-        ></div>
+      <div class="embed-projects-view-lightbox" v-if="lightboxImage" @click="clickHideImage()">
+        <div class="embed-projects-view-lightbox-content" :style="{
+          backgroundImage:
+            'url(' +
+            $env.HOST +
+            '/api/v1/files/view/' +
+            lightboxImage.id +
+            '.' +
+            lightboxImage.extension +
+            ')',
+        }"></div>
 
-        <div
-          class="embed-projects-view-lightbox-description"
-          @click.stop
-          v-if="lightboxImage.description || lightboxImage.copyright"
-        >
+        <div class="embed-projects-view-lightbox-description" @click.stop
+          v-if="lightboxImage.description || lightboxImage.copyright">
           <template v-if="lightboxImage.description">{{
             lightboxImage.description
           }}</template>
           <template v-if="lightboxImage.description && lightboxImage.copyright">
             |
           </template>
-          <template v-if="lightboxImage.copyright"
-            >© {{ lightboxImage.copyright }}</template
-          >
+          <template v-if="lightboxImage.copyright">© {{ lightboxImage.copyright }}</template>
         </div>
 
         <a class="embed-projects-view-lightbox-prev" @click.stop="clickPrevImage()">

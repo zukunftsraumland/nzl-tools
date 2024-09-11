@@ -24,7 +24,7 @@
     --#{$instance-id}-shadow-1: #{.1em .1em .5em rgba($grey-mid, .5)};
     --#{$instance-id}-shadow-2: #{0 0 .5em rgba($grey-mid, .75)};
 
-    --#{$instance-id}-thumbnail-placeholder-image: url(../images/project-image-placeholder.jpg);
+    --#{$instance-id}-thumbnail-placeholder-image: url(../images/netzwerk-zukunftsraum-land-logo-white.svg);
 
     --#{$instance-id}-overlay-background: rgba($white, .75);
 
@@ -52,6 +52,11 @@
         &:active, &:hover {
             text-decoration: underline;
         }
+    }
+
+    h4 {
+        color: var(--#{$instance-id}-primary-color);
+        font-weight: bold;
     }
 
     & &-actions {
@@ -372,7 +377,7 @@
     }
 
     &.is-draft {
-        background: #fff3f3;
+        background: #f6f6f6;
     }
 
     &-header {
@@ -385,8 +390,8 @@
             width: 100%;
             height: 100%;
             background-image: var(--#{$instance-id}-thumbnail-placeholder-image);
-            background-color: var(--#{$instance-id}-secondary-color);
-            background-size: cover;
+            background-color: var(--#{$instance-id}-primary-color);
+            // background-size: cover;
             background-repeat: no-repeat;
             background-position: center center;
         }
@@ -427,6 +432,7 @@
                 padding: .5em 1em;
                 background: var(--#{$instance-id}-secondary-color);
                 border-radius: var(--#{$instance-id}-border-radius-2);
+                color: white;
             }
         }
     }
