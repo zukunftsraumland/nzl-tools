@@ -89,14 +89,6 @@ class Project
     #[Groups(['project'])]
     private $cooperationProjectEu = false;
 
-    #[ORM\Column(name: 'synergy', type: 'boolean', nullable: true)]
-    #[Groups(['project'])]
-    private $synergy = false;
-
-    #[ORM\Column(name: 'synergyGoal', type: 'boolean', nullable: true)]
-    #[Groups(['project'])]
-    private $synergyGoal = false;
-
     #[ORM\Column(name: 'case_study', type: 'boolean', nullable: true)]
     #[Groups(['project'])]
     private $caseStudy = false;
@@ -149,6 +141,22 @@ class Project
     #[Groups(['project'])]
     private ?string $transferDetails = null;
 
+    #[ORM\Column(name: 'funding_method', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $fundingMethod = null;
+
+    #[ORM\Column(name: 'funding_method_stakeholders', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $fundingMethodStakeholders = null;
+
+    #[ORM\Column(name: 'results_quantity', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $resultsQuantity = null;
+
+    #[ORM\Column(name: 'results_quality', type: Types::TEXT, nullable: true)]
+    #[Groups(['project'])]
+    private ?string $resultsQuality = null;
+
     /**
      * @var \Doctrine\Common\Collections\Collection
      */
@@ -173,17 +181,17 @@ class Project
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['project'])]
     private ?LEPeriod $lePeriod;
-    
+
     #[ORM\ManyToOne(targetEntity: LEFundingCategory::class)]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['project'])]
     private ?LEFundingCategory $leFundingCategory;
-    
+
     #[ORM\ManyToOne(targetEntity: LEFundingArticle::class)]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['project'])]
     private ?LEFundingArticle $leFundingArticle;
-    
+
     #[ORM\ManyToOne(targetEntity: LEFundingMethod::class)]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['project'])]
@@ -1490,52 +1498,6 @@ class Project
     }
 
     /**
-     * Check if the project has a synergy to other EU policies.
-     *
-     * @return bool
-     */
-    public function isSynergy(): bool
-    {
-        return $this->synergy;
-    }
-
-    /**
-     * Set the project synergy to other EU policies.
-     *
-     * @param bool $synergy
-     * @return self
-     */
-    public function setSynergy(bool $synergy): self
-    {
-        $this->synergy = $synergy;
-
-        return $this;
-    }
-
-    /**
-     * Check if the project goal contributes to other european or international policies.
-     *
-     * @return bool
-     */
-    public function isSynergyGoal(): bool
-    {
-        return $this->synergyGoal;
-    }
-
-    /**
-     * Set the project goal contributes to other european or international policies.
-     *
-     * @param bool $synergyGoal
-     * @return self
-     */
-    public function setSynergyGoal(bool $synergyGoal): self
-    {
-        $this->synergyGoal = $synergyGoal;
-
-        return $this;
-    }
-
-    /**
      * Get synergyFundTags
      *
      * @return \Doctrine\Common\Collections\Collection
@@ -1662,7 +1624,7 @@ class Project
      *
      * @return Project
      */
-    public function setLEFundingCategory($leFundingCategory): static
+    public function setLeFundingCategory($leFundingCategory): static
     {
         $this->leFundingCategory = $leFundingCategory;
 
@@ -1674,7 +1636,7 @@ class Project
      *
      * @return LEFundingCategory
      */
-    public function getLEFundingCategory(): ?LEFundingCategory
+    public function getLeFundingCategory(): ?LEFundingCategory
     {
         return $this->leFundingCategory;
     }
@@ -1686,7 +1648,7 @@ class Project
      *
      * @return Project
      */
-    public function setLEFundingArticle($leFundingArticle): static
+    public function setLeFundingArticle($leFundingArticle): static
     {
         $this->leFundingArticle = $leFundingArticle;
 
@@ -1698,7 +1660,7 @@ class Project
      *
      * @return LEFundingArticle
      */
-    public function getLEFundingArticle(): ?LEFundingArticle
+    public function getLeFundingArticle(): ?LEFundingArticle
     {
         return $this->leFundingArticle;
     }
@@ -1710,7 +1672,7 @@ class Project
      *
      * @return Project
      */
-    public function getLEFundingMethod(): ?LEFundingMethod
+    public function getLeFundingMethod(): ?LEFundingMethod
     {
         return $this->leFundingMethod;
     }
@@ -1720,7 +1682,7 @@ class Project
      *
      * @return LEFundingMethod
      */
-    public function setLEFundingMethod($leFundingMethod): static
+    public function setLeFundingMethod($leFundingMethod): static
     {
         $this->leFundingMethod = $leFundingMethod;
 
@@ -1875,6 +1837,54 @@ class Project
     public function setTransferDetails(?string $transferDetails): static
     {
         $this->transferDetails = $transferDetails;
+
+        return $this;
+    }
+
+    public function getFundingMethod(): ?string
+    {
+        return $this->fundingMethod;
+    }
+
+    public function setFundingMethod(?string $fundingMethod): self
+    {
+        $this->fundingMethod = $fundingMethod;
+
+        return $this;
+    }
+
+    public function getFundingMethodStakeholders(): ?string
+    {
+        return $this->fundingMethodStakeholders;
+    }
+
+    public function setFundingMethodStakeholders(?string $fundingMethodStakeholders): self
+    {
+        $this->fundingMethodStakeholders = $fundingMethodStakeholders;
+
+        return $this;
+    }
+
+    public function getResultsQuantity(): ?string
+    {
+        return $this->resultsQuantity;
+    }
+
+    public function setResultsQuantity(?string $resultsQuantity): self
+    {
+        $this->resultsQuantity = $resultsQuantity;
+
+        return $this;
+    }
+
+    public function getResultsQuality(): ?string
+    {
+        return $this->resultsQuality;
+    }
+
+    public function setResultsQuality(?string $resultsQuality): self
+    {
+        $this->resultsQuality = $resultsQuality;
 
         return $this;
     }

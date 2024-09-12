@@ -12,5 +12,9 @@ export const tooltips = {
     integrationMinorities: "Bitte beschreiben Sie, auf welche Weise Angehörige von Minderheiten beziehungsweise deren Anliegen in das Projekt einbezogen waren. Inwiefern haben diese Menschen bzw. Angehörige von Minderheiten generell durch das Projekt profitiert? Hat dieses Projekt zur Inklusion beigetragen?",
     learningExperience: "Fassen Sie bitte kurz zusammen, was Sie aus der Umsetzung des Projekts gelernt haben. Beschreiben Sie wesentliche Erfolgsfaktoren, Erfahrungen, Erkenntnisse. Denken Sie auch an ungeplante Ereignisse, die einen Einfluss auf die Projektzielerreichung hatten und worauf Menschen achten sollten, die ebenfalls ein derartiges Projekt umsetzen möchten.",
     transferable: "Inwiefern lässt sich dieses Projekt auf andere Regionen oder Organisationen übertragen?",
-    transferDetails: "Wurde dieses Projekt bereits kopiert? In Ihrer Region, in Österreich oder international?"
+    transferDetails: "Wurde dieses Projekt bereits kopiert? In Ihrer Region, in Österreich oder international?",
+    fundingMethod: "Bei komplexeren Projekten, die aus mehreren Förderungen unterstützt wurden, unterscheiden Sie bitte, welche davon durch die Gemeinsame Agrarpolitik/ Ländliche Entwicklung gefördert und welche aus anderen Quellen finanziert wurden. Bitte benennen und beschreiben Sie die Maßnahmen im Projekt in chronologischer Reihenfolge:",
+    fundingMethodStakeholders: "Wer bzw. welche Stakeholder waren beteiligt und entscheidend für den Projekterfolg?",
+    resultsQuantity: "Geben Sie hier all jene Ergebnisse und Wirkungen an, die in Zahlen messbar sind (zum Beispiel Anzahl geschaffener Arbeitsplätze, prozentuelle Steigerung der Einnahmen). Bei LEADER-Projekten: Angabe der relevanten Wirkungsindikatoren",
+    resultsQuality: " Beschreiben Sie hier jene Teile der Projektergebnisse, die sich nicht in Zahlen fassen lassen.",
 }

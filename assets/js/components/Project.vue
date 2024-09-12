@@ -290,6 +290,64 @@
         v-if="project.caseStudy"
         :fields="[
           {
+            name: 'fundingMethod',
+            label: 'Maßnahmen im Projekt',
+            type: 'ckeditor',
+            editor: editor,
+            editorConfig: editorConfig,
+            columnsize: 6,
+            tooltip: tooltips.fundingMethod,
+          },
+          {
+            name: 'fundingMethodStakeholders',
+            label: 'Welche Stakeholder waren entscheidend?',
+            type: 'ckeditor',
+            editor: editor,
+            editorConfig: editorConfig,
+            columnsize: 6,
+            tooltip: tooltips.fundingMethodStakeholders,
+          },
+        ]"
+        :project="project"
+        :diff="diff"
+        :locale="locale"
+        @mergeFields="mergeFields"
+        @update:project="project = $event"
+      />
+
+      <FieldWrapper
+        v-if="project.caseStudy"
+        :fields="[
+          {
+            name: 'resultsQuantity',
+            label: 'Ergebnisse und Wirkungen (Quantitativ)',
+            type: 'ckeditor',
+            editor: editor,
+            editorConfig: editorConfig,
+            columnsize: 6,
+            tooltip: tooltips.resultsQuantity,
+          },
+          {
+            name: 'resultsQuality',
+            label: 'Ergebnisse und Wirkungen (Qualitativ)',
+            type: 'ckeditor',
+            editor: editor,
+            editorConfig: editorConfig,
+            columnsize: 6,
+            tooltip: tooltips.resultsQuality,
+          },
+        ]"
+        :project="project"
+        :diff="diff"
+        :locale="locale"
+        @mergeFields="mergeFields"
+        @update:project="project = $event"
+      />
+
+      <FieldWrapper
+        v-if="project.caseStudy"
+        :fields="[
+          {
             name: 'additionalValue',
             label: 'Mehrwert durch Vernetzung',
             type: 'ckeditor',
@@ -2586,6 +2644,10 @@ export default {
       this.mergeFields("learningExperience");
       this.mergeFields("transferable");
       this.mergeFields("transferableDetails");
+      this.mergeFields("fundingMethod");
+      this.mergeFields("fundingMethodStakeholders");
+      this.mergeFields("resultsQuantity");
+      this.mergeFields("resultsQuality");
       this.mergeFundingStructureFields();
     },
     mergeFundingStructureFields() {

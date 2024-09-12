@@ -205,10 +205,12 @@ class ProjectService
             ->setLearningExperience($payload['learningExperience'] ?? '')
             ->setTransferable($payload['transferable'] ?? '')
             ->setTransferDetails($payload['transferDetails'] ?? '')
-            ->setSynergy($payload['synergy'] ?? false)
-            ->setSynergyGoal($payload['synergyGoal'] ?? '')
             ->setSynergyFundTags(new ArrayCollection())
-            ->setSynergyGoalTags(new ArrayCollection());
+            ->setSynergyGoalTags(new ArrayCollection())
+            ->setFundingMethod($payload['fundingMethod'] ?? '')
+            ->setFundingMethodStakeholders($payload['fundingMethodStakeholders'] ?? '')
+            ->setResultsQuality($payload['resultsQuality'] ?? '')
+            ->setResultsQuantity($payload['resultsQuantity'] ?? '');
 
         foreach ($payload['countries'] as $item) {
             $entity = null;

@@ -26,6 +26,26 @@
         <div class="embed-projects-view-content-text" v-html="project.initialContextGoals"></div>
       </div>
 
+      <div v-if="project.fundingMethod">
+        <h4>Maßnahmen im Projekt</h4>
+        <div class="embed-projects-view-content-text" v-html="project.fundingMethod"></div>
+      </div>
+
+      <div v-if="project.fundingMethodStakeholders">
+        <h4>Welche Stakeholder waren entscheidend?</h4>
+        <div class="embed-projects-view-content-text" v-html="project.fundingMethodStakeholders"></div>
+      </div>
+
+      <div v-if="project.resultsQuantity">
+        <h4>Ergebnisse und Wirkungen (Quantitativ)</h4>
+        <div class="embed-projects-view-content-text" v-html="project.resultsQuantity"></div>
+      </div>
+
+      <div v-if="project.resultsQuality">
+        <h4>Ergebnisse und Wirkungen (Qualitativ)</h4>
+        <div class="embed-projects-view-content-text" v-html="project.resultsQuality"></div>
+      </div>
+
       <div v-if="project.additionalValue">
         <h4>Mehrwert durch Vernetzung</h4>
         <div class="embed-projects-view-content-text" v-html="project.additionalValue"></div>
@@ -60,7 +80,7 @@
         <h4>Die wichtigsten Lernerfahrungen</h4>
         <div class="embed-projects-view-content-text" v-html="project.learningExperience"></div>
       </div>
-      <!-- Synergy Fund Tag -->
+
       <div v-if="project.synergyFundTags.lenght > 0">
         <h4>Synergien mit anderen EU-Politiken (GAP und andere EU Förderquellen)</h4>
         <ul>
@@ -70,7 +90,6 @@
         </ul>
       </div>
 
-      <!-- Synergy Goal Tag -->
       <div v-if="project.synergyGoalTags.length > 0">
         <h4>Dieses Projekt trägt zu Zielen folgenden europäischen und internationalen Politiken bei:</h4>
         <ul>
@@ -79,6 +98,7 @@
           </li>
         </ul>
       </div>
+
       <div v-if="project.transferable">
         <h4>Übertragbarkeit</h4>
         <div class="embed-projects-view-content-text" v-html="project.transferable"></div>
@@ -102,7 +122,6 @@
 
       <div class="embed-projects-view-content-contacts" v-if="translateField(project, 'contacts', locale)?.length">
         <h4>{{ $t("Kontakt", locale) }}</h4>
-
         <div class="embed-projects-view-content-contacts-contact"
           v-for="contact in translateField(project, 'contacts', locale)">
           <p>
