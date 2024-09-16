@@ -203,9 +203,10 @@ select {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 0.5rem 0.25rem;
+  padding: 0.5em 0.25em;
   border-radius: 5px;
   border: 1px solid #5077b2;
+  font-size: inherit;
 }
 
 select option {
