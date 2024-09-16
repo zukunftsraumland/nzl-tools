@@ -33,11 +33,18 @@ export default {
             },
 
             formatPercent(percent, total, currency = '€') {
-                const roundedPercent = Math.round(percent * 100) / 100;
-                const roundedTotal = Math.round(total * 100) / 100;
-                return (roundedPercent + "%" + " (~" + roundedTotal / 100 * roundedPercent + " " + currency + ")");
+                
+                const austrianFormat = (number) => {
+                    return Number(number).toLocaleString('de-AT', {
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 2
+                    });
+                };
+            
+                const calculatedAmount = (total / 100 * percent).toFixed(2); 
+            
+                return `${austrianFormat(percent)}% (~ ${austrianFormat(calculatedAmount)} ${currency})`;
             },
-
             stripHTML(html) {
                 let tmp = document.createElement('div');
                 tmp.innerHTML = html;
