@@ -116,9 +116,7 @@
             name: 'localWorkgroups',
             label: 'Kooperation mit LAG:',
             type: 'tag-select',
-            options: localWorkgroups.filter(
-              (workgroup) => workgroup.id !== project.localWorkgroup
-            ),
+            options: localWorkgroups,
             columnsize: 6,
           },
         ]"
@@ -248,6 +246,7 @@
             editorConfig: editorConfig,
             columnsize: 12,
             tooltip: tooltips.exemplary,
+            isAccordion: true,
           },
         ]"
         :project="project"
@@ -266,17 +265,30 @@
             type: 'ckeditor',
             editor: editor,
             editorConfig: editorConfig,
-            columnsize: 6,
+            columnsize: 12,
             tooltip: tooltips.initialContext,
+            isAccordion: true,
           },
+        ]"
+        :project="project"
+        :diff="diff"
+        :locale="locale"
+        @mergeFields="mergeFields"
+        @update:project="project = $event"
+      />
+
+      <FieldWrapper
+        v-if="project.caseStudy"
+        :fields="[
           {
             name: 'initialContextGoals',
             label: 'Ziele',
             type: 'ckeditor',
             editor: editor,
             editorConfig: editorConfig,
-            columnsize: 6,
+            columnsize: 12,
             tooltip: tooltips.initialContextGoals,
+            isAccordion: true,
           },
         ]"
         :project="project"
@@ -295,17 +307,30 @@
             type: 'ckeditor',
             editor: editor,
             editorConfig: editorConfig,
-            columnsize: 6,
+            columnsize: 12,
             tooltip: tooltips.fundingMethod,
+            isAccordion: true,
           },
+        ]"
+        :project="project"
+        :diff="diff"
+        :locale="locale"
+        @mergeFields="mergeFields"
+        @update:project="project = $event"
+      />
+
+      <FieldWrapper
+        v-if="project.caseStudy"
+        :fields="[
           {
             name: 'fundingMethodStakeholders',
             label: 'Welche Stakeholder waren entscheidend?',
             type: 'ckeditor',
             editor: editor,
             editorConfig: editorConfig,
-            columnsize: 6,
+            columnsize: 12,
             tooltip: tooltips.fundingMethodStakeholders,
+            isAccordion: true,
           },
         ]"
         :project="project"
@@ -324,17 +349,30 @@
             type: 'ckeditor',
             editor: editor,
             editorConfig: editorConfig,
-            columnsize: 6,
+            columnsize: 12,
             tooltip: tooltips.resultsQuantity,
+            isAccordion: true,
           },
+        ]"
+        :project="project"
+        :diff="diff"
+        :locale="locale"
+        @mergeFields="mergeFields"
+        @update:project="project = $event"
+      />
+
+      <FieldWrapper
+        v-if="project.caseStudy"
+        :fields="[
           {
             name: 'resultsQuality',
             label: 'Ergebnisse und Wirkungen (Qualitativ)',
             type: 'ckeditor',
             editor: editor,
             editorConfig: editorConfig,
-            columnsize: 6,
+            columnsize: 12,
             tooltip: tooltips.resultsQuality,
+            isAccordion: true,
           },
         ]"
         :project="project"
@@ -353,17 +391,30 @@
             type: 'ckeditor',
             editor: editor,
             editorConfig: editorConfig,
-            columnsize: 6,
+            columnsize: 12,
             tooltip: tooltips.additionalValue,
+            isAccordion: true,
           },
+        ]"
+        :project="project"
+        :diff="diff"
+        :locale="locale"
+        @mergeFields="mergeFields"
+        @update:project="project = $event"
+      />
+
+      <FieldWrapper
+        v-if="project.caseStudy"
+        :fields="[
           {
             name: 'additionalValueResult',
             label: 'Möglichkeiten zur Vernetzung',
             type: 'ckeditor',
             editor: editor,
             editorConfig: editorConfig,
-            columnsize: 6,
+            columnsize: 12,
             tooltip: tooltips.additionalValueResult,
+            isAccordion: true,
           },
         ]"
         :project="project"
@@ -384,6 +435,7 @@
             editorConfig: editorConfig,
             columnsize: 12,
             tooltip: tooltips.innovations,
+            isAccordion: true,
           },
         ]"
         :project="project"
@@ -402,17 +454,30 @@
             type: 'ckeditor',
             editor: editor,
             editorConfig: editorConfig,
-            columnsize: 6,
+            columnsize: 12,
             tooltip: tooltips.integrationYoungCitizen,
+            isAccordion: true,
           },
+        ]"
+        :project="project"
+        :diff="diff"
+        :locale="locale"
+        @mergeFields="mergeFields"
+        @update:project="project = $event"
+      />
+
+      <FieldWrapper
+        v-if="project.caseStudy"
+        :fields="[
           {
             name: 'integrationFemaleCitizen',
             label: 'Einbeziehung von Frauen',
             type: 'ckeditor',
             editor: editor,
             editorConfig: editorConfig,
-            columnsize: 6,
+            columnsize: 12,
             tooltip: tooltips.integrationFemaleCitizen,
+            isAccordion: true,
           },
         ]"
         :project="project"
@@ -433,6 +498,7 @@
             editorConfig: editorConfig,
             columnsize: 12,
             tooltip: tooltips.integrationMinorities,
+            isAccordion: true,
           },
         ]"
         :project="project"
@@ -453,6 +519,7 @@
             editorConfig: editorConfig,
             columnsize: 12,
             tooltip: tooltips.learningExperience,
+            isAccordion: true,
           },
         ]"
         :project="project"
@@ -471,17 +538,9 @@
             type: 'ckeditor',
             editor: editor,
             editorConfig: editorConfig,
-            columnsize: 6,
+            columnsize: 12,
             tooltip: tooltips.transferable,
-          },
-          {
-            name: 'transferDetails',
-            label: 'Details zur Übertragung dieses Projekts',
-            type: 'ckeditor',
-            editor: editor,
-            editorConfig: editorConfig,
-            columnsize: 6,
-            tooltip: tooltips.transferDetails,
+            isAccordion: true,
           },
         ]"
         :project="project"
@@ -491,6 +550,26 @@
         @update:project="project = $event"
       />
 
+      <FieldWrapper
+        v-if="project.caseStudy"
+        :fields="[
+          {
+            name: 'transferDetails',
+            label: 'Details zur Übertragung dieses Projekts',
+            type: 'ckeditor',
+            editor: editor,
+            editorConfig: editorConfig,
+            columnsize: 12,
+            tooltip: tooltips.transferDetails,
+            isAccordion: true,
+          },
+        ]"
+        :project="project"
+        :diff="diff"
+        :locale="locale"
+        @mergeFields="mergeFields"
+        @update:project="project = $event"
+      />
       <div
         class="project-component-form-row"
         v-if="$env.PROJECTS_ENABLE_PROJECT_COSTS || $env.PROJECTS_ENABLE_FINANCING"
@@ -2306,14 +2385,16 @@ export default {
         translations: {},
         isPublic: false,
         localWorkgroup: [],
+        localWorkgroups: [],
         cooperationProjectAt: false,
         cooperationProjectEu: false,
         caseStudy: false,
-        localWorkgroupsAt: [],
         lePeriod: null,
         leFundingCategory: null,
         leFundingArticle: null,
         leFundingMethod: null,
+        synergyFundTags: [],
+        synergyGoalTags: [],
       },
       diff: null,
       locale: "de",
@@ -2501,6 +2582,7 @@ export default {
                     return this.$router.push("/inbox");
                   }
                   this.$router.push("/projects");
+                  this.$store.dispatch("tags/loadAll");
                 });
             },
           },
@@ -2648,6 +2730,8 @@ export default {
       this.mergeFields("fundingMethodStakeholders");
       this.mergeFields("resultsQuantity");
       this.mergeFields("resultsQuality");
+      this.mergeOptions("synergyFundTags");
+      this.mergeOptions("synergyGoalTags");
       this.mergeFundingStructureFields();
     },
     mergeFundingStructureFields() {

@@ -203,11 +203,11 @@
       </template>
 
       <template v-if="topicsHTML">
-        <h3>{{ $t("Thema", locale) }}</h3>
+        <h3>{{ $t("Schwerpunkte", locale) }}</h3>
         <p v-html="topicsHTML"></p>
       </template>
       <p class="embed-projects-view-content-tags" v-if="translateField(project, 'tags', locale)?.length">
-      <h3>{{ $t("Tags", locale) }}</h3>
+      <h3>{{ $t("Schlagworte", locale) }}</h3>
 
       <div class="embed-projects-view-content-tags-tag" v-for="tag in project.tags.filter((tag) => tag.context === 'tag')">
         <span>{{ tag.name }}</span>
@@ -407,8 +407,11 @@ export default {
     translateField,
 
     templateHook(name, ...params) {
-      if (this?.$clientOptions?.templateHooks?.[name]) {
-        return this.$clientOptions.templateHooks[name](this, ...params);
+      const clientOptions = this.$clientOptions || {}; // Provide a fallback
+      const templateHooks = clientOptions.templateHooks || {}; // Provide a fallback for templateHooks
+
+      if (templateHooks[name]) {
+        return templateHooks[name](this, ...params);
       }
 
       return null;

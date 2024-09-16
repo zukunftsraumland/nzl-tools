@@ -203,7 +203,7 @@ select {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 5px;
+  padding: 0.5rem 0.25rem;
   border-radius: 5px;
   border: 1px solid #5077b2;
 }

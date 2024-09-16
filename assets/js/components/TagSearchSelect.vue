@@ -176,7 +176,6 @@ export default {
 }
 
 .tag-selector-component-selection {
-  margin-bottom: 10px;
   display: flex;
   flex-wrap: wrap;
 }
@@ -203,10 +202,8 @@ export default {
 
 .tag-selector-component-selection-search {
   width: 98% !important;
-  padding: 8px;
   border: 1px solid #5077b2;
   border-radius: 0.25em;
-  margin-bottom: 10px;
   box-sizing: border-box;
 }
 
@@ -223,6 +220,7 @@ export default {
   display: flex;
   flex-wrap: wrap;
   box-sizing: border-box;
+  margin-left: -4px;
 }
 
 .tag-selector-component-options-option {
@@ -252,5 +250,13 @@ export default {
 .create-new-tag:hover {
   background-color: #5077b2;
   color: white;
+}
+
+.tag-selector-component-selection {
+  padding: 0px;
+}
+
+.tag-selector-component {
+  padding: 0.25em;
 }
 </style>
