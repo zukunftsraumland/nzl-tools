@@ -81,7 +81,7 @@
         <div class="embed-projects-view-content-text" v-html="project.learningExperience"></div>
       </div>
 
-      <div v-if="project.synergyFundTags.lenght > 0">
+      <div v-if="project.synergyFundTags.length > 0">
         <h4>Synergien mit anderen EU-Politiken (GAP und andere EU Förderquellen)</h4>
         <ul>
           <li v-for="tag in project.synergyFundTags">
