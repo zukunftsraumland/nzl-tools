@@ -202,6 +202,7 @@
                 :leFundingCategory="diff.leFundingCategory"
                 :leFundingArticle="diff.leFundingArticle"
                 :leFundingMethod="diff.leFundingMethod"
+                :project="localProject"
                 @update="updateField"
               />
             </div>

@@ -11,77 +11,77 @@
     <div class="embed-projects-view-content">
       <div class="embed-projects-view-content-text" v-html="translateField(project, 'description', locale)"></div>
 
-      <div v-if="project.exemplary">
+      <div v-if="project.exemplary && project.caseStudy">
         <h4>Was macht dieses Projekt besonders nachahmenswert?</h4>
         <div class="embed-projects-view-content-text" v-html="project.exemplary"></div>
       </div>
 
-      <div v-if="project.initialContext">
+      <div v-if="project.initialContext && project.caseStudy">
         <h4>Kontext</h4>
         <div class="embed-projects-view-content-text" v-html="project.initialContext"></div>
       </div>
 
-      <div v-if="project.initialContextGoals">
+      <div v-if="project.initialContextGoals && project.caseStudy">
         <h4>Ziele</h4>
         <div class="embed-projects-view-content-text" v-html="project.initialContextGoals"></div>
       </div>
 
-      <div v-if="project.fundingMethod">
+      <div v-if="project.fundingMethod && project.caseStudy">
         <h4>Maßnahmen im Projekt</h4>
         <div class="embed-projects-view-content-text" v-html="project.fundingMethod"></div>
       </div>
 
-      <div v-if="project.fundingMethodStakeholders">
+      <div v-if="project.fundingMethodStakeholders && project.caseStudy">
         <h4>Welche Stakeholder waren entscheidend?</h4>
         <div class="embed-projects-view-content-text" v-html="project.fundingMethodStakeholders"></div>
       </div>
 
-      <div v-if="project.resultsQuantity">
+      <div v-if="project.resultsQuantity && project.caseStudy">
         <h4>Ergebnisse und Wirkungen (Quantitativ)</h4>
         <div class="embed-projects-view-content-text" v-html="project.resultsQuantity"></div>
       </div>
 
-      <div v-if="project.resultsQuality">
+      <div v-if="project.resultsQuality && project.caseStudy">
         <h4>Ergebnisse und Wirkungen (Qualitativ)</h4>
         <div class="embed-projects-view-content-text" v-html="project.resultsQuality"></div>
       </div>
 
-      <div v-if="project.additionalValue">
+      <div v-if="project.additionalValue && project.caseStudy">
         <h4>Mehrwert durch Vernetzung</h4>
         <div class="embed-projects-view-content-text" v-html="project.additionalValue"></div>
       </div>
 
-      <div v-if="project.additionalValueResult">
+      <div v-if="project.additionalValueResult && project.caseStudy">
         <h4>Mehrwert durch Vernetzung Ergebnisse</h4>
         <div class="embed-projects-view-content-text" v-html="project.additionalValueResult"></div>
       </div>
 
-      <div v-if="project.innovations">
+      <div v-if="project.innovations && project.caseStudy">
         <h4>Innovation</h4>
         <div class="embed-projects-view-content-text" v-html="project.innovations"></div>
       </div>
 
-      <div v-if="project.integrationYoungCitizen">
+      <div v-if="project.integrationYoungCitizen && project.caseStudy">
         <h4>Einbeziehung junger Menschen</h4>
         <div class="embed-projects-view-content-text" v-html="project.integrationYoungCitizen"></div>
       </div>
 
-      <div v-if="project.integrationFemaleCitizen">
+      <div v-if="project.integrationFemaleCitizen && project.caseStudy">
         <h4>Einbeziehung von Frauen</h4>
         <div class="embed-projects-view-content-text" v-html="project.integrationFemaleCitizen"></div>
       </div>
 
-      <div v-if="project.integrationMinorities">
+      <div v-if="project.integrationMinorities && project.caseStudy">
         <h4>Inklusion</h4>
         <div class="embed-projects-view-content-text" v-html="project.integrationMinorities"></div>
       </div>
 
-      <div v-if="project.learningExperience">
+      <div v-if="project.learningExperience && project.caseStudy">
         <h4>Die wichtigsten Lernerfahrungen</h4>
         <div class="embed-projects-view-content-text" v-html="project.learningExperience"></div>
       </div>
 
-      <div v-if="project.synergyFundTags.length > 0">
+      <div v-if="project.synergyFundTags.length > 0  && project.caseStudy">
         <h4>Synergien mit anderen EU-Politiken (GAP und andere EU Förderquellen)</h4>
         <ul>
           <li v-for="tag in project.synergyFundTags">
@@ -90,7 +90,7 @@
         </ul>
       </div>
 
-      <div v-if="project.synergyGoalTags.length > 0">
+      <div v-if="project.synergyGoalTags.length > 0  && project.caseStudy">
         <h4>Dieses Projekt trägt zu Zielen folgenden europäischen und internationalen Politiken bei:</h4>
         <ul>
           <li v-for="tag in project.synergyGoalTags">
@@ -99,12 +99,12 @@
         </ul>
       </div>
 
-      <div v-if="project.transferable">
+      <div v-if="project.transferable && project.caseStudy">
         <h4>Übertragbarkeit</h4>
         <div class="embed-projects-view-content-text" v-html="project.transferable"></div>
       </div>
 
-      <div v-if="project.transferDetails">
+      <div v-if="project.transferDetails && project.caseStudy">
         <h4>Dieses Projekt wurde kopiert von:</h4>
         <div class="embed-projects-view-content-text" v-html="project.transferDetails"></div>
       </div>

@@ -709,6 +709,7 @@
       </div>
 
       <FieldWrapper
+        v-if="project.caseStudy"
         :fields="[
           {
             name: 'synergyFundTags',

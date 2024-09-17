@@ -1,6 +1,11 @@
 <template>
   <!-- Period Dropdown -->
-  <select v-model="selectedPeriodId" @change="onPeriodChange">
+  <select
+    v-model="selectedPeriodId"
+    @change="onPeriodChange"
+    :disabled="this.project?.lePeriod === this.lePeriod"
+    className="form-control"
+  >
     <option value="">Select LE Period</option>
     <option v-for="period in periods" :key="period.id" :value="period.id">
       {{ period.name }}
@@ -12,6 +17,8 @@
     v-if="selectedCategories.length > 0 || selectedCategoryId"
     v-model="selectedCategoryId"
     @change="onCategoryChange"
+    :disabled="this.project?.leFundingCategory === this.leFundingCategory"
+    className="form-control"
   >
     <option value="">Select Funding Category</option>
     <option
@@ -28,6 +35,8 @@
     v-if="selectedArticles.length > 0 || selectedArticleId"
     v-model="selectedArticleId"
     @change="onArticleChange"
+    :disabled="this.project?.leFundingArticle === this.leFundingArticle"
+    className="form-control"
   >
     <option value="">Select Funding Article</option>
     <option v-for="article in selectedArticles" :key="article.id" :value="article.id">
@@ -39,6 +48,8 @@
   <select
     v-if="selectedMethods.length > 0 || selectedMethodId"
     v-model="selectedMethodId"
+    :disabled="this.project?.leFundingMethod === this.leFundingMethod"
+    className="form-control"
   >
     <option value="">Select Funding Method</option>
     <option v-for="method in selectedMethods" :key="method.id" :value="method.id">
@@ -67,6 +78,10 @@ export default {
     },
     leFundingMethod: {
       type: [Object, Number],
+      default: null,
+    },
+    project: {
+      type: Object,
       default: null,
     },
   },
@@ -199,18 +214,15 @@ export default {
 select {
   display: block;
   margin-bottom: 10px;
-  max-width: 500px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 0.4em 0.25em;
   border-radius: 5px;
   border: 1px solid #5077b2;
   font-size: inherit;
 }
 
 select option {
-  max-width: 500px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
