@@ -528,11 +528,11 @@ export default {
 }
 
 .austria-tag {
-  background: linear-gradient(90deg,
-      rgba(255, 0, 0, 0.5) 33%,
+  background: linear-gradient(0deg,
+      rgba(255, 0, 0, 0.5) 25%,
       white 33%,
       white 66%,
-      rgba(255, 0, 0, 0.5) 66%);
+      rgba(255, 0, 0, 0.5) 75%);
   border: 1px solid black;
   color: black;
   text-align: center;

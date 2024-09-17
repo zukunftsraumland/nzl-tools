@@ -720,7 +720,7 @@
           },
           {
             name: 'synergyGoalTags',
-            label: 'Ziel Trägt zu EU Poloitiken bei',
+            label: 'Ziel Trägt zu EU Politiken bei',
             type: 'tag-search-select',
             context: 'synergyGoalTag',
             options: tags.filter((tag) => tag.context === 'synergyGoalTag'),
