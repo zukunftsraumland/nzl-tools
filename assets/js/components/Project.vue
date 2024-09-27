@@ -617,6 +617,7 @@
                   />
                 </div>
                 <div class="col-md-2">
+                  <label v-if="index === 0">Verwerfen</label>
                   <a
                     class="button warning"
                     @click="

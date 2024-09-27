@@ -9,7 +9,10 @@
     </div>
 
     <div class="embed-projects-view-content">
-      <div class="embed-projects-view-content-text" v-html="translateField(project, 'description', locale)"></div>
+      <div
+        class="embed-projects-view-content-text"
+        v-html="translateField(project, 'description', locale)"
+      ></div>
 
       <div v-if="project.exemplary && project.caseStudy">
         <h4>Was macht dieses Projekt besonders nachahmenswert?</h4>
@@ -18,42 +21,66 @@
 
       <div v-if="project.initialContext && project.caseStudy">
         <h4>Kontext</h4>
-        <div class="embed-projects-view-content-text" v-html="project.initialContext"></div>
+        <div
+          class="embed-projects-view-content-text"
+          v-html="project.initialContext"
+        ></div>
       </div>
 
       <div v-if="project.initialContextGoals && project.caseStudy">
         <h4>Ziele</h4>
-        <div class="embed-projects-view-content-text" v-html="project.initialContextGoals"></div>
+        <div
+          class="embed-projects-view-content-text"
+          v-html="project.initialContextGoals"
+        ></div>
       </div>
 
       <div v-if="project.fundingMethod && project.caseStudy">
         <h4>Maßnahmen im Projekt</h4>
-        <div class="embed-projects-view-content-text" v-html="project.fundingMethod"></div>
+        <div
+          class="embed-projects-view-content-text"
+          v-html="project.fundingMethod"
+        ></div>
       </div>
 
       <div v-if="project.fundingMethodStakeholders && project.caseStudy">
         <h4>Welche Stakeholder waren entscheidend?</h4>
-        <div class="embed-projects-view-content-text" v-html="project.fundingMethodStakeholders"></div>
+        <div
+          class="embed-projects-view-content-text"
+          v-html="project.fundingMethodStakeholders"
+        ></div>
       </div>
 
       <div v-if="project.resultsQuantity && project.caseStudy">
         <h4>Ergebnisse und Wirkungen (Quantitativ)</h4>
-        <div class="embed-projects-view-content-text" v-html="project.resultsQuantity"></div>
+        <div
+          class="embed-projects-view-content-text"
+          v-html="project.resultsQuantity"
+        ></div>
       </div>
 
       <div v-if="project.resultsQuality && project.caseStudy">
         <h4>Ergebnisse und Wirkungen (Qualitativ)</h4>
-        <div class="embed-projects-view-content-text" v-html="project.resultsQuality"></div>
+        <div
+          class="embed-projects-view-content-text"
+          v-html="project.resultsQuality"
+        ></div>
       </div>
 
       <div v-if="project.additionalValue && project.caseStudy">
         <h4>Mehrwert durch Vernetzung</h4>
-        <div class="embed-projects-view-content-text" v-html="project.additionalValue"></div>
+        <div
+          class="embed-projects-view-content-text"
+          v-html="project.additionalValue"
+        ></div>
       </div>
 
       <div v-if="project.additionalValueResult && project.caseStudy">
         <h4>Mehrwert durch Vernetzung Ergebnisse</h4>
-        <div class="embed-projects-view-content-text" v-html="project.additionalValueResult"></div>
+        <div
+          class="embed-projects-view-content-text"
+          v-html="project.additionalValueResult"
+        ></div>
       </div>
 
       <div v-if="project.innovations && project.caseStudy">
@@ -63,36 +90,53 @@
 
       <div v-if="project.integrationYoungCitizen && project.caseStudy">
         <h4>Einbeziehung junger Menschen</h4>
-        <div class="embed-projects-view-content-text" v-html="project.integrationYoungCitizen"></div>
+        <div
+          class="embed-projects-view-content-text"
+          v-html="project.integrationYoungCitizen"
+        ></div>
       </div>
 
       <div v-if="project.integrationFemaleCitizen && project.caseStudy">
         <h4>Einbeziehung von Frauen</h4>
-        <div class="embed-projects-view-content-text" v-html="project.integrationFemaleCitizen"></div>
+        <div
+          class="embed-projects-view-content-text"
+          v-html="project.integrationFemaleCitizen"
+        ></div>
       </div>
 
       <div v-if="project.integrationMinorities && project.caseStudy">
         <h4>Inklusion</h4>
-        <div class="embed-projects-view-content-text" v-html="project.integrationMinorities"></div>
+        <div
+          class="embed-projects-view-content-text"
+          v-html="project.integrationMinorities"
+        ></div>
       </div>
 
       <div v-if="project.learningExperience && project.caseStudy">
         <h4>Die wichtigsten Lernerfahrungen</h4>
-        <div class="embed-projects-view-content-text" v-html="project.learningExperience"></div>
+        <div
+          class="embed-projects-view-content-text"
+          v-html="project.learningExperience"
+        ></div>
       </div>
 
-      <div v-if="project.synergyFundTags.length > 0  && project.caseStudy">
-        <h4>Synergien mit anderen EU-Politiken (GAP und andere EU Förderquellen)</h4>
-        <ul>
+      <div v-if="project.synergyFundTags.length > 0 && project.caseStudy">
+        <h4 class="synergy-title">Synergien mit anderen EU-Politiken</h4>
+        <span>(GAP und andere EU Förderquellen)</span>
+        <ul class="synergy-list">
           <li v-for="tag in project.synergyFundTags">
             <span>{{ tag.name }}</span>
           </li>
         </ul>
       </div>
 
-      <div v-if="project.synergyGoalTags.length > 0  && project.caseStudy">
-        <h4>Dieses Projekt trägt zu Zielen folgenden europäischen und internationalen Politiken bei:</h4>
-        <ul>
+      <div v-if="project.synergyGoalTags.length > 0 && project.caseStudy">
+        <h4 class="synergy-title">Europäische und Internationale Politik</h4>
+        <span
+          >Dieses Projekt trägt zu Zielen folgenden europäischen und internationalen
+          Politiken bei:</span
+        ><br />
+        <ul class="synergy-list">
           <li v-for="tag in project.synergyGoalTags">
             <span>{{ tag.name }}</span>
           </li>
@@ -106,27 +150,43 @@
 
       <div v-if="project.transferDetails && project.caseStudy">
         <h4>Dieses Projekt wurde kopiert von:</h4>
-        <div class="embed-projects-view-content-text" v-html="project.transferDetails"></div>
+        <div
+          class="embed-projects-view-content-text"
+          v-html="project.transferDetails"
+        ></div>
       </div>
 
-
-      <div class="embed-projects-view-content-downloads" v-if="translateField(project, 'files', locale)?.length">
+      <div
+        class="embed-projects-view-content-downloads"
+        v-if="translateField(project, 'files', locale)?.length"
+      >
         <h4>{{ $t("Downloads", locale) }}</h4>
-        <div class="embed-projects-view-content-downloads-download"
-          v-for="(file, index) in translateField(project, 'files', locale)">
-          <a :href="$env.HOST + '/api/v1/files/download/' + file.id + '.' + file.extension" download>
+        <div
+          class="embed-projects-view-content-downloads-download"
+          v-for="(file, index) in translateField(project, 'files', locale)"
+        >
+          <a
+            :href="$env.HOST + '/api/v1/files/download/' + file.id + '.' + file.extension"
+            download
+          >
             {{ file.description || "Datei " + (index + 1) }}
           </a>
         </div>
       </div>
 
-      <div class="embed-projects-view-content-contacts" v-if="translateField(project, 'contacts', locale)?.length">
+      <div
+        class="embed-projects-view-content-contacts"
+        v-if="translateField(project, 'contacts', locale)?.length"
+      >
         <h4>{{ $t("Kontakt", locale) }}</h4>
-        <div class="embed-projects-view-content-contacts-contact"
-          v-for="contact in translateField(project, 'contacts', locale)">
+        <div
+          class="embed-projects-view-content-contacts-contact"
+          v-for="contact in translateField(project, 'contacts', locale)"
+        >
           <p>
             <template v-if="contact.name">
-              <strong>{{ contact.name }}</strong><br />
+              <strong>{{ contact.name }}</strong
+              ><br />
             </template>
             <template v-if="contact.firstName && contact.lastName">
               {{ contact.title || "" }} {{ contact.firstName }} {{ contact.lastName
@@ -138,61 +198,89 @@
               {{ contact.zipCode || "" }} {{ contact.city || "" }}<br />
             </template>
             <template v-if="contact.phone">
-              <a :href="'tel:' + contact.phone">{{ contact.phone }}</a><br />
+              <a :href="'tel:' + contact.phone">{{ contact.phone }}</a
+              ><br />
             </template>
             <template v-if="contact.email">
-              <a :href="'mailto:' + contact.email">{{ contact.email }}</a><br />
+              <a :href="'mailto:' + contact.email">{{ contact.email }}</a
+              ><br />
             </template>
             <template v-if="contact.website && contact.website.startsWith('http')">
               <a :href="contact.website" target="_blank">{{
                 contact.website.split("://", 2)[1]
-              }}</a><br />
+              }}</a
+              ><br />
             </template>
             <template v-if="contact.website && !contact.website.startsWith('http')">
               <a :href="'http://' + contact.website" target="_blank">{{
                 contact.website
-              }}</a><br />
+              }}</a
+              ><br />
             </template>
           </p>
         </div>
       </div>
 
-      <div class="embed-projects-view-content-gallery"
-        v-if="(translateField(project, 'images', locale) || []).length > 1">
-        <div class="embed-projects-view-content-gallery-image"
-          v-for="image in (translateField(project, 'images', locale) || []).slice(1)">
+      <div
+        class="embed-projects-view-content-gallery"
+        v-if="(translateField(project, 'images', locale) || []).length > 1"
+      >
+        <div
+          class="embed-projects-view-content-gallery-image"
+          v-for="image in (translateField(project, 'images', locale) || []).slice(1)"
+        >
           <a @click="clickShowImage(image)">
-            <img :src="$env.HOST + '/api/v1/files/view/' + image.id + '.' + image.extension" alt="" />
+            <img
+              :src="$env.HOST + '/api/v1/files/view/' + image.id + '.' + image.extension"
+              alt=""
+            />
           </a>
         </div>
       </div>
 
-      <div class="embed-projects-view-content-videos"
-        v-if="(translateField(project, 'videos', locale) || []).length > 1">
-        <div class="embed-projects-view-content-videos-video"
-          v-for="video in translateField(project, 'videos', locale) || []">
+      <div
+        class="embed-projects-view-content-videos"
+        v-if="(translateField(project, 'videos', locale) || []).length > 1"
+      >
+        <div
+          class="embed-projects-view-content-videos-video"
+          v-for="video in translateField(project, 'videos', locale) || []"
+        >
           <div class="youtube-embed" v-if="parseYoutubeId(video.url)">
-            <iframe width="560" height="315"
-              :src="'https://www.youtube-nocookie.com/embed/' + parseYoutubeId(video.url)" frameborder="0"
+            <iframe
+              width="560"
+              height="315"
+              :src="'https://www.youtube-nocookie.com/embed/' + parseYoutubeId(video.url)"
+              frameborder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen></iframe>
+              allowfullscreen
+            ></iframe>
           </div>
         </div>
       </div>
 
-      <div v-if="templateHook('projectContentAfter', project)" v-html="templateHook('projectContentAfter', project)">
-      </div>
+      <div
+        v-if="templateHook('projectContentAfter', project)"
+        v-html="templateHook('projectContentAfter', project)"
+      ></div>
     </div>
 
     <div class="embed-projects-view-sidebar">
-      <div v-if="templateHook('projectSidebarImage', project)" v-html="templateHook('projectSidebarImage', project)">
-      </div>
+      <div
+        v-if="templateHook('projectSidebarImage', project)"
+        v-html="templateHook('projectSidebarImage', project)"
+      ></div>
 
       <template v-else>
-        <div class="embed-projects-view-sidebar-image"
-          v-for="image in (translateField(project, 'images', locale) || []).slice(0, 1)">
+        <div
+          class="embed-projects-view-sidebar-image"
+          v-for="image in (translateField(project, 'images', locale) || []).slice(0, 1)"
+        >
           <a @click="clickShowImage(image)">
-            <img :src="$env.HOST + '/api/v1/files/view/' + image.id + '.' + image.extension" alt="" />
+            <img
+              :src="$env.HOST + '/api/v1/files/view/' + image.id + '.' + image.extension"
+              alt=""
+            />
           </a>
         </div>
       </template>
@@ -206,13 +294,19 @@
         <h3>{{ $t("Schwerpunkte", locale) }}</h3>
         <p v-html="topicsHTML"></p>
       </template>
-      <p class="embed-projects-view-content-tags" v-if="translateField(project, 'tags', locale)?.length">
-      <h3>{{ $t("Schlagworte", locale) }}</h3>
 
-      <div class="embed-projects-view-content-tags-tag" v-for="tag in project.tags.filter((tag) => tag.context === 'tag')">
-        <span>{{ tag.name }}</span>
+      <h3>{{ $t("Schlagworte", locale) }}</h3>
+      <div class="embed-tags" v-if="translateField(project, 'tags', locale)?.length">
+        <!-- Tag loop -->
+        <span
+          class="tag"
+          v-for="tag in project.tags.filter((tag) => tag.context === 'tag')"
+          :key="tag.id"
+        >
+          {{ tag.name }}
+        </span>
       </div>
-      </p>
+
       <template v-if="programsHTML">
         <h3>{{ $t("Programm", locale) }}</h3>
         <p v-html="programsHTML"></p>
@@ -234,19 +328,31 @@
       <template v-if="project.projectCosts">
         <h3>{{ $t("Projektkosten", locale) }}</h3>
         <p>{{ $helpers.formatCurrency(project.projectCosts) }}</p>
-      </template>
-
-      <template v-for="financing in project.financing">
-        <h3 v-if="financing.id === 'costsFederation'">
-          {{ $t("GAP Strategieplan", locale) }}
-        </h3>
-        <h3 v-if="financing.id === 'costsCanton'">
-          {{ $t("Private und Eigenmittel", locale) }}
-        </h3>
-        <h3 v-if="financing.id === 'costsExternal'">
-          {{ $t("Andere Finanzquellen", locale) }}
-        </h3>
-        <p>{{ $helpers.formatPercent(financing.value, project.projectCosts) }}</p>
+        <table class="project-costs-table">
+          <tbody>
+            <tr v-for="financing in project.financing" :key="financing.id">
+              <td v-if="financing.id === 'costsFederation'">
+                {{ $t("GAP Strategieplan", locale) }}
+              </td>
+              <td v-if="financing.id === 'costsCanton'">
+                {{ $t("Private und Eigenmittel", locale) }}
+              </td>
+              <td v-if="financing.id === 'costsExternal'">
+                {{ $t("Andere Finanzquellen", locale) }}
+              </td>
+              <td>{{ $helpers.formatPercent(financing.value) }}</td>
+              <td>
+                {{ $helpers.formatPercentValue(financing.value, project.projectCosts) }}
+              </td>
+            </tr>
+            <tr>
+              <td>Gesamt:</td>
+              <td></td>
+              <td>{{ $helpers.formatCurrency(project.projectCosts) }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p></p>
       </template>
 
       <template v-if="linksHTML">
@@ -254,32 +360,46 @@
         <p v-html="linksHTML"></p>
       </template>
 
-      <div v-if="templateHook('projectSidebarAfter', project)" v-html="templateHook('projectSidebarAfter', project)">
-      </div>
+      <div
+        v-if="templateHook('projectSidebarAfter', project)"
+        v-html="templateHook('projectSidebarAfter', project)"
+      ></div>
     </div>
 
     <transition name="embed-projects-view-lightbox" mode="out-in">
-      <div class="embed-projects-view-lightbox" v-if="lightboxImage" @click="clickHideImage()">
-        <div class="embed-projects-view-lightbox-content" :style="{
-          backgroundImage:
-            'url(' +
-            $env.HOST +
-            '/api/v1/files/view/' +
-            lightboxImage.id +
-            '.' +
-            lightboxImage.extension +
-            ')',
-        }"></div>
+      <div
+        class="embed-projects-view-lightbox"
+        v-if="lightboxImage"
+        @click="clickHideImage()"
+      >
+        <div
+          class="embed-projects-view-lightbox-content"
+          :style="{
+            backgroundImage:
+              'url(' +
+              $env.HOST +
+              '/api/v1/files/view/' +
+              lightboxImage.id +
+              '.' +
+              lightboxImage.extension +
+              ')',
+          }"
+        ></div>
 
-        <div class="embed-projects-view-lightbox-description" @click.stop
-          v-if="lightboxImage.description || lightboxImage.copyright">
+        <div
+          class="embed-projects-view-lightbox-description"
+          @click.stop
+          v-if="lightboxImage.description || lightboxImage.copyright"
+        >
           <template v-if="lightboxImage.description">{{
             lightboxImage.description
           }}</template>
           <template v-if="lightboxImage.description && lightboxImage.copyright">
             |
           </template>
-          <template v-if="lightboxImage.copyright">© {{ lightboxImage.copyright }}</template>
+          <template v-if="lightboxImage.copyright"
+            >© {{ lightboxImage.copyright }}</template
+          >
         </div>
 
         <a class="embed-projects-view-lightbox-prev" @click.stop="clickPrevImage()">
@@ -450,3 +570,60 @@ export default {
   },
 };
 </script>
+<style scoped>
+.project-costs-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 0.8em;
+  text-align: left;
+}
+
+.project-costs-table th,
+.project-costs-table td {
+  border: 1px solid #ddd;
+  padding: 4px;
+}
+
+.project-costs-table th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+  color: #333;
+}
+
+.project-costs-table td {
+  color: #555;
+}
+
+.project-costs-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.project-costs-table td:first-child {
+  font-weight: bold;
+}
+
+.project-costs-table th,
+.project-costs-table td {
+  text-align: center;
+}
+
+.project-costs-table td:nth-child(1) {
+  text-align: left;
+}
+
+.project-costs-table td:nth-child(2) {
+  text-align: right;
+}
+
+.project-costs-table td:nth-child(3) {
+  text-align: right;
+}
+
+.project-costs-table tbody tr:last-child td:last-child {
+  color: green;
+  font-weight: bold;
+  text-decoration: underline;
+  text-align: right;
+}
+</style>

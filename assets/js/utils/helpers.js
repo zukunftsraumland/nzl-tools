@@ -32,7 +32,19 @@ export default {
                   .toLocaleString('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })+' '+currency;
             },
 
-            formatPercent(percent, total, currency = '€') {
+            formatPercent(percent) {
+                
+                const austrianFormat = (number) => {
+                    return Number(number).toLocaleString('de-AT', {
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 2
+                    });
+                };
+
+                return `${austrianFormat(percent)}%`;
+            },
+
+            formatPercentValue(percent, total, currency = '€') {
                 
                 const austrianFormat = (number) => {
                     return Number(number).toLocaleString('de-AT', {
@@ -43,8 +55,9 @@ export default {
             
                 const calculatedAmount = (total / 100 * percent).toFixed(2); 
             
-                return `${austrianFormat(percent)}% (~ ${austrianFormat(calculatedAmount)} ${currency})`;
+                return `~ ${austrianFormat(calculatedAmount)} ${currency}`;
             },
+
             stripHTML(html) {
                 let tmp = document.createElement('div');
                 tmp.innerHTML = html;
