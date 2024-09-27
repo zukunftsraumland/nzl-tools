@@ -290,6 +290,20 @@
         <p v-html="statesHTML"></p>
       </template>
 
+      <template v-if="project.localWorkgroup">
+        <h3>{{ $t("Lokale Arbeitsgruppe", locale) }}</h3>
+        <p v-html="localWorkgroupHTML"></p>
+      </template>
+
+      <template v-if="project.localWorkgroups.length > 0">
+        <h3>{{ $t("Kooperierende Arbeitsgruppen", locale) }}</h3>
+        <p v-html="localWorkgroupsHTML"></p
+      ></template>
+
+      <template v-if="project.cooperationProjectEu">
+        <p>🇪🇺 Dies ist ein EU Kooperationsprojekt</p>
+      </template>
+
       <template v-if="topicsHTML">
         <h3>{{ $t("Schwerpunkte", locale) }}</h3>
         <p v-html="topicsHTML"></p>
@@ -451,6 +465,7 @@ export default {
       getTopicById: "topics/getById",
       getProgramById: "programs/getById",
       getInstrumentById: "instruments/getById",
+      getLocalWorkgroupById: "localWorkgroups/getById",
     }),
     statesHTML() {
       let result = [];
@@ -474,6 +489,24 @@ export default {
 
       return result.join(", ");
     },
+    localWorkgroupHTML() {
+      let result = [];
+      result = this.getLocalWorkgroupById(this.project.localWorkgroup);
+
+      return result.name;
+    },
+
+    localWorkgroupsHTML() {
+      let result = [];
+
+      this.project.localWorkgroups.forEach((item) => {
+        let row = this.getLocalWorkgroupById(item.id).name;
+        result.push(`<span>${row}</span><br />`);
+      });
+
+      return `${result.join("")}`;
+    },
+
     programsHTML() {
       let result = [];
 
