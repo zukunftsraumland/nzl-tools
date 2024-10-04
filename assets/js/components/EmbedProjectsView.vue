@@ -459,6 +459,7 @@ export default {
       topics: (state) => state.topics.all,
       programs: (state) => state.programs.all,
       instruments: (state) => state.instruments.all,
+      localWorkgroups: (state) => state.localWorkgroups.all,
     }),
     ...mapGetters({
       getStateById: "states/getById",
@@ -491,17 +492,23 @@ export default {
     },
     localWorkgroupHTML() {
       let result = [];
-      result = this.getLocalWorkgroupById(this.project.localWorkgroup);
-
-      return result.name;
+      try {
+        result = this.getLocalWorkgroupById(this.project.localWorkgroup);
+      } catch (e) {
+        console.error(e);
+      }
+      return result ? result.name : null;
     },
 
     localWorkgroupsHTML() {
       let result = [];
 
       this.project.localWorkgroups.forEach((item) => {
-        let row = this.getLocalWorkgroupById(item.id).name;
-        result.push(`<span>${row}</span><br />`);
+        let row = this.getLocalWorkgroupById(item.id);
+        console.log(row);
+        if (row) {
+          result.push(`<span>${row.name}</span><br />`);
+        }
       });
 
       return `${result.join("")}`;
