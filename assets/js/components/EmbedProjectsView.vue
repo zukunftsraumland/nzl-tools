@@ -499,7 +499,7 @@ export default {
         result.push(`<span class="tag">${row}</span>`);
       });
 
-      return result.join(", ");
+      return result.join("");
     },
     topicsHTML() {
       let result = [];
@@ -510,7 +510,7 @@ export default {
         result.push(`<span class="tag">${row}</span>`);
       });
 
-      return result.join(", ");
+      return result.join("");
     },
     localWorkgroupHTML() {
       let result = [];
@@ -557,7 +557,7 @@ export default {
         result.push(row);
       });
 
-      return result.join(", ");
+      return result.join("");
     },
     instrumentsHTML() {
       let result = [];
