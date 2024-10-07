@@ -123,11 +123,7 @@
       <div v-if="project.synergyFundTags.length > 0 && project.caseStudy">
         <h4 class="synergy-title">Synergien mit anderen EU-Politiken</h4>
         <span>(GAP und andere EU Förderquellen)</span>
-        <ul class="synergy-list">
-          <li v-for="tag in project.synergyFundTags">
-            <span>{{ tag.name }}</span>
-          </li>
-        </ul>
+        <ul class="synergy-list" v-html="synergyFundTagsHTML"></ul>
       </div>
 
       <div v-if="project.synergyGoalTags.length > 0 && project.caseStudy">
@@ -136,11 +132,7 @@
           >Dieses Projekt trägt zu Zielen folgenden europäischen und internationalen
           Politiken bei:</span
         ><br />
-        <ul class="synergy-list">
-          <li v-for="tag in project.synergyGoalTags">
-            <span>{{ tag.name }}</span>
-          </li>
-        </ul>
+        <ul class="synergy-list" v-html="synergyGoalTagsHTML"></ul>
       </div>
 
       <div v-if="project.transferable && project.caseStudy">
@@ -309,17 +301,10 @@
         <p v-html="topicsHTML"></p>
       </template>
 
-      <h3>{{ $t("Schlagworte", locale) }}</h3>
-      <div class="embed-tags" v-if="translateField(project, 'tags', locale)?.length">
-        <!-- Tag loop -->
-        <span
-          class="tag"
-          v-for="tag in project.tags.filter((tag) => tag.context === 'tag')"
-          :key="tag.id"
-        >
-          {{ tag.name }}
-        </span>
-      </div>
+      <template v-if="project.tags.length > 0">
+        <h3>{{ $t("Schlagworte", locale) }}</h3>
+        <div class="embed-tags" v-html="tagsHTML"></div>
+      </template>
 
       <template v-if="programsHTML">
         <h3>{{ $t("Programm", locale) }}</h3>
@@ -452,7 +437,10 @@ export default {
   },
 
   emits: ["clickClose"],
-
+  mounted() {
+    this.$store.dispatch("localWorkgroups/loadAll");
+    this.$store.dispatch("tags/loadAll");
+  },
   computed: {
     ...mapState({
       states: (state) => state.states.all,
@@ -460,6 +448,7 @@ export default {
       programs: (state) => state.programs.all,
       instruments: (state) => state.instruments.all,
       localWorkgroups: (state) => state.localWorkgroups.all,
+      tags: (state) => state.tags.all,
     }),
     ...mapGetters({
       getStateById: "states/getById",
@@ -467,7 +456,40 @@ export default {
       getProgramById: "programs/getById",
       getInstrumentById: "instruments/getById",
       getLocalWorkgroupById: "localWorkgroups/getById",
+      getTagById: "tags/getById",
     }),
+    tagsHTML() {
+      let result = [];
+
+      this.project.tags.forEach((item) => {
+        let tag = this.getTagById(item.id);
+        result.push(`<span class="tag">${tag?.name}</span>`);
+      });
+
+      return result.join(" ");
+    },
+    synergyFundTagsHTML() {
+      let result = [];
+
+      this.project.synergyFundTags.forEach((item) => {
+        let tag = this.getTagById(item.id);
+
+        result.push(`<li>${tag?.name}</li>`);
+      });
+
+      return result.join("");
+    },
+    synergyGoalTagsHTML() {
+      let result = [];
+
+      this.project.synergyGoalTags.forEach((item) => {
+        let tag = this.getTagById(item.id);
+
+        result.push(`<li>${tag?.name}</li>`);
+      });
+
+      return result.join("");
+    },
     statesHTML() {
       let result = [];
 
@@ -493,7 +515,12 @@ export default {
     localWorkgroupHTML() {
       let result = [];
       try {
-        result = this.getLocalWorkgroupById(this.project.localWorkgroup);
+        // TODO_MAP: this is a quickfix because for some reason in the iframe the object contains an id and in the backend it does not.
+        result = this.getLocalWorkgroupById(
+          this.project.localWorkgroup.id
+            ? this.project.localWorkgroup.id
+            : this.project.localWorkgroup
+        );
       } catch (e) {
         console.error(e);
       }
@@ -505,7 +532,6 @@ export default {
 
       this.project.localWorkgroups.forEach((item) => {
         let row = this.getLocalWorkgroupById(item.id);
-        console.log(row);
         if (row) {
           result.push(`<span>${row.name}</span><br />`);
         }
@@ -567,11 +593,8 @@ export default {
     translateField,
 
     templateHook(name, ...params) {
-      const clientOptions = this.$clientOptions || {}; // Provide a fallback
-      const templateHooks = clientOptions.templateHooks || {}; // Provide a fallback for templateHooks
-
-      if (templateHooks[name]) {
-        return templateHooks[name](this, ...params);
+      if (this?.$clientOptions?.templateHooks?.[name]) {
+        return this.$clientOptions.templateHooks[name](this, ...params);
       }
 
       return null;
