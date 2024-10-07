@@ -194,21 +194,21 @@
     flex-wrap: wrap;
 
     .tag {
-        background: $theme-color-1;
-        color: $white;
-        border-radius: .25em;
-        padding: .25em 1em;
+        background: transparent;
+        color: black;
+        border-radius: 25px;
+        padding: 0.25em 1em;
         display: inline-block;
         text-decoration: none;
         margin-right: 2px;
         margin-bottom: 2px;
-        line-height: 145%;
+        line-height: 100%;
+        border: solid 2px #5077B2;
+        text-transform: uppercase;
+        font-size: 0.7em;
+        font-weight: 600;
     }
     margin-bottom: 2em;
-}
-
-h4.synergy-title {
-    margin-bottom: 4px;
 }
 
 ul.synergy-list {

@@ -15,12 +15,12 @@
       ></div>
 
       <div v-if="project.exemplary && project.caseStudy">
-        <h4>Was macht dieses Projekt besonders nachahmenswert?</h4>
+        <h4 class="nzl-title">Was macht dieses Projekt besonders nachahmenswert?</h4>
         <div class="embed-projects-view-content-text" v-html="project.exemplary"></div>
       </div>
 
       <div v-if="project.initialContext && project.caseStudy">
-        <h4>Kontext</h4>
+        <h4 class="nzl-title">Kontext</h4>
         <div
           class="embed-projects-view-content-text"
           v-html="project.initialContext"
@@ -28,7 +28,7 @@
       </div>
 
       <div v-if="project.initialContextGoals && project.caseStudy">
-        <h4>Ziele</h4>
+        <h4 class="nzl-title">Ziele</h4>
         <div
           class="embed-projects-view-content-text"
           v-html="project.initialContextGoals"
@@ -36,7 +36,7 @@
       </div>
 
       <div v-if="project.fundingMethod && project.caseStudy">
-        <h4>Maßnahmen im Projekt</h4>
+        <h4 class="nzl-title">Maßnahmen im Projekt</h4>
         <div
           class="embed-projects-view-content-text"
           v-html="project.fundingMethod"
@@ -44,7 +44,7 @@
       </div>
 
       <div v-if="project.fundingMethodStakeholders && project.caseStudy">
-        <h4>Welche Stakeholder waren entscheidend?</h4>
+        <h4 class="nzl-title">Welche Stakeholder waren entscheidend?</h4>
         <div
           class="embed-projects-view-content-text"
           v-html="project.fundingMethodStakeholders"
@@ -52,7 +52,7 @@
       </div>
 
       <div v-if="project.resultsQuantity && project.caseStudy">
-        <h4>Ergebnisse und Wirkungen (Quantitativ)</h4>
+        <h4 class="nzl-title">Ergebnisse und Wirkungen (Quantitativ)</h4>
         <div
           class="embed-projects-view-content-text"
           v-html="project.resultsQuantity"
@@ -60,7 +60,7 @@
       </div>
 
       <div v-if="project.resultsQuality && project.caseStudy">
-        <h4>Ergebnisse und Wirkungen (Qualitativ)</h4>
+        <h4 class="nzl-title">Ergebnisse und Wirkungen (Qualitativ)</h4>
         <div
           class="embed-projects-view-content-text"
           v-html="project.resultsQuality"
@@ -68,7 +68,7 @@
       </div>
 
       <div v-if="project.additionalValue && project.caseStudy">
-        <h4>Mehrwert durch Vernetzung</h4>
+        <h4 class="nzl-title">Mehrwert durch Vernetzung</h4>
         <div
           class="embed-projects-view-content-text"
           v-html="project.additionalValue"
@@ -76,7 +76,7 @@
       </div>
 
       <div v-if="project.additionalValueResult && project.caseStudy">
-        <h4>Mehrwert durch Vernetzung Ergebnisse</h4>
+        <h4 class="nzl-title">Mehrwert durch Vernetzung Ergebnisse</h4>
         <div
           class="embed-projects-view-content-text"
           v-html="project.additionalValueResult"
@@ -84,12 +84,12 @@
       </div>
 
       <div v-if="project.innovations && project.caseStudy">
-        <h4>Innovation</h4>
+        <h4 class="nzl-title">Innovation</h4>
         <div class="embed-projects-view-content-text" v-html="project.innovations"></div>
       </div>
 
       <div v-if="project.integrationYoungCitizen && project.caseStudy">
-        <h4>Einbeziehung junger Menschen</h4>
+        <h4 class="nzl-title">Einbeziehung junger Menschen</h4>
         <div
           class="embed-projects-view-content-text"
           v-html="project.integrationYoungCitizen"
@@ -97,7 +97,7 @@
       </div>
 
       <div v-if="project.integrationFemaleCitizen && project.caseStudy">
-        <h4>Einbeziehung von Frauen</h4>
+        <h4 class="nzl-title">Einbeziehung von Frauen</h4>
         <div
           class="embed-projects-view-content-text"
           v-html="project.integrationFemaleCitizen"
@@ -105,7 +105,7 @@
       </div>
 
       <div v-if="project.integrationMinorities && project.caseStudy">
-        <h4>Inklusion</h4>
+        <h4 class="nzl-title">Inklusion</h4>
         <div
           class="embed-projects-view-content-text"
           v-html="project.integrationMinorities"
@@ -113,7 +113,7 @@
       </div>
 
       <div v-if="project.learningExperience && project.caseStudy">
-        <h4>Die wichtigsten Lernerfahrungen</h4>
+        <h4 class="nzl-title">Die wichtigsten Lernerfahrungen</h4>
         <div
           class="embed-projects-view-content-text"
           v-html="project.learningExperience"
@@ -121,13 +121,13 @@
       </div>
 
       <div v-if="project.synergyFundTags.length > 0 && project.caseStudy">
-        <h4 class="synergy-title">Synergien mit anderen EU-Politiken</h4>
+        <h4 class="nzl-title">Synergien mit anderen EU-Politiken</h4>
         <span>(GAP und andere EU Förderquellen)</span>
         <ul class="synergy-list" v-html="synergyFundTagsHTML"></ul>
       </div>
 
       <div v-if="project.synergyGoalTags.length > 0 && project.caseStudy">
-        <h4 class="synergy-title">Europäische und Internationale Politik</h4>
+        <h4 class="nzl-title">Europäische und Internationale Politik</h4>
         <span
           >Dieses Projekt trägt zu Zielen folgenden europäischen und internationalen
           Politiken bei:</span
@@ -136,12 +136,12 @@
       </div>
 
       <div v-if="project.transferable && project.caseStudy">
-        <h4>Übertragbarkeit</h4>
+        <h4 class="nzl-title">Übertragbarkeit</h4>
         <div class="embed-projects-view-content-text" v-html="project.transferable"></div>
       </div>
 
       <div v-if="project.transferDetails && project.caseStudy">
-        <h4>Dieses Projekt wurde kopiert von:</h4>
+        <h4 class="nzl-title">Dieses Projekt wurde kopiert von:</h4>
         <div
           class="embed-projects-view-content-text"
           v-html="project.transferDetails"
@@ -152,7 +152,7 @@
         class="embed-projects-view-content-downloads"
         v-if="translateField(project, 'files', locale)?.length"
       >
-        <h4>{{ $t("Downloads", locale) }}</h4>
+        <h4 class="nzl-title">{{ $t("Downloads", locale) }}</h4>
         <div
           class="embed-projects-view-content-downloads-download"
           v-for="(file, index) in translateField(project, 'files', locale)"
@@ -170,7 +170,7 @@
         class="embed-projects-view-content-contacts"
         v-if="translateField(project, 'contacts', locale)?.length"
       >
-        <h4>{{ $t("Kontakt", locale) }}</h4>
+        <h4 class="nzl-title">{{ $t("Kontakt", locale) }}</h4>
         <div
           class="embed-projects-view-content-contacts-contact"
           v-for="contact in translateField(project, 'contacts', locale)"
@@ -279,17 +279,17 @@
 
       <template v-if="statesHTML">
         <h3>{{ $t("Kanton", locale) }}</h3>
-        <p v-html="statesHTML"></p>
+        <div class="embed-tags" v-html="statesHTML"></div>
       </template>
 
       <template v-if="project.localWorkgroup">
         <h3>{{ $t("Lokale Arbeitsgruppe", locale) }}</h3>
-        <p v-html="localWorkgroupHTML"></p>
+        <div class="embed-tags" v-html="localWorkgroupHTML"></div>
       </template>
 
       <template v-if="project.localWorkgroups.length > 0">
         <h3>{{ $t("Kooperierende Arbeitsgruppen", locale) }}</h3>
-        <p v-html="localWorkgroupsHTML"></p
+        <div class="embed-tags" v-html="localWorkgroupsHTML"></div
       ></template>
 
       <template v-if="project.cooperationProjectEu">
@@ -298,7 +298,7 @@
 
       <template v-if="topicsHTML">
         <h3>{{ $t("Schwerpunkte", locale) }}</h3>
-        <p v-html="topicsHTML"></p>
+        <div class="embed-tags" v-html="topicsHTML"></div>
       </template>
 
       <template v-if="project.tags.length > 0">
@@ -496,7 +496,7 @@ export default {
       this.project.states.forEach((item) => {
         let row = this.translateField(this.getStateById(item.id), "name", this.locale);
 
-        result.push(row);
+        result.push(`<span class="tag">${row}</span>`);
       });
 
       return result.join(", ");
@@ -507,7 +507,7 @@ export default {
       this.project.topics.forEach((item) => {
         let row = this.translateField(this.getTopicById(item.id), "name", this.locale);
 
-        result.push(row);
+        result.push(`<span class="tag">${row}</span>`);
       });
 
       return result.join(", ");
@@ -524,7 +524,7 @@ export default {
       } catch (e) {
         console.error(e);
       }
-      return result ? result.name : null;
+      return `<span class="tag">${result ? result.name : null}</span>`;
     },
 
     localWorkgroupsHTML() {
@@ -533,7 +533,7 @@ export default {
       this.project.localWorkgroups.forEach((item) => {
         let row = this.getLocalWorkgroupById(item.id);
         if (row) {
-          result.push(`<span>${row.name}</span><br />`);
+          result.push(`<span class="tag">${row.name}</span><br />`);
         }
       });
 
@@ -688,5 +688,12 @@ export default {
   font-weight: bold;
   text-decoration: underline;
   text-align: right;
+}
+
+h4.nzl-title {
+  font-weight: 600 !important;
+  color: black;
+  text-decoration: underline 3px #5077b2;
+  text-underline-offset: 5px;
 }
 </style>
