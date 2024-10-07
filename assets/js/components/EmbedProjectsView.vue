@@ -466,7 +466,7 @@ export default {
         result.push(`<span class="tag">${tag?.name}</span>`);
       });
 
-      return result.join(" ");
+      return result.join("");
     },
     synergyFundTagsHTML() {
       let result = [];
