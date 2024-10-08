@@ -411,6 +411,45 @@ class ApiProjectsController extends AbstractController
 
         }
 
+        // if request has lag
+
+        // Handle both localWorkgroup and localWorkgroups
+        if ($request->get('localWorkgroup') && is_array($request->get('localWorkgroup')) && count($request->get('localWorkgroup'))) {
+            foreach ($request->get('localWorkgroup') as $key => $localWorkgroup) {
+                $qb
+                    ->leftJoin('p.localWorkgroup', 'localWorkgroup'.$key) // Single localWorkgroup
+                    ->leftJoin('p.localWorkgroups', 'localWorkgroups'.$key) // Many localWorkgroups relation
+                    ->andWhere(
+                        'localWorkgroup'.$key.'.name = :localWorkgroup'.$key.' OR localWorkgroup'.$key.'.id = :localWorkgroupId'.$key
+                        . ' OR localWorkgroups'.$key.'.name = :localWorkgroup'.$key.' OR localWorkgroups'.$key.'.id = :localWorkgroupId'.$key
+                    )
+                    ->setParameter('localWorkgroup'.$key, $localWorkgroup)
+                    ->setParameter('localWorkgroupId'.$key, $localWorkgroup);
+            }
+        }
+
+        if ($request->get('lePeriod')) {
+            $qb->andWhere('p.lePeriod = :lePeriod')
+               ->setParameter('lePeriod', $request->get('lePeriod'));
+        }
+        
+        if ($request->get('leFundingCategory')) {
+            $qb->andWhere('p.leFundingCategory = :leFundingCategory')
+               ->setParameter('leFundingCategory', $request->get('leFundingCategory'));
+        }
+        
+        if ($request->get('leFundingArticle')) {
+            $qb->andWhere('p.leFundingArticle = :leFundingArticle')
+               ->setParameter('leFundingArticle', $request->get('leFundingArticle'));
+        }
+        
+        if ($request->get('leFundingMethod')) {
+            $qb->andWhere('p.leFundingMethod = :leFundingMethod')
+               ->setParameter('leFundingMethod', $request->get('leFundingMethod'));
+        }
+        
+
+        
         if($request->get('orderBy') && is_array($request->get('orderBy')) && count($request->get('orderBy'))) {
 
             foreach($request->get('orderBy') as $key => $orderBy) {

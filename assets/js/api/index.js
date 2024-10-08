@@ -33,6 +33,7 @@ import stints from './modules/stints';
 import posts from './modules/posts';
 import tags from './modules/tags';
 import localWorkgroups from './modules/local-workgroups';
+import leStructure from './modules/le-structure';
 
 export default {
     logs,
@@ -70,4 +71,5 @@ export default {
     posts,
     tags,
     localWorkgroups,
+    leStructure,
 }

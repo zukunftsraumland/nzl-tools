@@ -36,6 +36,7 @@ import stints from './modules/stints';
 import posts from './modules/posts';
 import tags from './modules/tags';
 import localWorkgroups from './modules/local-workgroups';
+import leStructure from './modules/le-structure';
 
 //const debug = process.env.NODE_ENV !== 'production';
 const debug = false;
@@ -79,6 +80,7 @@ export default createStore({
         posts,
         tags,
         localWorkgroups,
+        leStructure,
     },
     strict: debug,
     plugins: debug ? [createLogger()] : []
