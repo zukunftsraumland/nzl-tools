@@ -354,10 +354,10 @@
     margin-bottom: calc(var(--#{$instance-id}-gutter-width) / 2);
     margin-left: calc(var(--#{$instance-id}-gutter-width) / 2);
     margin-right: calc(var(--#{$instance-id}-gutter-width) / 2);
-    border-radius: var(--#{$instance-id}-border-radius-2);
+    border-radius: var(--#{$instance-id}-border-radius-1);
     background: var(--#{$instance-id}-white);
     box-sizing: border-box;
-    box-shadow: var(--#{$instance-id}-shadow-1);
+    //box-shadow: var(--#{$instance-id}-shadow-1);
     overflow: hidden;
     cursor: pointer;
     transform: scale(1);
@@ -398,7 +398,7 @@
     }
 
     &-content {
-        padding: 1em;
+        //padding: 1em;
 
         &-title {
             font-size: 1.2em;
@@ -406,6 +406,7 @@
             color: var(--#{$instance-id}-primary-color);
             margin: 0;
             margin-bottom: 1em;
+            margin-top: 1em;
         }
 
         &-subtitle {
@@ -419,6 +420,7 @@
         &-description {
             margin: 0;
             margin-bottom: 1em;
+            line-height: 1.4em;
         }
 
         &-tags {
@@ -426,13 +428,18 @@
             flex-wrap: wrap;
 
             &-item {
-                margin-right: .5em;
-                margin-bottom: .5em;
-                line-height: 1em;
-                padding: .5em 1em;
-                background: var(--#{$instance-id}-secondary-color);
-                border-radius: var(--#{$instance-id}-border-radius-2);
-                color: white;
+                background: white;
+                color: black;
+                border-radius: 25px;
+                padding: 0.5em 1em;
+                display: inline-block;
+                text-decoration: none;
+                margin-right: 8px;
+                margin-bottom: 8px;
+                line-height: 100%;
+                border: solid 2px #5077B2;
+                text-transform: uppercase;
+                font-size: 0.7em;
             }
         }
     }
@@ -574,7 +581,7 @@
             font-weight: normal;
             font-size: 1.6em;
             margin: 0;
-            margin-bottom: 2em;
+            margin-bottom: 1em;
         }
 
         @include headlines(2) {

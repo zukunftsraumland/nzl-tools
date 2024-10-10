@@ -23,7 +23,7 @@
         ></div>
       </div>
 
-      <div
+      <!-- <div
         class="embed-projects-search-toggle"
         v-if="$clientOptions?.mapboxApiToken"
         data-filter-type="map"
@@ -35,6 +35,17 @@
           {{ $t("Karte anzeigen (NRP und Interreg)", locale) }}
         </div>
         <div v-if="templateHook('mapToggleAfter', null)"></div>
+      </div> -->
+
+      <div
+        class="embed-projects-search-toggle"
+        @click="toggleCaseStudy()"
+        :class="{ 'is-active': isCaseStudyActive }"
+      >
+        <div class="embed-projects-search-toggle-button"></div>
+        <div class="embed-projects-search-toggle-label">
+          {{ $t("Case Study", locale) }}
+        </div>
       </div>
     </div>
 
@@ -44,7 +55,7 @@
           class="embed-projects-filters-select-label"
           @click.stop="clickFilterSelect('state')"
         >
-          {{ $t("Kanton", locale) }}
+          {{ $t("Projektregion", locale) }}
         </div>
 
         <div
@@ -57,6 +68,18 @@
             class="embed-projects-filters-select-options"
             v-if="activeFilterSelect === 'state'"
           >
+            <div
+              class="embed-projects-filters-select-options-item"
+              :class="{
+                'is-selected': isFilterSelected({
+                  type: 'state',
+                  entity: { id: 'austria-wide' },
+                }),
+              }"
+              @click.stop="clickAustriaWide()"
+            >
+              {{ $t("Österreichweit", locale) }}
+            </div>
             <div
               class="embed-projects-filters-select-options-item"
               v-for="state in states"
@@ -109,7 +132,7 @@
         </transition>
       </div>
 
-      <div class="embed-projects-filters-select" data-filter-type="programs">
+      <!-- <div class="embed-projects-filters-select" data-filter-type="programs">
         <div
           class="embed-projects-filters-select-label"
           @click.stop="clickFilterSelect('program')"
@@ -154,7 +177,7 @@
             </div>
           </div>
         </transition>
-      </div>
+      </div> -->
 
       <div class="embed-projects-filters-select" data-filter-type="startDates">
         <div
@@ -193,7 +216,7 @@
         </transition>
       </div>
 
-      <div class="embed-projects-filters-select" data-filter-type="instruments">
+      <!-- <div class="embed-projects-filters-select" data-filter-type="instruments">
         <div
           class="embed-projects-filters-select-label"
           @click.stop="clickFilterSelect('instrument')"
@@ -231,9 +254,9 @@
             </div>
           </div>
         </transition>
-      </div>
+      </div> -->
 
-      <div class="embed-projects-filters-select" data-filter-type="cooperations">
+      <!-- <div class="embed-projects-filters-select" data-filter-type="cooperations">
         <div
           class="embed-projects-filters-select-label"
           @click.stop="clickFilterSelect('cooperation')"
@@ -273,7 +296,7 @@
             </div>
           </div>
         </transition>
-      </div>
+      </div> -->
 
       <!-- Local Workgroup Filter -->
       <div class="embed-projects-filters-select" data-filter-type="localWorkgroup">
@@ -317,7 +340,7 @@
           class="embed-projects-filters-select-label"
           @click.stop="clickFilterSelect('lePeriod')"
         >
-          {{ $t("LE Periode", locale) }}
+          {{ $t("LE-Periode", locale) }}
         </div>
         <div
           class="embed-projects-filters-select-icon"
@@ -454,13 +477,21 @@
       </div>
 
       <div class="embed-projects-filters-list">
-        <div
-          class="embed-projects-filters-list-item"
-          v-for="filter in filters"
-          @click.stop="clickToggleFilter(filter, true)"
-        >
-          {{ translateField(filter.entity, "name", locale) }}
-        </div>
+        <template v-for="filter in filters">
+          <div
+            v-if="filter.type != 'caseStudy'"
+            class="embed-projects-filters-list-item"
+            :class="{
+              'austria-tag': isFilterSelected({
+                type: 'state',
+                entity: { id: 'austria-wide' },
+              }),
+            }"
+            @click.stop="clickToggleFilter(filter, true)"
+          >
+            {{ translateField(filter.entity, "name", locale) }}
+          </div>
+        </template>
       </div>
     </div>
 
@@ -499,13 +530,44 @@
                   project.images[0].extension +
                   ')',
               }"
-            ></div>
-
-            <div class="embed-projects-list-item-header-image" v-else></div>
+            >
+              <span v-if="project.caseStudy" class="case-study-icon">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="currentColor"
+                  class="bi bi-star"
+                  viewBox="0 0 16 16"
+                >
+                  <path
+                    d="M2.866 14.85c-.078.444.36.791.746.593l.39-.22 3.46-2.062 3.46 2.062.39.22c.386.198.824-.149.746-.592l-.073-.446-1.611-4.73L14.36 5.87c.33-.242.16-.765-.283-.765h-4.967L8.114.342a.516.516 0 0 0-.973 0L5.898 5.104H.932c-.443 0-.614.523-.283.765l3.73 2.748-1.611 4.73-.073.446z"
+                  />
+                </svg>
+              </span>
+            </div>
+            <div class="embed-projects-list-item-header-image" v-else>
+              <span v-if="project.caseStudy" class="case-study-icon">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="currentColor"
+                  class="bi bi-star"
+                  viewBox="0 0 16 16"
+                >
+                  <path
+                    d="M2.866 14.85c-.078.444.36.791.746.593l.39-.22 3.46-2.062 3.46 2.062.39.22c.386.198.824-.149.746-.592l-.073-.446-1.611-4.73L14.36 5.87c.33-.242.16-.765-.283-.765h-4.967L8.114.342a.516.516 0 0 0-.973 0L5.898 5.104H.932c-.443 0-.614.523-.283.765l3.73 2.748-1.611 4.73-.073.446z"
+                  />
+                </svg>
+              </span>
+            </div>
           </div>
 
           <div class="embed-projects-list-item-content">
-            <h3 class="embed-projects-list-item-content-title">
+            <h3 class="embed-projects-list-item-content-title nzl-title">
               {{ translateField(project, "title", locale) }}
             </h3>
 
@@ -527,14 +589,22 @@
                 {{ translateField(getTopicById(topic.id), "name", locale) }}
               </div>
 
-              <div
+              <!-- <div
                 class="embed-projects-list-item-content-tags-item"
                 v-for="program in project.programs.filter((e) => getProgramById(e.id))"
               >
                 {{ translateField(getProgramById(program.id), "name", locale) }}
+              </div> -->
+
+              <div
+                v-if="project.states.length === 9"
+                class="embed-projects-list-item-content-tags-item austria-tag"
+              >
+                Österreichweit
               </div>
 
               <div
+                v-if="project.states.length < 9"
                 class="embed-projects-list-item-content-tags-item"
                 v-for="state in project.states.filter((e) => getStateById(e.id))"
               >
@@ -609,6 +679,7 @@ export default {
       selectedCategory: null,
       selectedArticle: null,
       selectedMethod: null,
+      isCaseStudyActive: false,
     };
   },
 
@@ -759,15 +830,30 @@ export default {
 
   methods: {
     translateField,
-
     templateHook(name, ...params) {
       if (this?.$clientOptions?.templateHooks?.[name]) {
         return this.$clientOptions.templateHooks[name](this, ...params);
       }
-
       return null;
     },
+    toggleCaseStudy() {
+      // Toggle the state of the case study filter
+      this.isCaseStudyActive = !this.isCaseStudyActive;
 
+      // Check if the case study filter is active and apply the filter accordingly
+      if (this.isCaseStudyActive) {
+        this.filters.push({
+          type: "caseStudy",
+          entity: { id: "caseStudy", name: "Case Study" },
+        });
+      } else {
+        // Remove the case study filter if it's inactive
+        this.filters = this.filters.filter((filter) => filter.type !== "caseStudy");
+      }
+
+      // Reload the project list based on the updated filters
+      this.reload();
+    },
     keyUp(event) {
       if (event.keyCode === 27) {
         this.activeFilterSelect = null;
@@ -796,7 +882,10 @@ export default {
       for (let filter of filters) {
         params[filter.type].push(filter.entity?.id || filter.entity?.name);
       }
-
+      // Add the caseStudy filter explicitly if it's active
+      if (this.isCaseStudyActive) {
+        params.caseStudy = 1; // This assumes your backend expects 1 for case study projects
+      }
       // Handle LE specific filters
       if (this.selectedPeriod) {
         params.lePeriod = [this.selectedPeriod.id];
@@ -1019,6 +1108,20 @@ export default {
           ];
 
       this.reload();
+    },
+
+    clickAustriaWide() {
+      const austriaWideEntity = {
+        id: "austria-wide",
+        name: this.$t("Österreichweit", this.locale),
+      };
+
+      const allStateIds = this.states.map((state) => state.id);
+
+      this.clickToggleFilter({
+        type: "state",
+        entity: { id: austriaWideEntity.id, name: austriaWideEntity.name },
+      });
     },
 
     clickLoadMore() {
@@ -1330,5 +1433,32 @@ export default {
 }
 .embed-projects-filters-select-options-item:hover {
   color: #f0f0f0;
+}
+.case-study-icon {
+  align-self: flex-end;
+  height: 35px;
+  max-height: 35px;
+  width: 35px;
+  max-width: 35px;
+  background-color: #5077b2;
+  /* Blue background */
+  color: white;
+  /* White text */
+  border-radius: 50%;
+  /* Circular shape */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 12px;
+  text-align: center;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
 }
 </style>

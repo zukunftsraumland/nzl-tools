@@ -297,16 +297,30 @@ class ApiProjectsController extends AbstractController
 
         }
         
-        if($request->get('state') && is_array($request->get('state')) && count($request->get('state'))) {
-            foreach($request->get('state') as $key => $state) {
+        if ($request->get('state') && is_array($request->get('state')) && count($request->get('state'))) {
+            $selectedStateIds = $request->get('state');
+            
+            // Check if the state is 'austria-wide' or if all 9 states are selected
+            if (in_array('austria-wide', $selectedStateIds) || count($selectedStateIds) === 9) {
+                // Query to find projects associated with all 9 states (Österreichweit)
                 $qb
-                    ->leftJoin('p.states', 'state'.$key)
-                    ->andWhere('state'.$key.'.name = :state'.$key.' OR state'.$key.'.id = :stateId'.$key)
-                    ->setParameter('state'.$key, $state)
-                    ->setParameter('stateId'.$key, $state)
-                ;
+                    ->leftJoin('p.states', 'state')
+                    ->groupBy('p.id')
+                    ->having('COUNT(state.id) = :austriaStateCount')
+                    ->setParameter('austriaStateCount', 9);
+            } else {
+                // Regular logic for specific state filtering
+                foreach ($selectedStateIds as $key => $state) {
+                    $qb
+                        ->leftJoin('p.states', 'state' . $key)
+                        ->andWhere('state' . $key . '.name = :state' . $key . ' OR state' . $key . '.id = :stateId' . $key)
+                        ->setParameter('state' . $key, $state)
+                        ->setParameter('stateId' . $key, $state);
+                }
             }
         }
+        
+    
         
         if($request->get('topic') && is_array($request->get('topic')) && count($request->get('topic'))) {
             foreach($request->get('topic') as $key => $topic) {

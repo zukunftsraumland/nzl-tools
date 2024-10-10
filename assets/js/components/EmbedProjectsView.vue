@@ -278,7 +278,7 @@
       </template>
 
       <template v-if="statesHTML">
-        <h3>{{ $t("Kanton", locale) }}</h3>
+        <h3>{{ $t("Projektregion", locale) }}</h3>
         <div class="embed-tags" v-html="statesHTML"></div>
       </template>
 
@@ -492,6 +492,9 @@ export default {
     },
     statesHTML() {
       let result = [];
+      if (this.project.states.length === 9) {
+        return `<span class="tag austria-tag">Österreichweit</span>`;
+      }
 
       this.project.states.forEach((item) => {
         let row = this.translateField(this.getStateById(item.id), "name", this.locale);
@@ -633,7 +636,7 @@ export default {
   },
 };
 </script>
-<style scoped>
+<style>
 .project-costs-table {
   width: 100%;
   border-collapse: collapse;
@@ -690,10 +693,50 @@ export default {
   text-align: right;
 }
 
-h4.nzl-title {
+.embed-tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 2em;
+
+  .tag {
+    background: white;
+    color: black;
+    border-radius: 25px;
+    padding: 0.5em 1em;
+    display: inline-block;
+    text-decoration: none;
+    margin-right: 8px;
+    margin-bottom: 8px;
+    line-height: 100%;
+    border: solid 2px #5077b2;
+    text-transform: uppercase;
+    font-size: 0.7em;
+  }
+}
+
+.austria-tag {
+  background: linear-gradient(
+    0deg,
+    rgba(255, 0, 0, 0.5) 25%,
+    white 33%,
+    white 66%,
+    rgba(255, 0, 0, 0.5) 75%
+  ) !important;
+  border: 1px solid black !important;
+  color: black !important;
+  text-align: center;
+  font-weight: bold;
+}
+
+ul.synergy-list {
+  margin-top: 1em;
+}
+
+.nzl-title {
   font-weight: 600 !important;
-  color: black;
-  text-decoration: underline 3px #5077b2;
-  text-underline-offset: 5px;
+  color: black !important;
+  text-decoration: underline 3px #5077b2 !important;
+  text-underline-offset: 5px !important;
+  line-height: 1.5em;
 }
 </style>

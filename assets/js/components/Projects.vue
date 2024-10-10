@@ -188,6 +188,7 @@
                 "
               >
                 <option></option>
+                <option value="austria-wide">Österreichweit</option>
                 <option
                   v-for="state in states.filter(
                     (state) => !state.context || state.context === 'project'
@@ -655,8 +656,18 @@ export default {
       }
 
       const filterValue = {
-        id: filter.value.id ? filter.value.id : filter.value,
-        name: filter.value.name ? filter.value.name : filter.value,
+        id:
+          filter.value === "austria-wide"
+            ? "austria-wide"
+            : filter.value.id
+            ? filter.value.id
+            : filter.value,
+        name:
+          filter.value === "austria-wide"
+            ? "Österreichweit"
+            : filter.value.name
+            ? filter.value.name
+            : filter.value,
       };
 
       const existingFilterIndex = this.filters.findIndex((f) => f.type === filter.type);
