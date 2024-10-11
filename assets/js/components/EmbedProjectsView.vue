@@ -339,9 +339,14 @@
               <td v-if="financing.id === 'costsExternal'">
                 {{ $t("Andere Finanzquellen", locale) }}
               </td>
-              <td>{{ $helpers.formatPercent(financing.value) }}</td>
+              <td>{{ financing.value }}%</td>
               <td>
-                {{ $helpers.formatPercentValue(financing.value, project.projectCosts) }}
+                {{
+                  $helpers
+                    .calculateFinancingAmount(financing.value, project.projectCosts)
+                    .toString()
+                    .replace(".", ",") + " €"
+                }}
               </td>
             </tr>
             <tr>
@@ -687,7 +692,7 @@ export default {
 }
 
 .project-costs-table tbody tr:last-child td:last-child {
-  color: green;
+  color: #5077b2;
   font-weight: bold;
   text-decoration: underline;
   text-align: right;

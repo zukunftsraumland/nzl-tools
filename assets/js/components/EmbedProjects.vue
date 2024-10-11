@@ -513,7 +513,6 @@
           class="embed-projects-list-item"
           v-for="project in projects"
           :id="'project-' + project.id"
-          :class="{ 'is-draft': project.isPublic !== true }"
           @click.stop="clickShowProject(project)"
         >
           <div class="embed-projects-list-item-header">
@@ -531,6 +530,7 @@
                   ')',
               }"
             >
+              <span v-if="project.isPublic !== true" class="draft-tagline">Entwurf</span>
               <span v-if="project.caseStudy" class="case-study-icon">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -548,6 +548,8 @@
               </span>
             </div>
             <div class="embed-projects-list-item-header-image" v-else>
+              <span v-if="project.isPublic !== true" class="draft-tagline">Entwurf</span>
+
               <span v-if="project.caseStudy" class="case-study-icon">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -1460,5 +1462,19 @@ export default {
     width: 20px;
     height: 20px;
   }
+}
+
+.draft-tagline {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  color: #5077b2;
+  background-color: white;
+  border-radius: 25px;
+  border: 2px solid #5077b2;
+  text-transform: uppercase;
+  padding: 0.5em 1em;
+  font-size: 0.7em;
+  line-height: 1.5em;
 }
 </style>

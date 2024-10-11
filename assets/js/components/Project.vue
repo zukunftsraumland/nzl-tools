@@ -136,6 +136,7 @@
             options: states,
             columnsize: 12,
             selectAllValue: 'Österreichweit',
+            tooltip: tooltips.projectRegion,
           },
         ]"
         :project="project"
@@ -592,8 +593,8 @@
             </div>
             <div class="col-md-8" v-if="$env.PROJECTS_ENABLE_FINANCING">
               <div class="row" v-for="(financing, index) in project.financing">
-                <div class="col-md-5">
-                  <label v-if="index === 0">Weitere Projektkosten (%)</label>
+                <div class="col-md-7">
+                  <label v-if="index === 0"> (%)</label>
                   <div class="select-wrapper">
                     <select class="form-control" v-model="financing.id">
                       <option value="costsFederation">GAP Strategieplan</option>
@@ -609,14 +610,10 @@
                     type="text"
                     class="form-control"
                     :value="financing.value"
-                    @change="
-                      financing.value = $event.target.value = filterNumber(
-                        $event.target.value
-                      )
-                    "
+                    @change="updateFinancingValue(index, $event.target.value)"
                   />
                 </div>
-                <div class="col-md-2">
+                <!-- <div class="col-md-2">
                   <label v-if="index === 0">Verwerfen</label>
                   <a
                     class="button warning"
@@ -626,14 +623,17 @@
                   >
                     <span class="material-icons">cancel</span>
                   </a>
-                </div>
+                </div> -->
               </div>
-              <a
+              <p v-if="financingError" class="text-danger">
+                Die Summe der Anteile darf 100 % nicht über- / unterschreiten.
+              </p>
+              <!-- <a
                 class="form-control-add"
                 @click="project.financing.push({ id: '', value: 0 })"
               >
                 <span class="material-icons">add</span> Kostenstelle hinzufügen
-              </a>
+              </a> -->
             </div>
           </div>
         </div>
@@ -2368,7 +2368,12 @@ export default {
         projectCosts: "",
         programs: [],
         attachments: [],
-        financing: [],
+        financing: [
+          { id: "costsFederation", value: null }, // GAP Strategieplan
+          { id: "costsCanton", value: null }, // Private und Eigenmittel
+          { id: "costsExternal", value: null }, // Andere Finanzquellen
+        ],
+        financingError: false,
         topics: [],
         tags: [],
         geographicRegions: [],
@@ -2922,8 +2927,32 @@ export default {
         return moment(date).format("DD.MM.YYYY");
       }
     },
+    updateFinancingValue(index, newValue) {
+      // Update the financing array directly#
+      let valuestring = newValue.toString();
+      if (valuestring.includes(",")) {
+        newValue = newValue.replace(",", ".");
+      }
+      this.project.financing[index].value = newValue;
+
+      // Calculate total percentage
+      const totalPercentage = this.project.financing.reduce(
+        (sum, item) => sum + parseFloat(item.value || 0),
+        0
+      );
+      const allFilled = this.project.financing.every((item) => item.value > 0);
+
+      // Check if total exceeds 100%
+      if (totalPercentage > 100 || (allFilled && totalPercentage < 100)) {
+        this.financingError = true;
+      } else {
+        this.financingError = false;
+      }
+
+      this.project.financing[index].value = valuestring;
+    },
     filterNumber(input) {
-      return parseFloat(input.toString().replaceAll(",", ".")) || 0.0;
+      return input;
     },
     setCooperationProjectAt(value) {
       this.project.cooperationProjectAt = value;

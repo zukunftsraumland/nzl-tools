@@ -16,5 +16,6 @@ export const tooltips = {
     fundingMethod: "Bei komplexeren Projekten, die aus mehreren Förderungen unterstützt wurden, unterscheiden Sie bitte, welche davon durch die Gemeinsame Agrarpolitik/ Ländliche Entwicklung gefördert und welche aus anderen Quellen finanziert wurden. Bitte benennen und beschreiben Sie die Maßnahmen im Projekt in chronologischer Reihenfolge:",
     fundingMethodStakeholders: "Wer bzw. welche Stakeholder waren beteiligt und entscheidend für den Projekterfolg?",
     resultsQuantity: "Geben Sie hier all jene Ergebnisse und Wirkungen an, die in Zahlen messbar sind (zum Beispiel Anzahl geschaffener Arbeitsplätze, prozentuelle Steigerung der Einnahmen). Bei LEADER-Projekten: Angabe der relevanten Wirkungsindikatoren",
-    resultsQuality: " Beschreiben Sie hier jene Teile der Projektergebnisse, die sich nicht in Zahlen fassen lassen.",
+    resultsQuality: "Beschreiben Sie hier jene Teile der Projektergebnisse, die sich nicht in Zahlen fassen lassen.",
+    projectRegion: "Sie können entweder einzelne Bundesländer oder 'österreichweit' auswählen. Um eine Auswahl zu entfernen, klicken Sie erneut auf das entsprechende Element in der Drop-Down-Liste."
 }

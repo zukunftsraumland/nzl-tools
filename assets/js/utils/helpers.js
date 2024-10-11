@@ -29,7 +29,7 @@ export default {
 
             formatCurrency(value, currency = '€') {
                 return parseFloat(value)
-                  .toLocaleString('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })+' '+currency;
+                  .toLocaleString('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })+' '+currency;
             },
 
             formatPercent(percent) {
@@ -44,19 +44,16 @@ export default {
                 return `${austrianFormat(percent)}%`;
             },
 
-            formatPercentValue(percent, total, currency = '€') {
-                
-                const austrianFormat = (number) => {
-                    return Number(number).toLocaleString('de-AT', {
-                        minimumFractionDigits: 2, 
-                        maximumFractionDigits: 2
-                    });
-                };
+            calculateFinancingAmount(percent, projectCostsVal) {
+                const projectCosts = parseFloat(projectCostsVal);
+                const percentage = parseFloat(percent.toString().replace(',', '.'));
             
-                const calculatedAmount = (total / 100 * percent).toFixed(2); 
-            
-                return `~ ${austrianFormat(calculatedAmount)} ${currency}`;
-            },
+                if (!isNaN(projectCosts) && !isNaN(percentage)) {
+                  return ((projectCosts / 100) * (percentage)).toFixed(2); // Two decimal precision
+                } else {
+                  return 0;
+                }
+              },
 
             stripHTML(html) {
                 let tmp = document.createElement('div');
