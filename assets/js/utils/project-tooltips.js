@@ -17,5 +17,5 @@ export const tooltips = {
     fundingMethodStakeholders: "Wer bzw. welche Stakeholder waren beteiligt und entscheidend für den Projekterfolg?",
     resultsQuantity: "Geben Sie hier all jene Ergebnisse und Wirkungen an, die in Zahlen messbar sind (zum Beispiel Anzahl geschaffener Arbeitsplätze, prozentuelle Steigerung der Einnahmen). Bei LEADER-Projekten: Angabe der relevanten Wirkungsindikatoren",
     resultsQuality: "Beschreiben Sie hier jene Teile der Projektergebnisse, die sich nicht in Zahlen fassen lassen.",
-    projectRegion: "Sie können entweder einzelne Bundesländer oder 'österreichweit' auswählen. Um eine Auswahl zu entfernen, klicken Sie erneut auf das entsprechende Element in der Drop-Down-Liste."
+    projectRegion: "Sie können entweder einzelne Bundesländer oder 'Österreichweit' auswählen. Um eine Auswahl zu entfernen, klicken Sie erneut auf das entsprechende Element in der Drop-Down-Liste."
 }
