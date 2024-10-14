@@ -200,7 +200,7 @@
             </div>
           </div>
         </div>
-        <div class="col-sm-3">
+        <!-- <div class="col-sm-3">
           <div class="form-group">
             <label for="localWorkgroup">Lokale Arbeitsgruppe (LAG)</label>
             <div class="select-wrapper">
@@ -219,7 +219,7 @@
               </select>
             </div>
           </div>
-        </div>
+        </div> -->
 
         <div class="col-sm-3" v-if="$env.PROJECTS_ENABLE_GEOGRAPHIC_REGIONS">
           <div class="form-group">

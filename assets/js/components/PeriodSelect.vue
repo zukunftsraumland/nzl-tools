@@ -143,7 +143,7 @@ export default {
   },
   methods: {
     fetchPeriods() {
-      axios.get("/api/le-structure").then((response) => {
+      axios.get("/api/v1/le-structure").then((response) => {
         this.periods = response.data;
         // Automatically select categories, articles, and methods based on the initial IDs
         if (this.selectedPeriodId) {

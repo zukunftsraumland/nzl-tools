@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const endpoint = process.env.HOST + '/api/le-structure';
+const endpoint = process.env.HOST + '/api/v1/le-structure';
 
 export default {
     getAll() {
