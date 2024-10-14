@@ -743,5 +743,8 @@ ul.synergy-list {
   text-decoration: underline 3px #5077b2 !important;
   text-underline-offset: 5px !important;
   line-height: 1.5em;
+  text-decoration: underline;
+  text-decoration-color: #5077b2;
+  text-decoration-thickness: 3px;
 }
 </style>
