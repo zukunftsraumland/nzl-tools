@@ -308,7 +308,7 @@ export default {
         case "tag-select":
           return this.compareTags(currVal, diffVal) ? " disabled " : "";
         case "period-select":
-          return this.compareLEPeriod(currVal, diffVal) ? " disabled " : "";
+          return this.compareLEPeriod() ? " disabled " : "";
         default:
           return currVal === diffVal ? " disabled " : "";
       }
@@ -333,14 +333,12 @@ export default {
         return tag.id === diffVal[index].id; // Assuming each tag has an `id` property
       });
     },
-    compareLEPeriod(currVal, diffVal) {
-      if (!currVal || !diffVal) return false;
-
+    compareLEPeriod() {
       return (
-        currVal.lePeriod === diffVal.lePeriod &&
-        currVal.leFundingCategory === diffVal.leFundingCategory &&
-        currVal.leFundingArticle === diffVal.leFundingArticle &&
-        currVal.leFundingMethod === diffVal.leFundingMethod
+        this.project.lePeriod === this.diff.lePeriod &&
+        this.project.leFundingCategory === this.diff.leFundingCategory &&
+        this.project.leFundingArticle === this.diff.leFundingArticle &&
+        this.project.leFundingMethod === this.diff.leFundingMethod
       );
     },
 
