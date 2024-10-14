@@ -625,7 +625,7 @@
                   </a>
                 </div> -->
               </div>
-              <p v-if="financingError" class="text-danger">
+              <p v-if="this.project.financingError" class="text-danger">
                 Die Summe der Anteile darf 100 % nicht über- / unterschreiten.
               </p>
               <!-- <a
@@ -1088,7 +1088,7 @@
       </template>
 
       <template v-if="$env.PROJECTS_ENABLE_IMAGES">
-        <div class="project-component-form-row">
+        <div id="picture-section" class="project-component-form-row">
           <div class="project-component-form-section">
             <div class="row">
               <div class="col-md-12">
@@ -1115,13 +1115,13 @@
               <div
                 class="col-md-12"
                 :class="{
-                  disabled: compareOptions(project.images, diff.images),
+                  disabled: comparePictures(project.images, diff.images),
                 }"
               >
                 <label for="images">
                   <span
                     class="material-icons"
-                    v-if="!compareOptions(project.images, diff.images)"
+                    v-if="!comparePictures(project.images, diff.images)"
                     @click="mergeOptions('images')"
                     >keyboard_backspace</span
                   >
@@ -1140,7 +1140,11 @@
       </template>
 
       <template v-if="$env.PROJECTS_ENABLE_FILES">
-        <div class="project-component-form-row" v-if="!isTranslationModeEnabled()">
+        <div
+          id="file-section"
+          class="project-component-form-row"
+          v-if="!isTranslationModeEnabled()"
+        >
           <div class="project-component-form-section">
             <div class="row">
               <div class="col-md-12">
@@ -1166,13 +1170,13 @@
               <div
                 class="col-md-12"
                 :class="{
-                  disabled: compareOptions(project.files, diff.files),
+                  disabled: compareDocuments(project.files, diff.files),
                 }"
               >
                 <label for="files">
                   <span
                     class="material-icons"
-                    v-if="!compareOptions(project.files, diff.files)"
+                    v-if="!compareDocuments(project.files, diff.files)"
                     @click="mergeOptions('files')"
                     >keyboard_backspace</span
                   >
@@ -1217,7 +1221,7 @@
               <div
                 class="col-md-12"
                 :class="{
-                  disabled: compareOptions(
+                  disabled: compareDocuments(
                     project.translations[locale].files,
                     diff.translations[locale].files
                   ),
@@ -1227,7 +1231,7 @@
                   <span
                     class="material-icons"
                     v-if="
-                      !compareOptions(
+                      !compareDocuments(
                         project.translations[locale].files,
                         diff.translations[locale].files
                       )
@@ -2553,6 +2557,64 @@ export default {
         return;
       }
 
+      if (this.project.images.length > 0) {
+        let error = false;
+        this.project.images.forEach((image) => {
+          if (!image.copyright) {
+            error = true;
+          }
+        });
+        if (error) {
+          this.modal = {
+            title: "Ein Fehler ist aufgetreten",
+            description:
+              "Bitte fügen Sie für alle Bilder eine Urheberrechtsangabe hinzu.",
+            actions: [
+              {
+                label: "Verstanden",
+                class: "error",
+                onClick: () => {
+                  this.modal = null;
+                  document
+                    .getElementById("picture-section")
+                    .scrollIntoView({ behavior: "smooth" });
+                },
+              },
+            ],
+          };
+          return;
+        }
+      }
+
+      if (this.project.files.length > 0) {
+        let error = false;
+        this.project.files.forEach((file) => {
+          if (!file.copyright) {
+            error = true;
+          }
+        });
+        if (error) {
+          this.modal = {
+            title: "Ein Fehler ist aufgetreten",
+            description:
+              "Bitte fügen Sie für alle Dateien eine Urheberrechtsangabe hinzu.",
+            actions: [
+              {
+                label: "Verstanden",
+                class: "error",
+                onClick: () => {
+                  this.modal = null;
+                  document
+                    .getElementById("file-section")
+                    .scrollIntoView({ behavior: "smooth" });
+                },
+              },
+            ],
+          };
+          return;
+        }
+      }
+
       if (!this.project.startDate) {
         this.project.startDate = null;
       }
@@ -2648,6 +2710,43 @@ export default {
       for (let aEntry of a) {
         let match = (b || []).find(
           (bEntry) => bEntry.id === aEntry.id && bEntry.value == aEntry.value
+        );
+        if (!match) {
+          return false;
+        }
+      }
+
+      return true;
+    },
+    comparePictures(a, b) {
+      if (!a || a.length !== (b || []).length) {
+        return false;
+      }
+      for (let aEntry of a) {
+        let match = (b || []).find(
+          (bEntry) =>
+            bEntry.id === aEntry.id &&
+            bEntry.value == aEntry.value &&
+            bEntry.description == aEntry.description &&
+            bEntry.copyright == aEntry.copyright
+        );
+        if (!match) {
+          return false;
+        }
+      }
+
+      return true;
+    },
+    compareDocuments(a, b) {
+      if (!a || a.length !== (b || []).length) {
+        return false;
+      }
+      for (let aEntry of a) {
+        let match = (b || []).find(
+          (bEntry) =>
+            bEntry.id === aEntry.id &&
+            bEntry.value == aEntry.value &&
+            bEntry.copyright == aEntry.copyright
         );
         if (!match) {
           return false;
@@ -2928,11 +3027,11 @@ export default {
       }
     },
     updateFinancingValue(index, newValue) {
-      // Update the financing array directly#
-      let valuestring = newValue.toString();
-      if (valuestring.includes(",")) {
+      // Update the financing array directly
+      if (typeof newValue === "string" && newValue.includes(",")) {
         newValue = newValue.replace(",", ".");
       }
+      newValue = parseFloat(newValue);
       this.project.financing[index].value = newValue;
 
       // Calculate total percentage
@@ -2944,12 +3043,10 @@ export default {
 
       // Check if total exceeds 100%
       if (totalPercentage > 100 || (allFilled && totalPercentage < 100)) {
-        this.financingError = true;
+        this.project.financingError = true;
       } else {
-        this.financingError = false;
+        this.project.financingError = false;
       }
-
-      this.project.financing[index].value = valuestring;
     },
     filterNumber(input) {
       return input;
