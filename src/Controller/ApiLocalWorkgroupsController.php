@@ -19,7 +19,7 @@ class ApiLocalWorkgroupsController extends AbstractController
     #[Route(path: '', name: 'index', methods: ['GET'])]
     #[OA\Response(
         response: 200,
-        description: 'Returns all local workgroups (LAG)',
+        description: 'Returns all local workgroups (LAG - Lokale Arbeitsgruppe)',
         content: new OA\JsonContent(
             type: 'array',
             items: new OA\Items(ref: new Model(type: LocalWorkgroup::class, groups: ['id', 'localworkgroup']))
@@ -47,7 +47,7 @@ class ApiLocalWorkgroupsController extends AbstractController
             ref: new Model(type: LocalWorkgroup::class, groups: ['id', 'localworkgroup'])
         )
     )]
-    #[OA\Tag(name: 'Local Workgroup')]
+    #[OA\Tag(name: 'Local Workgroups (LAG)')]
     public function find(Request $request, EntityManagerInterface $em, NormalizerInterface $normalizer): JsonResponse
     {
         $localworkgroup = $em->getRepository(LocalWorkgroup::class)
