@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Tag;
 use Doctrine\ORM\EntityManagerInterface;
 use Nelmio\ApiDocBundle\Annotation\Model;
+use Nelmio\ApiDocBundle\Annotation\Security;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
@@ -60,8 +61,9 @@ class ApiTagsController extends AbstractController
         return $this->json($result);
     }
 
-
+    #[OA\Tag(name: 'Tags')]
     #[Route(path: '/create', name: 'create', methods: ['POST'])]
+    #[Security(name: 'cookieAuth')]
     public function create(Request $request, EntityManagerInterface $em, NormalizerInterface $normalizer): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -71,7 +73,7 @@ class ApiTagsController extends AbstractController
         $tag->setIsPublic(true);
         $tag->setCreatedAt(new \DateTime());
         $tag->setUpdatedAt(new \DateTime());
-        // $tag->setContext($data['context'] ? $data['context'] : 'project');
+        $tag->setContext($data['context'] ? $data['context'] : 'tag');
         $em->persist($tag);
         $em->flush();
     
