@@ -841,8 +841,8 @@ class ApiProjectsController extends AbstractController
 
                 foreach($project->getFinancing() as $financing) {
                     $financialMapping = [
-                        'costsFederation' => 'GAP Strategieplan',
-                        'costsCanton' => 'Private und Eigenmittel',
+                        'costsGap' => 'GAP Strategieplan',
+                        'costsPrivate' => 'Private und Eigenmittel',
                         'costsExternal' => 'Andere Finanzquellen',
                     ];
                     if(!array_key_exists($financing['id'], $financialMapping)) {

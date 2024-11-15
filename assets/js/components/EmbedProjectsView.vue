@@ -330,10 +330,10 @@
         <table class="project-costs-table">
           <tbody>
             <tr v-for="financing in project.financing" :key="financing.id">
-              <td v-if="financing.id === 'costsFederation'">
+              <td v-if="financing.id === 'costsGap'">
                 {{ $t("GAP Strategieplan", locale) }}
               </td>
-              <td v-if="financing.id === 'costsCanton'">
+              <td v-if="financing.id === 'costsPrivate'">
                 {{ $t("Private und Eigenmittel", locale) }}
               </td>
               <td v-if="financing.id === 'costsExternal'">

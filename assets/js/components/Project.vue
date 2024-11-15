@@ -597,8 +597,8 @@
                   <label v-if="index === 0"> (%)</label>
                   <div class="select-wrapper">
                     <select class="form-control" v-model="financing.id">
-                      <option value="costsFederation">GAP Strategieplan</option>
-                      <option value="costsCanton">Private und Eigenmittel</option>
+                      <option value="costsGap">GAP Strategieplan</option>
+                      <option value="costsPrivate">Private und Eigenmittel</option>
                       <option value="costsExternal">Andere Finanzquellen</option>
                     </select>
                   </div>
@@ -688,8 +688,8 @@
                 <div class="col-md-6">
                   <div class="select-wrapper">
                     <select class="form-control" v-model="financing.id" disabled>
-                      <option value="costsFederation">GAP Strategieplan</option>
-                      <option value="costsCanton">Private und Eigenmittel</option>
+                      <option value="costsGap">GAP Strategieplan</option>
+                      <option value="costsPrivate">Private und Eigenmittel</option>
                       <option value="costsExternal">Andere Finanzquellen</option>
                     </select>
                   </div>
@@ -2373,8 +2373,8 @@ export default {
         programs: [],
         attachments: [],
         financing: [
-          { id: "costsFederation", value: null }, // GAP Strategieplan
-          { id: "costsCanton", value: null }, // Private und Eigenmittel
+          { id: "costsGap", value: null }, // GAP Strategieplan
+          { id: "costsPrivate", value: null }, // Private und Eigenmittel
           { id: "costsExternal", value: null }, // Andere Finanzquellen
         ],
         financingError: false,
