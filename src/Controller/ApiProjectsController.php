@@ -131,6 +131,34 @@ class ApiProjectsController extends AbstractController
         schema: new OA\Schema(type: 'boolean'),
     )]
     #[OA\Parameter(
+        name: 'lePeriod',
+        description: 'Include only projects of a specific LE period. The parameter value is the LE period id',
+        in: 'query',
+        required: false, 
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Parameter(
+        name: 'leFundingCategory', 
+        description: 'Include only projects of a specific LE funding category. The parameter value is the LE funding category id',
+        in: 'query',
+        required: false,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Parameter(
+        name: 'leFundingArticle',
+        description: 'Include only projects of a specific LE funding article. The parameter value is the LE funding article id',
+        in: 'query', 
+        required: false,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Parameter(
+        name: 'leFundingMethod',
+        description: 'Include only projects of a specific LE funding method. The parameter value is the LE funding method id',
+        in: 'query',
+        required: false,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Parameter(
         name: 'status[]',
         description: 'Return projects by status',
         in: 'query',

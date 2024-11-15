@@ -64,6 +64,25 @@ class ApiTagsController extends AbstractController
     #[OA\Tag(name: 'Tags')]
     #[Route(path: '/create', name: 'create', methods: ['POST'])]
     #[Security(name: 'cookieAuth')]
+    #[OA\RequestBody(
+        description: 'Create a new tag. Context can either be "tag = Individuelles Schlagwort", "synergyFundTag = Synergieen mit anderen EU-Politiken" or "synergyGoalTag = Ziele anderer europäischer und internationaler Politiken". ',
+        
+        required: true,
+        content: new OA\JsonContent(
+            type: 'object',
+            properties: [
+                new OA\Property(property: 'name', type: 'string', description: 'The name of the tag'),
+                new OA\Property(property: 'context', type: 'string', description: 'The context of the tag')
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Creates a new tag',
+        content: new OA\JsonContent(
+            ref: new Model(type: Tag::class, groups: ['id', 'tag'])
+        )
+    )]
     public function create(Request $request, EntityManagerInterface $em, NormalizerInterface $normalizer): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
