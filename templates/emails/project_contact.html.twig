@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background-color: #5077b2;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            border-top: 1px solid #eee;
+        }
+        .project-info, .contact-details, .message-box, .attachment-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            border-left: 4px solid #5077b2;
+        }
+        .reference {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="margin:0;">Neue Kontaktanfrage</h1>
+            <p style="margin:0;">Netzwerk Zukunftsraum Land</p>
+        </div>
+        
+        <div class="content">
+            <div class="project-info">
+                <h2 style="margin-top:0;">Projektinformationen</h2>
+                <p><strong>Projekt:</strong> {{ project.title }}</p>
+                <p><strong>Projekt ID:</strong> {{ project.id }}</p>
+                {% if project.projectCode %}
+                    <p><strong>Projekt Code:</strong> {{ project.projectCode }}</p>
+                {% endif %}
+            </div>
+
+            <div class="contact-details">
+                <h2 style="margin-top:0;">Kontaktdetails</h2>
+                <p><strong>Name:</strong> {{ data.firstName }} {{ data.lastName }}</p>
+                <p><strong>E-Mail:</strong> {{ data.email }}</p>
+                {% if data.phone %}
+                    <p><strong>Telefon:</strong> {{ data.phone }}</p>
+                {% endif %}
+            </div>
+
+            <div class="message-box">
+                <h2 style="margin-top:0;">Nachricht</h2>
+                <p><strong>Betreff:</strong> {{ data.subject }}</p>
+                <p>{{ data.message|nl2br }}</p>
+            </div>
+
+            {% if data.fileName %}
+            <div class="attachment-info">
+                <h2 style="margin-top:0;">Angehängte Datei</h2>
+                <p><strong>Dateiname:</strong> {{ data.fileName }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="footer">
+            <p>Bei Fragen wenden Sie sich bitte an:<br>
+            <strong>Netzwerk Zukunftsraum Land</strong><br>
+            E-Mail: <a href="mailto:info@zukunftsraumland.at">info@zukunftsraumland.at</a></p>
+            
+            <div class="reference">
+                <p>Referenz für Rückfragen:<br>
+                Projekt ID: {{ project.id }}<br>
+                {% if project.projectCode %}
+                    Projekt Code: {{ project.projectCode }}
+                {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

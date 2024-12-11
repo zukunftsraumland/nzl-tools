@@ -46,7 +46,11 @@ export default {
 
             calculateFinancingAmount(percent, projectCostsVal) {
                 const projectCosts = parseFloat(projectCostsVal);
-                const percentage = parseFloat(percent.toString().replace(',', '.'));
+                let percentage = 0;
+
+                if(percent !== undefined && percent !== null) {
+                    percentage = parseFloat(percent.toString().replace(',', '.'));
+                }
             
                 if (!isNaN(projectCosts) && !isNaN(percentage)) {
                   return ((projectCosts / 100) * (percentage)).toFixed(2); // Two decimal precision

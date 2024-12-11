@@ -25,6 +25,8 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
 
 #[Route(path: '/api/v1/projects', name: 'api_projects_')]
 class ApiProjectsController extends AbstractController
@@ -533,9 +535,14 @@ class ApiProjectsController extends AbstractController
         }
         
         $projects = $qb->getQuery()->getResult();
+        $serializationGroups = ['id', 'project', 'topic', 'program', 'instrument', 'state', 'country', 'geographic_region', 'business_sector'];
+
+        if ($this->isGranted('ROLE_ADMIN')) {
+            $serializationGroups[] = 'project_secure'; // Include contacts only for admins
+        }
 
         $result = $normalizer->normalize($projects, null, [
-            'groups' => ['id', 'project', 'topic', 'program', 'instrument', 'state', 'country', 'geographic_region', 'business_sector'],
+            'groups' => $serializationGroups,
         ]);
 
         return $this->json($result);
@@ -555,8 +562,14 @@ class ApiProjectsController extends AbstractController
         $project = $em->getRepository(Project::class)
             ->find($request->get('id'));
 
+        $serializationGroups = ['id', 'project', 'topic', 'program', 'instrument', 'state', 'country', 'geographic_region', 'business_sector'];
+
+        if ($this->isGranted('ROLE_ADMIN')) {
+            $serializationGroups[] = 'project_secure'; // Include contacts only for admins
+        }
+
         $result = $normalizer->normalize($project, null, [
-            'groups' => ['id', 'project', 'topic', 'program', 'instrument', 'state', 'country', 'geographic_region', 'business_sector', 'tag'],
+            'groups' => $serializationGroups,
         ]);
 
         return $this->json($result);
@@ -1319,4 +1332,58 @@ class ApiProjectsController extends AbstractController
         return $this->json($geojson);
     }
     
+    #[Route('/{id}/contact', name: 'api_project_contact', methods: ['POST'])]
+    public function contact(Request $request, Project $project, MailerInterface $mailer): JsonResponse
+    {
+        $data = $request->request->all();
+        $file = $request->files->get('file');
+
+        // Validate required fields
+        if (!$data['firstName'] || !$data['lastName'] || !$data['email'] || !$data['subject'] || !$data['message']) {
+            return new JsonResponse(['error' => 'Missing required fields'], 400);
+        }
+
+        // Validate file size if file exists
+        if ($file) {
+            $maxSize = 5 * 1024 * 1024; // 5MB in bytes
+            if ($file->getSize() > $maxSize) {
+                return new JsonResponse(['error' => 'File size exceeds 5MB limit'], 400);
+            }
+        }
+
+        // Get project contact email from first contact
+        $contactEmail = null;
+        $contacts = $project->getContacts();
+        if (!empty($contacts) && isset($contacts[0]['email']) && !empty($contacts[0]['email'])) {
+            $contactEmail = $contacts[0]['email'];
+        }
+
+        if (!$contactEmail) {
+            $contactEmail = 'info@zukunftsraumland.at';
+            return new JsonResponse(['error' => 'No contact email found'], 404);
+        }
+
+        // Create email
+        $email = (new Email())
+            ->from('noreply@zukunftsraumland.at')
+            ->to($contactEmail)
+            ->replyTo($data['email'])
+            ->subject('Neue Kontaktanfrage: ' . $data['subject'])
+            ->html($this->renderView('emails/project_contact.html.twig', [
+                'project' => $project,
+                'data' => array_merge($data, ['fileName' => $file ? $file->getClientOriginalName() : null])
+            ]));
+
+        // Attach file if exists
+        if ($file) {
+            $email->attachFromPath($file->getPathname(), $file->getClientOriginalName());
+        }
+
+        try {
+            $mailer->send($email);
+            return new JsonResponse(['message' => 'Email sent successfully']);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => 'Failed to send email'], 500);
+        }
+    }
 }

@@ -168,7 +168,7 @@
 
       <div
         class="embed-projects-view-content-contacts"
-        v-if="translateField(project, 'contacts', locale)?.length"
+        v-if="translateField(project, 'contacts', locale)?.length && isBackendView"
       >
         <h4 class="nzl-title">{{ $t("Kontakt", locale) }}</h4>
         <div
@@ -339,7 +339,7 @@
               <td v-if="financing.id === 'costsExternal'">
                 {{ $t("Andere Finanzquellen", locale) }}
               </td>
-              <td>{{ financing.value }}%</td>
+              <td>{{ financing.value ? financing.value : 0 }}%</td>
               <td>
                 {{
                   $helpers
@@ -362,6 +362,17 @@
       <template v-if="linksHTML">
         <h3>{{ $t("Links", locale) }}</h3>
         <p v-html="linksHTML"></p>
+      </template>
+
+      <template v-if="!isBackendView">
+        <h3>{{ $t("Kontakt", locale) }}</h3>
+        <button class="contact-btn" @click="showModal">
+          {{ $t("Kontakt aufnehmen", locale) }}
+        </button>
+        <p v-if="contactError" class="contact-error">
+          {{ $t("Kontaktaufnahme nicht möglich. Bitte wenden Sie sich an", locale) }} 
+          <a href="mailto:info@zukunftsraumland.at">info@zukunftsraumland.at</a>
+        </p>
       </template>
 
       <div
@@ -415,6 +426,66 @@
         </a>
       </div>
     </transition>
+
+    <transition name="modal">
+      <div v-if="showContactModal" class="modal-overlay" @click="hideModal">
+        <div class="modal-content" @click.stop>
+          <div class="modal-header">
+            <h3>{{ $t("Kontakt aufnehmen", locale) }}</h3>
+            <button class="modal-close" @click="hideModal">×</button>
+          </div>
+          
+          <form @submit.prevent="submitContactForm">
+            <div class="modal-body">
+              <!-- Two column layout for contact info -->
+              <div class="contact-info-grid">
+                <div class="form-group">
+                  <label>{{ $t("Vorname", locale) }}*</label>
+                  <input class="form-control" v-model="contactForm.firstName" required>
+                </div>
+                <div class="form-group">
+                  <label>{{ $t("Nachname", locale) }}*</label>
+                  <input class="form-control" v-model="contactForm.lastName" required>
+                </div>
+                <div class="form-group">
+                  <label>{{ $t("E-Mail", locale) }}*</label>
+                  <input class="form-control" type="email" v-model="contactForm.email" required>
+                </div>
+                <div class="form-group">
+                  <label>{{ $t("Telefon", locale) }}</label>
+                  <input class="form-control" type="tel" v-model="contactForm.phone">
+                </div>
+              </div>
+
+              <!-- Full width subject and message -->
+              <div class="form-group full-width">
+                <label>{{ $t("Betreff", locale) }}*</label>
+                <input class="form-control" v-model="contactForm.subject" required>
+              </div>
+              
+              <div class="form-group full-width">
+                <label>{{ $t("Nachricht", locale) }}*</label>
+                <textarea class="form-control" v-model="contactForm.message" required></textarea>
+              </div>
+
+              <div class="form-group full-width">
+                <label>{{ $t("Datei anhängen", locale) }}</label>
+                <input class="form-control file-input" type="file" @change="handleFileUpload">
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="submit" class="submit-btn" :disabled="sending">
+                {{ sending ? $t("Wird gesendet...", locale) : $t("Absenden", locale) }}
+              </button>
+              <button type="button" class="cancel-btn" @click="hideModal">
+                {{ $t("Abbrechen", locale) }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -426,6 +497,18 @@ export default {
   data() {
     return {
       lightboxImage: null,
+      showContactModal: false,
+      contactForm: {
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        subject: "",
+        message: "",
+        file: null
+      },
+      sending: false,
+      contactError: false,
     };
   },
 
@@ -463,6 +546,9 @@ export default {
       getLocalWorkgroupById: "localWorkgroups/getById",
       getTagById: "tags/getById",
     }),
+    isBackendView() {
+      return window.location.hash.includes('/projects/') && window.location.hash.includes('/edit');
+    },
     tagsHTML() {
       let result = [];
 
@@ -638,7 +724,83 @@ export default {
       const result = (url || "").split(/(vi\/|v=|\/v\/|youtu\.be\/|\/embed\/)/);
       return result[2] !== undefined ? result[2].split(/[^0-9a-z_\-]/i)[0] : false;
     },
+
+    handleFileUpload(event) {
+      this.contactForm.file = event.target.files[0];
+    },
+
+    async submitContactForm() {
+      this.sending = true;
+      this.contactError = false;
+
+      const formData = new FormData();
+      formData.append('firstName', this.contactForm.firstName);
+      formData.append('lastName', this.contactForm.lastName);
+      formData.append('email', this.contactForm.email);
+      formData.append('phone', this.contactForm.phone);
+      formData.append('subject', this.contactForm.subject);
+      formData.append('message', this.contactForm.message);
+      if (this.contactForm.file) {
+        formData.append('file', this.contactForm.file);
+      }
+
+      try {
+        const response = await fetch(`${this.$env.HOST}/api/v1/projects/${this.project.id}/contact`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error('Contact failed');
+        }
+
+        // Success
+        this.showContactModal = false;
+        this.contactForm = {
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: '',
+          file: null
+        };
+
+        alert(this.$t("Ihre Nachricht wurde erfolgreich gesendet.", this.locale));
+
+      } catch (error) {
+        console.error('Contact error:', error);
+        this.contactError = true;
+      } finally {
+        this.sending = false;
+      }
+    },
+
+    showModal() {
+      this.showContactModal = true;
+      document.body.style.overflow = 'hidden';
+      document.body.classList.add('modal-open');
+      document.getElementsByClassName('embed-projects-overlay')[0].style.overflow = 'unset';
+      this.$el.classList.add('modal-open');
+    },
+
+    hideModal() {
+      this.showContactModal = false;
+      document.body.style.overflow = '';
+      document.body.classList.remove('modal-open');
+      document.getElementsByClassName('embed-projects-overlay')[0].style.overflow = 'auto';
+      this.$el.classList.remove('modal-open');
+    },
   },
+
+  beforeUnmount() {
+    // Cleanup in case component is destroyed while modal is open
+    document.body.style.overflow = '';
+    document.body.classList.remove('modal-open');
+    if (this.$el) {
+      this.$el.classList.remove('modal-open');
+    }
+  }
 };
 </script>
 <style>
@@ -731,6 +893,7 @@ export default {
   color: black !important;
   text-align: center;
   font-weight: bold;
+  line-height: unset;
 }
 
 ul.synergy-list {
@@ -747,4 +910,215 @@ ul.synergy-list {
   text-decoration-color: #5077b2;
   text-decoration-thickness: 3px;
 }
+
+.contact-btn {
+  background-color: #5077b2;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.contact-error {
+  color: red;
+  margin-top: 10px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  margin: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-header {
+  padding: 20px 30px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.5em;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  line-height: 1;
+}
+
+.modal-body {
+  padding: 30px;
+}
+
+.contact-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-control {
+  width: -webkit-fill-available;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.form-control:focus {
+  border-color: #5077b2;
+  outline: none;
+}
+
+textarea.form-control {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.file-input {
+  padding: 8px;
+  background-color: #f8f9fa;
+}
+
+.modal-footer {
+  padding: 20px 30px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+
+.submit-btn,
+.cancel-btn {
+  padding: 10px 20px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.submit-btn {
+  background-color: #5077b2;
+  color: white;
+}
+
+.submit-btn:hover {
+  background-color: #405d8d;
+}
+
+.submit-btn:disabled {
+  background-color: #99afd1;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.cancel-btn:hover {
+  background-color: #d0d0d0;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .contact-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-content {
+    max-height: 95vh;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 15px;
+  }
+}
+
+/* Modal transition animations */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+body.modal-open {
+  overflow: hidden !important;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+@supports (-webkit-overflow-scrolling: touch) {
+  /* iOS-specific fixes */
+  .modal-overlay {
+    height: -webkit-fill-available;
+  }
+}
+
+.embed-projects-view {
+  &.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+  }
+}
+
 </style>

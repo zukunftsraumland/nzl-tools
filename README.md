@@ -10,10 +10,10 @@ While the issue tracker is currently disabled, we encourage you to reach out to 
     docker compose build
     docker compose up -d
     
-    docker exec -it regiosuisse-tools_php bash -c "composer install"
-    docker exec -it regiosuisse-tools_php bash -c "php bin/console doctrine:migrations:migrate --no-interaction"
-    docker exec -it regiosuisse-tools_php bash -c "yarn install && yarn build"
-    docker exec -it regiosuisse-tools_php bash -c "php bin/console app:user:create"
+    docker exec -it nzl-tools_php bash -c "composer install"
+    docker exec -it nzl-tools_php bash -c "php bin/console doctrine:migrations:migrate --no-interaction"
+    docker exec -it nzl-tools_php bash -c "yarn install && yarn build"
+    docker exec -it nzl-tools_php bash -c "php bin/console app:user:create"
 
 ## Configuration
 

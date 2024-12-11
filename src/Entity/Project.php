@@ -312,7 +312,7 @@ class Project
     private $dates = [];
 
     #[ORM\Column(name: 'contacts', type: 'json')]
-    #[Groups(['project'])]
+    #[Groups(['project_secure'])]
     #[OA\Property(type: 'array', items: new OA\Items(
         properties: [
             new OA\Property(property: 'foreignId', type: 'integer'),
