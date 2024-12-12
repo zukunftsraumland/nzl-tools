@@ -27,11 +27,21 @@ use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
+use App\Service\LogService;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 #[Route(path: '/api/v1/projects', name: 'api_projects_')]
 class ApiProjectsController extends AbstractController
 {
-    
+    private string $mailerFrom;
+    private LogService $logService;
+
+    public function __construct(ParameterBagInterface $params, LogService $logService)
+    {
+        $this->mailerFrom = $params->get('mailer_from');
+        $this->logService = $logService;
+    }
+
     #[Route(path: '', name: 'index', methods: ['GET'])]
     #[OA\Parameter(
         name: 'ids[]',
@@ -1363,26 +1373,57 @@ class ApiProjectsController extends AbstractController
             return new JsonResponse(['error' => 'No contact email found'], 404);
         }
 
-        // Create email
-        $email = (new Email())
-            ->from('noreply@zukunftsraumland.at')
-            ->to($contactEmail)
-            ->replyTo($data['email'])
-            ->subject('Neue Kontaktanfrage: ' . $data['subject'])
-            ->html($this->renderView('emails/project_contact.html.twig', [
-                'project' => $project,
-                'data' => array_merge($data, ['fileName' => $file ? $file->getClientOriginalName() : null])
-            ]));
-
-        // Attach file if exists
-        if ($file) {
-            $email->attachFromPath($file->getPathname(), $file->getClientOriginalName());
-        }
-
         try {
+            // Create email
+            $email = (new Email())
+                ->from($this->mailerFrom)
+                ->to($contactEmail)
+                ->replyTo($data['email'])
+                ->subject('Neue Kontaktanfrage: ' . $data['subject'])
+                ->html($this->renderView('emails/project_contact.html.twig', [
+                    'project' => $project,
+                    'data' => array_merge($data, ['fileName' => $file ? $file->getClientOriginalName() : null])
+                ]));
+
+            // Attach file if exists
+            if ($file) {
+                $email->attachFromPath($file->getPathname(), $file->getClientOriginalName());
+            }
+
+            // Send email
             $mailer->send($email);
+
+            // Log the successful email
+            $this->logService->createLog([
+                'context' => 'Project Contact',
+                'category' => 'Email',
+                'action' => 'sent',
+                'value' => json_encode([
+                    'projectId' => $project->getId(),
+                    'from' => $data['email'],
+                    'to' => $contactEmail,
+                    'subject' => $data['subject'],
+                    'hasAttachment' => !empty($file)
+                ])
+            ]);
+
             return new JsonResponse(['message' => 'Email sent successfully']);
+
         } catch (\Exception $e) {
+            // Log the failed email attempt
+            $this->logService->createLog([
+                'context' => 'Project Contact',
+                'category' => 'Email',
+                'action' => 'failed',
+                'value' => json_encode([
+                    'projectId' => $project->getId(),
+                    'from' => $data['email'],
+                    'to' => $contactEmail,
+                    'subject' => $data['subject'],
+                    'error' => $e->getMessage()
+                ])
+            ]);
+
             return new JsonResponse(['error' => 'Failed to send email'], 500);
         }
     }
