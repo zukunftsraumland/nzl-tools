@@ -1379,7 +1379,7 @@ class ApiProjectsController extends AbstractController
         }
 
         if (!$contactEmail) {
-            $contactEmail = 'info@zukunftsraumland.at';
+            $contactEmail = $this->mailerFrom;
             return new JsonResponse(['error' => 'No contact email found'], 404);
         }
 
