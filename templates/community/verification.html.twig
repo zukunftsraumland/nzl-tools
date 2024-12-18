@@ -1,0 +1,115 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="verification-page">
+        <!-- Header Section -->
+        <header class="verification-header">
+            <div class="container">
+                <p>
+                    <img src="{{ asset('build/images/netzwerk-zukunftsraum-land-logo.svg') }}" alt="Logo" class="logo">
+                </p>
+            </div>
+            <div class="container">
+                {% if success %}
+                    <div class="verification-result success">
+                        <div class="icon-container">
+                            <i class="material-icons">check_circle</i>
+                        </div>
+                        <h1>Kontaktanfrage erfolgreich bestätigt</h1>
+                        <p>
+                            Wir haben Ihre Kontaktanfrage erfolgreich übermittelt.
+                        </p>
+                    </div>
+                {% else %}
+                    <div class="verification-result error">
+                        <div class="icon-container">
+                            <i class="material-icons">error</i>
+                        </div>
+                        <h1>Kontaktanfrage konnte nicht übermittelt werden</h1>
+                        <p>
+                            Der Verifizierungslink ist ungültig oder wurde bereits verwendet.
+                            Bitte stellen Sie sicher, dass Sie den korrekten Link verwenden.
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </header>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        body {
+            background-color: #f4f4f4;
+        }
+        .verification-result {
+            text-align: center;
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            padding: 0 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .icon-container {
+            margin-bottom: 1.5rem;
+        }
+
+        .icon-container .material-icons {
+            font-size: 4rem;
+        }
+
+        .success .icon-container .material-icons {
+            color: #28a745;
+        }
+
+        .error .icon-container .material-icons {
+            color: #dc3545;
+        }
+
+        .verification-result h1 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.75rem;
+        }
+
+        .verification-result p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .action-buttons {
+            margin-top: 2rem;
+        }
+
+        .action-buttons .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .button.primary {
+            background: #005B7F;
+            color: white;
+        }
+
+        .button.primary:hover {
+            background: #004b68;
+        }
+    </style>
+{% endblock %} 

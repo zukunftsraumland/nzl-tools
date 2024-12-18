@@ -36,4 +36,8 @@ export default {
         });
     },
 
+    createFromEmbed(payload) {
+        return axios.post(endpoint + '/embed', payload);
+    },
+
 };

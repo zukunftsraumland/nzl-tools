@@ -733,40 +733,41 @@ export default {
       this.sending = true;
       this.contactError = false;
 
-      const formData = new FormData();
-      formData.append('firstName', this.contactForm.firstName);
-      formData.append('lastName', this.contactForm.lastName);
-      formData.append('email', this.contactForm.email);
-      formData.append('phone', this.contactForm.phone);
-      formData.append('subject', this.contactForm.subject);
-      formData.append('message', this.contactForm.message);
-      if (this.contactForm.file) {
-        formData.append('file', this.contactForm.file);
-      }
-
       try {
-        const response = await fetch(`${this.$env.HOST}/api/v1/projects/${this.project.id}/contact`, {
-          method: 'POST',
-          body: formData
-        });
-
-        if (!response.ok) {
-          throw new Error('Contact failed');
-        }
-
-        // Success
-        this.showContactModal = false;
-        this.contactForm = {
-          firstName: '',
-          lastName: '',
-          email: '',
-          phone: '',
-          subject: '',
-          message: '',
-          file: null
+        // Create submission data
+        const submissionData = {
+          projectId: this.project.id,
+          contactInfo: {
+            firstName: this.contactForm.firstName,
+            lastName: this.contactForm.lastName,
+            email: this.contactForm.email,
+            phone: this.contactForm.phone,
+          },
+          subject: this.contactForm.subject,
+          message: this.contactForm.message,
+          type: 'project_contact'
         };
 
-        alert(this.$t("Ihre Nachricht wurde erfolgreich gesendet.", this.locale));
+        // Convert file to base64 if exists
+        if (this.contactForm.file) {
+          const base64File = await this.fileToBase64(this.contactForm.file);
+          submissionData.attachment = {
+            name: this.contactForm.file.name,
+            type: this.contactForm.file.type,
+            data: base64File
+          };
+        }
+
+        const response = await this.$store.dispatch('projects/createFromEmbed', submissionData);
+
+        if (response.redirectUrl) {
+          // Success - show confirmation message and redirect in new tab
+          this.showContactModal = false;
+          this.resetForm();
+          // Open in new tab and remove any hash fragments
+          const cleanUrl = response.redirectUrl.split('#')[0];
+          window.open(cleanUrl, '_blank');
+        }
 
       } catch (error) {
         console.error('Contact error:', error);
@@ -774,6 +775,33 @@ export default {
       } finally {
         this.sending = false;
       }
+    },
+
+    fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = error => reject(error);
+      });
+    },
+
+    resetForm() {
+      this.contactForm = {
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        subject: '',
+        message: '',
+        file: null
+      };
+      
+      // Reset scroll state
+      document.body.style.overflow = '';
+      document.body.classList.remove('modal-open');
+      document.getElementsByClassName('embed-projects-overlay')[0].style.overflow = 'auto';
+      this.$el.classList.remove('modal-open');
     },
 
     showModal() {

@@ -88,6 +88,12 @@ const actions = {
         });
     },
 
+    createFromEmbed ({ commit }, payload) {
+        return api.projects.createFromEmbed(payload).then((response) => {
+            return response.data;
+        });
+    },
+
 };
 
 // mutations

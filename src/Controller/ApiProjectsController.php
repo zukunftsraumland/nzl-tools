@@ -29,17 +29,27 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use App\Service\LogService;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use App\Service\CommunitySubmissionService;
+use App\Entity\CommunitySubmission;
 
 #[Route(path: '/api/v1/projects', name: 'api_projects_')]
 class ApiProjectsController extends AbstractController
 {
     private string $mailerFrom;
     private LogService $logService;
+    private ProjectService $projectService;
+    private CommunitySubmissionService $submissionService;
 
-    public function __construct(ParameterBagInterface $params, LogService $logService)
-    {
+    public function __construct(
+        ParameterBagInterface $params, 
+        LogService $logService,
+        ProjectService $projectService,
+        CommunitySubmissionService $submissionService
+    ) {
         $this->mailerFrom = $params->get('mailer_from');
         $this->logService = $logService;
+        $this->projectService = $projectService;
+        $this->submissionService = $submissionService;
     }
 
     #[Route(path: '', name: 'index', methods: ['GET'])]
@@ -1425,6 +1435,31 @@ class ApiProjectsController extends AbstractController
             ]);
 
             return new JsonResponse(['error' => 'Failed to send email'], 500);
+        }
+    }
+
+
+    #[Route('/embed', name: 'api_projects_create_from_embed', methods: ['POST'])]
+    public function createFromEmbed(Request $request): Response
+    {
+        try {
+            $data = json_decode($request->getContent(), true);
+            
+            // Create pending submission and send verification email
+            $submission = $this->submissionService->createPendingSubmission(
+                $data, 
+                CommunitySubmission::TYPE_PROJECT_CONTACT
+            );
+            
+            // Return URL for confirmation page
+            return $this->json([
+                'redirectUrl' => $this->generateUrl('community_submission_confirmation')
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
         }
     }
 }

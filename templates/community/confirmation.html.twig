@@ -1,0 +1,100 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="verification-page">
+        <!-- Header Section -->
+        <header class="verification-header">
+            <div class="container">
+                <p>
+                    <img src="{{ asset('build/images/netzwerk-zukunftsraum-land-logo.svg') }}" alt="Logo" class="logo">
+                </p>
+            </div>
+            <div class="container">
+                <span>Bestätigen Sie Ihre E-Mail-Adresse</span>
+            </div>
+            <div class="container">
+                <div class="confirmation-message">
+                    <div class="icon-container">
+                        <i class="material-icons">mail</i>
+                    </div>
+                    <h2>Vielen Dank für Ihre Kontaktanfrage</h2>
+                    <p>
+                        Wir haben Ihnen eine E-Mail mit einem Bestätigungslink geschickt. 
+                        Bitte klicken Sie auf diesen Link, um die Kontaktanfrage abzuschliessen.
+                    </p>
+                    <div class="info-box">
+                        <i class="material-icons">info</i>
+                        <p>
+                            Falls Sie keine E-Mail erhalten haben, überprüfen Sie bitte auch Ihren Spam-Ordner.
+                            Die E-Mail sollte innerhalb weniger Minuten bei Ihnen eintreffen.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </header>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        body {
+            background-color: #f4f4f4;
+        }
+        .confirmation-message {
+            text-align: center;
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .container {
+            padding: 0 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .icon-container {
+            margin-bottom: 1.5rem;
+        }
+
+        .icon-container .material-icons {
+            font-size: 4rem;
+            color: $color-blw;
+        }
+
+        .confirmation-message h2 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .confirmation-message p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-box {
+            display: flex;
+            align-items: start;
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 2rem;
+            text-align: left;
+        }
+
+        .info-box .material-icons {
+            color: $color-blw;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .info-box p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+    </style>
+{% endblock %} 
