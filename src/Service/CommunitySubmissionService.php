@@ -17,8 +17,6 @@ class CommunitySubmissionService
         private EntityManagerInterface $entityManager,
         private MailerInterface $mailer,
         private UrlGeneratorInterface $urlGenerator,
-        private JobService $jobService,
-        private EventService $eventService,
         private Environment $twig,
         private LogService $logService,
         private string $mailerFrom

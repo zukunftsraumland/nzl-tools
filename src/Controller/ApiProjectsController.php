@@ -35,20 +35,12 @@ use App\Entity\CommunitySubmission;
 #[Route(path: '/api/v1/projects', name: 'api_projects_')]
 class ApiProjectsController extends AbstractController
 {
-    private string $mailerFrom;
-    private LogService $logService;
-    private ProjectService $projectService;
+
     private CommunitySubmissionService $submissionService;
 
     public function __construct(
-        ParameterBagInterface $params, 
-        LogService $logService,
-        ProjectService $projectService,
         CommunitySubmissionService $submissionService
     ) {
-        $this->mailerFrom = $params->get('mailer_from');
-        $this->logService = $logService;
-        $this->projectService = $projectService;
         $this->submissionService = $submissionService;
     }
 
@@ -1352,94 +1344,79 @@ class ApiProjectsController extends AbstractController
         return $this->json($geojson);
     }
     
-    #[Route('/{id}/contact', name: 'api_project_contact', methods: ['POST'])]
-    public function contact(Request $request, Project $project, MailerInterface $mailer): JsonResponse
-    {
-        $data = $request->request->all();
-        $file = $request->files->get('file');
-
-        // Validate required fields
-        if (!$data['firstName'] || !$data['lastName'] || !$data['email'] || !$data['subject'] || !$data['message']) {
-            return new JsonResponse(['error' => 'Missing required fields'], 400);
-        }
-
-        // Validate file size if file exists
-        if ($file) {
-            $maxSize = 5 * 1024 * 1024; // 5MB in bytes
-            if ($file->getSize() > $maxSize) {
-                return new JsonResponse(['error' => 'File size exceeds 5MB limit'], 400);
-            }
-        }
-
-        // Get project contact email from first contact
-        $contactEmail = null;
-        $contacts = $project->getContacts();
-        if (!empty($contacts) && isset($contacts[0]['email']) && !empty($contacts[0]['email'])) {
-            $contactEmail = $contacts[0]['email'];
-        }
-
-        if (!$contactEmail) {
-            $contactEmail = 'info@zukunftsraumland.at';
-            return new JsonResponse(['error' => 'No contact email found'], 404);
-        }
-
-        try {
-            // Create email
-            $email = (new Email())
-                ->from($this->mailerFrom)
-                ->to($contactEmail)
-                ->replyTo($data['email'])
-                ->subject('Neue Kontaktanfrage: ' . $data['subject'])
-                ->html($this->renderView('emails/project_contact.html.twig', [
-                    'project' => $project,
-                    'data' => array_merge($data, ['fileName' => $file ? $file->getClientOriginalName() : null])
-                ]));
-
-            // Attach file if exists
-            if ($file) {
-                $email->attachFromPath($file->getPathname(), $file->getClientOriginalName());
-            }
-
-            // Send email
-            $mailer->send($email);
-
-            // Log the successful email
-            $this->logService->createLog([
-                'context' => 'Project Contact',
-                'category' => 'Email',
-                'action' => 'sent',
-                'value' => json_encode([
-                    'projectId' => $project->getId(),
-                    'from' => $data['email'],
-                    'to' => $contactEmail,
-                    'subject' => $data['subject'],
-                    'hasAttachment' => !empty($file)
-                ])
-            ]);
-
-            return new JsonResponse(['message' => 'Email sent successfully']);
-
-        } catch (\Exception $e) {
-            // Log the failed email attempt
-            $this->logService->createLog([
-                'context' => 'Project Contact',
-                'category' => 'Email',
-                'action' => 'failed',
-                'value' => json_encode([
-                    'projectId' => $project->getId(),
-                    'from' => $data['email'],
-                    'to' => $contactEmail,
-                    'subject' => $data['subject'],
-                    'error' => $e->getMessage()
-                ])
-            ]);
-
-            return new JsonResponse(['error' => 'Failed to send email'], 500);
-        }
-    }
-
-
     #[Route('/embed', name: 'api_projects_create_from_embed', methods: ['POST'])]
+    #[OA\Post(
+        tags: ['Projects'],
+        description: 'Creates a contact submission for a project. The provided email in contactInfo will receive a verification link. After verification, the message will be sent to the project owner.',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(
+                        property: 'projectId', 
+                        type: 'integer',
+                        description: 'ID of the project to contact'
+                    ),
+                    new OA\Property(
+                        property: 'contactInfo', 
+                        type: 'object',
+                        description: 'Contact information of the sender',
+                        properties: [
+                            new OA\Property(property: 'firstName', type: 'string', description: 'First name of sender'),
+                            new OA\Property(property: 'lastName', type: 'string', description: 'Last name of sender'),
+                            new OA\Property(property: 'email', type: 'string', description: 'Email of sender - will receive verification link'),
+                            new OA\Property(property: 'phone', type: 'string', description: 'Phone number of sender (optional)', nullable: true)
+                        ]
+                    ),
+                    new OA\Property(
+                        property: 'subject', 
+                        type: 'string',
+                        description: 'Subject of the message'
+                    ),
+                    new OA\Property(
+                        property: 'message', 
+                        type: 'string',
+                        description: 'Message content'
+                    ),
+                    new OA\Property(
+                        property: 'attachment', 
+                        type: 'object', 
+                        nullable: true,
+                        description: 'Optional file attachment',
+                        properties: [
+                            new OA\Property(property: 'name', type: 'string', description: 'File name'),
+                            new OA\Property(property: 'type', type: 'string', description: 'File MIME type'),
+                            new OA\Property(property: 'data', type: 'string', description: 'Base64 encoded file content')
+                        ]
+                    )
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Success - returns URL to confirmation page',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'redirectUrl', 
+                            type: 'string',
+                            description: 'URL to the confirmation page where user waits for verification email'
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 400,
+                description: 'Bad Request - missing or invalid data',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'error', type: 'string')
+                    ]
+                )
+            )
+        ]
+    )]
     public function createFromEmbed(Request $request): Response
     {
         try {

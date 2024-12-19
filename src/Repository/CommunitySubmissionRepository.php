@@ -20,15 +20,4 @@ class CommunitySubmissionRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, CommunitySubmission::class);
     }
-
-    public function findUnverifiedByToken(string $token): ?CommunitySubmission
-    {
-        return $this->createQueryBuilder('p')
-            ->where('p.verificationToken = :token')
-            ->andWhere('p.isVerified = :isVerified')
-            ->setParameter('token', $token)
-            ->setParameter('isVerified', false)
-            ->getQuery()
-            ->getOneOrNullResult();
-    }
 } 
