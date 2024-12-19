@@ -111,7 +111,8 @@ class CommunitySubmissionService
                         'subject' => $data['subject'],
                         'message' => $data['message'],
                         'fileName' => isset($data['attachment']) ? $data['attachment']['name'] : null
-                    ])
+                    ]),
+                    'mailerFrom' => $this->mailerFrom
                 ]));
 
             // Add attachment if exists

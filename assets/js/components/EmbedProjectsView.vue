@@ -371,7 +371,7 @@
         </button>
         <p v-if="contactError" class="contact-error">
           {{ $t("Kontaktaufnahme nicht möglich. Bitte wenden Sie sich an", locale) }} 
-          <a href="mailto:info@zukunftsraumland.at">info@zukunftsraumland.at</a>
+          <a :href="'mailto:' + $env.MAILER_FROM">{{ $env.MAILER_FROM }}</a>
         </p>
       </template>
 
