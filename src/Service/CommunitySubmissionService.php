@@ -95,7 +95,7 @@ class CommunitySubmissionService
         }
 
         if (!$contactEmail) {
-            $contactEmail = 'info@zukunftsraumland.at';
+            $contactEmail = $this->mailerFrom;
         }
 
         try {
@@ -181,7 +181,7 @@ class CommunitySubmissionService
         };
 
         $email = (new Email())
-            ->from('noreply@zukunftsraumland.at')
+            ->from($this->mailerFrom)
             ->to($submission->getEmail())
             ->subject($subject)
             ->html($this->getEmailTemplate($verificationUrl, $submission->getType()));
