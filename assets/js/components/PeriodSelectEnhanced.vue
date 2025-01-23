@@ -275,12 +275,9 @@ export default {
 
 <style lang="scss" scoped>
 .period-select-enhanced {
-  .row {
-    margin-bottom: 1rem;
-  }
 
   .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: 0;
   }
 
   label {
