@@ -31,27 +31,13 @@
           v-if="searchType === 'text'"
         />
 
-        <div class="select-wrapper" v-if="searchType === 'select'">
-          <select class="form-control" @change="changeSelect()" v-model="selectValue">
-            <option v-if="labelSelectAll.length > 0" value="selectAll">
-              {{ labelSelectAll }}
-            </option>
-            <template v-if="isOptGroup">
-              <optgroup :label="optGroup[label]" v-for="optGroup in options">
-                <option
-                  v-for="option in filterOptions(optGroup.children)"
-                  :value="option"
-                >
-                  {{ option[label] }}
-                </option>
-              </optgroup>
-            </template>
-
-            <option v-else v-for="option in filterOptions(options)" :value="option">
-              {{ option[label] }}
-            </option>
-          </select>
-        </div>
+        <enhanced-select
+          v-if="searchType === 'select'"
+          :options="filterOptions(options)"
+          :placeholder="labelSelectAll.length > 0 ? labelSelectAll : 'Bitte wählen'"
+          @change="selectOption"
+          :show-placeholder="true"
+        />
       </template>
     </div>
 
@@ -71,7 +57,12 @@
 </template>
 
 <script>
+import EnhancedSelect from './EnhancedSelect.vue';
+
 export default {
+  components: {
+    EnhancedSelect
+  },
   emits: ["change"],
   props: {
     model: Array,
@@ -101,7 +92,6 @@ export default {
   data() {
     return {
       term: "",
-      selectValue: null,
     };
   },
   methods: {
@@ -138,10 +128,6 @@ export default {
         option[this.label]?.toLowerCase().includes(term.trim().toLowerCase())
       );
     },
-    changeSelect() {
-      this.selectOption(this.selectValue);
-      this.selectValue = null;
-    },
     toggleSelectAll() {
       if (this.isAllSelected) {
         this.model.splice(0);
@@ -156,22 +142,76 @@ export default {
       return this.model.length === this.options.length;
     },
     groupOptions() {
-      if (!this.model) return [];
-      let groupOptions = [];
-      for (let option of this.model) {
-        for (let optGroup of this.options) {
-          for (let opt of optGroup.children) {
-            if (opt.id === option.id) {
-              groupOptions.push({
-                ...opt,
-                [this.label]: `${optGroup[this.label]}: ${opt[this.label]}`,
-              });
-            }
-          }
+      if (!this.isOptGroup) return [];
+      return this.model.map((option) => {
+        for (let group of this.options) {
+          let found = group.children.find((o) => o.id === option.id);
+          if (found) return found;
         }
-      }
-      return groupOptions;
+        return null;
+      });
     },
   },
 };
 </script>
+
+<style lang="scss" scoped>
+.tag-selector-component {
+  &-selection {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 4px;
+    min-height: 38px;
+    border: 1px solid #5077b2;
+    border-radius: 4px;
+    background: white;
+
+    &-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      background: #5077b2;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+
+      &:hover {
+        background: #C00;
+      }
+    }
+
+    &-search {
+      flex: 1;
+      min-width: 100px;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      
+      &:focus {
+        outline: none;
+      }
+    }
+  }
+
+  &-options {
+    position: absolute;
+    z-index: 1000;
+    width: 100%;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #5077b2;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+    &-option {
+      padding: 8px 12px;
+      cursor: pointer;
+
+      &:hover {
+        background: #f8f9fa;
+      }
+    }
+  }
+}
+</style>

@@ -99,6 +99,15 @@
                 :leFundingMethod="localProject.leFundingMethod"
                 @update="updateField(field.name, $event)"
               />
+              <period-select-enhanced
+                v-if="field.type === 'period-select-enhanced'"
+                :lePeriod="localProject.lePeriod"
+                :leFundingCategory="localProject.leFundingCategory"
+                :leFundingArticle="localProject.leFundingArticle"
+                :leFundingMethod="localProject.leFundingMethod"
+                :disabled="field.disabled"
+                @update="updateField(field.name, $event)"
+              />
             </div>
           </div>
         </div>
@@ -194,7 +203,6 @@
               ></tag-search-select>
             </div>
             <!-- Period Select Custom Component -->
-
             <div>
               <period-select
                 v-if="field.type === 'period-select'"
@@ -204,6 +212,14 @@
                 :leFundingMethod="diff.leFundingMethod"
                 :project="localProject"
                 @update="updateField"
+              />
+              <period-select-enhanced
+                v-if="field.type === 'period-select-enhanced'"
+                :lePeriod="diff.lePeriod"
+                :leFundingCategory="diff.leFundingCategory"
+                :leFundingArticle="diff.leFundingArticle"
+                :leFundingMethod="diff.leFundingMethod"
+                :disabled="true"
               />
             </div>
           </div>
@@ -218,6 +234,7 @@
 import TagSelector from "../TagSelector.vue";
 import TagSearchSelect from "../TagSearchSelect.vue";
 import PeriodSelect from "../PeriodSelect.vue";
+import PeriodSelectEnhanced from "../PeriodSelectEnhanced.vue";
 
 export default {
   emits: ["update:project", "mergeFields"],
@@ -231,6 +248,7 @@ export default {
     TagSelector,
     TagSearchSelect,
     PeriodSelect,
+    PeriodSelectEnhanced,
   },
   data() {
     return {
@@ -308,6 +326,7 @@ export default {
         case "tag-select":
           return this.compareTags(currVal, diffVal) ? " disabled " : "";
         case "period-select":
+        case "period-select-enhanced":
           return this.compareLEPeriod() ? " disabled " : "";
         default:
           return currVal === diffVal ? " disabled " : "";
@@ -354,6 +373,24 @@ export default {
           .replace(/\s+/g, "")
       );
     },
+  },
+  computed: {
+    fundingStructureValue() {
+      return {
+        lePeriod: this.localProject.lePeriod,
+        leFundingCategory: this.localProject.leFundingCategory,
+        leFundingArticle: this.localProject.leFundingArticle,
+        leFundingMethod: this.localProject.leFundingMethod
+      };
+    },
+    diffFundingStructure() {
+      return this.diff ? {
+        lePeriod: this.diff.lePeriod,
+        leFundingCategory: this.diff.leFundingCategory,
+        leFundingArticle: this.diff.leFundingArticle,
+        leFundingMethod: this.diff.leFundingMethod
+      } : null;
+    }
   },
 };
 </script>

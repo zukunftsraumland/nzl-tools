@@ -280,89 +280,53 @@
       </div>
 
       <div class="row">
-        <!-- Period Filter -->
-        <div class="col-sm-3 form-group">
-          <label for="lePeriod">LE Periode</label>
-          <select
-            id="lePeriod"
-            class="form-control"
-            v-model="selectedPeriod"
-            @change="
-              addFilter({
-                type: 'lePeriod',
-                value: { id: selectedPeriod.id, name: selectedPeriod.name },
-              })
-            "
-          >
-            <option value="" disabled>Select a period</option>
-            <option
-              v-for="period in leStructure"
-              :key="period.id"
-              :value="{ id: period.id, name: period.name }"
-            >
-              {{ period.name }}
-            </option>
-          </select>
+        <!-- LE Structure Filters (Period, Category, Article, Method) -->
+        <div class="col-sm-3">
+          <div class="form-group">
+            <label for="lePeriod">LE-Periode</label>
+            <enhanced-select
+              v-model="selectedPeriod"
+              :options="leStructure"
+              placeholder="LE-Periode auswählen"
+              @change="handleLEPeriodChange"
+            />
+          </div>
         </div>
 
-        <!-- Category Filter -->
-        <div class="col-sm-3 form-group" v-if="selectedPeriod">
-          <label for="leFundingCategory">LE Kategorie</label>
-          <select
-            id="leFundingCategory"
-            class="form-control"
-            v-model="selectedCategory"
-            @change="addFilter({ type: 'leFundingCategory', value: selectedCategory })"
-          >
-            <option value="" disabled>Select a category</option>
-            <option
-              v-for="category in getPeriodById(selectedPeriod.id)?.categories || []"
-              :key="category.id"
-              :value="{ id: category.id, name: category.name }"
-            >
-              {{ category.name }}
-            </option>
-          </select>
+        <div class="col-sm-3" v-if="selectedPeriod">
+          <div class="form-group">
+            <label for="leFundingCategory">LE Kategorie</label>
+            <enhanced-select
+              v-model="selectedCategory"
+              :options="getPeriodById(selectedPeriod.id)?.categories || []"
+              placeholder="Kategorie auswählen"
+              @change="handleLECategoryChange"
+            />
+          </div>
         </div>
 
-        <!-- Article Filter -->
-        <div class="col-sm-3 form-group" v-if="selectedCategory">
-          <label for="leFundingArticle">LE Artikel</label>
-          <select
-            id="leFundingArticle"
-            class="form-control"
-            v-model="selectedArticle"
-            @change="addFilter({ type: 'leFundingArticle', value: selectedArticle })"
-          >
-            <option value="" disabled>Select an article</option>
-            <option
-              v-for="article in getCategoryById(selectedCategory.id)?.articles || []"
-              :key="article.id"
-              :value="{ id: article.id, name: article.name }"
-            >
-              {{ article.name }}
-            </option>
-          </select>
+        <div class="col-sm-3" v-if="selectedCategory">
+          <div class="form-group">
+            <label for="leFundingArticle">LE Artikel</label>
+            <enhanced-select
+              v-model="selectedArticle"
+              :options="getCategoryById(selectedCategory.id)?.articles || []"
+              placeholder="Artikel auswählen"
+              @change="handleLEArticleChange"
+            />
+          </div>
         </div>
 
-        <!-- Method Filter -->
-        <div class="col-sm-3 form-group" v-if="selectedArticle">
-          <label for="leFundingMethod">LE Handlungsmethode</label>
-          <select
-            id="leFundingMethod"
-            class="form-control"
-            v-model="selectedMethod"
-            @change="addFilter({ type: 'leFundingMethod', value: selectedMethod })"
-          >
-            <option value="" disabled>Select a method</option>
-            <option
-              v-for="method in getArticleById(selectedArticle.id)?.methods || []"
-              :key="method.id"
-              :value="{ id: method.id, name: method.name }"
-            >
-              {{ method.name }}
-            </option>
-          </select>
+        <div class="col-sm-3" v-if="selectedArticle">
+          <div class="form-group">
+            <label for="leFundingMethod">LE Handlungsmethode</label>
+            <enhanced-select
+              v-model="selectedMethod"
+              :options="getArticleById(selectedArticle.id)?.methods || []"
+              placeholder="Methode auswählen"
+              @change="handleLEMethodChange"
+            />
+          </div>
         </div>
       </div>
 
@@ -519,8 +483,12 @@
 import { mapGetters, mapState } from "vuex";
 import moment from "moment";
 import { translateField } from "../utils/filters";
+import EnhancedSelect from "./EnhancedSelect.vue";
 
 export default {
+  components: {
+    EnhancedSelect
+  },
   data() {
     return {
       projects: [],
@@ -790,6 +758,30 @@ export default {
     loadLeStructure() {
       this.$store.dispatch("leStructure/loadAll");
     },
+    handleLEPeriodChange(period) {
+      this.addFilter({
+        type: 'lePeriod',
+        value: period,
+      });
+    },
+    handleLECategoryChange(category) {
+      this.addFilter({
+        type: 'leFundingCategory',
+        value: category,
+      });
+    },
+    handleLEArticleChange(article) {
+      this.addFilter({
+        type: 'leFundingArticle',
+        value: article,
+      });
+    },
+    handleLEMethodChange(method) {
+      this.addFilter({
+        type: 'leFundingMethod',
+        value: method,
+      });
+    },
   },
   created() {
     this.loadLeStructure();
@@ -867,5 +859,22 @@ export default {
   color: black;
   text-align: center;
   font-weight: bold;
+}
+
+/* Add some spacing between the filter rows */
+.row {
+  margin-bottom: 15px;
+}
+
+/* Ensure form groups have consistent spacing */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+/* Style labels consistently */
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
 }
 </style>

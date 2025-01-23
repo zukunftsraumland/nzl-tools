@@ -69,7 +69,7 @@
           {
             label: 'Fördermaßnahme',
             name: 'fundingStructure',
-            type: 'period-select',
+            type: 'period-select-enhanced',
             columnsize: 12,
           },
         ]"
@@ -2319,6 +2319,7 @@ import { tooltips } from "../utils/project-tooltips";
 import TagSearchSelect from "./TagSearchSelect.vue";
 import localWorkgroups from "../api/modules/local-workgroups";
 import tags from "../api/modules/tags";
+import PeriodSelectEnhanced from "./PeriodSelectEnhanced.vue";
 
 export default {
   components: {
@@ -2331,6 +2332,7 @@ export default {
     ProjectHeader,
     FieldWrapper,
     TagSearchSelect,
+    PeriodSelectEnhanced
   },
   computed: {
     ...mapState({
