@@ -14,7 +14,7 @@
         </div>
       </div>
 
-      <div class="col-md-6" v-if="selectedPeriod">
+      <div class="col-md-6" v-if="selectedPeriod?.categories?.length > 0">
         <div class="form-group">
           <label>LE Kategorie</label>
           <enhanced-select
@@ -28,7 +28,7 @@
       </div>
     </div>
 
-    <div class="row" v-if="selectedCategory">
+    <div class="row" v-if="selectedCategory?.articles?.length > 0">
       <div class="col-md-6">
         <div class="form-group">
           <label>LE Artikel</label>
@@ -42,7 +42,7 @@
         </div>
       </div>
 
-      <div class="col-md-6" v-if="selectedArticle">
+      <div class="col-md-6" v-if="selectedArticle?.methods?.length > 0">
         <div class="form-group">
           <label>LE Handlungsmethode</label>
           <enhanced-select

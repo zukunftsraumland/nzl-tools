@@ -163,7 +163,6 @@ export default {
     gap: 8px;
     padding: 4px;
     min-height: 38px;
-    border: 1px solid #5077b2;
     border-radius: 4px;
     background: white;
 
