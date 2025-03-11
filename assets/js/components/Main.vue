@@ -1,9 +1,18 @@
 <template>
-    <router-view v-slot="{ Component }">
-        <component :is="Component"></component>
-    </router-view>
+    <div>
+        <Notifications />
+        <router-view v-slot="{ Component }">
+            <component :is="Component"></component>
+        </router-view>
+    </div>
 </template>
 
 <script>
-    export default {}
+import Notifications from './Notifications.vue';
+
+export default {
+    components: {
+        Notifications
+    }
+}
 </script>

@@ -21,6 +21,14 @@ class LEPeriod
     private $categories;
 
     /**
+     * Constructor
+     */
+    public function __construct()
+    {
+        $this->categories = new \Doctrine\Common\Collections\ArrayCollection();
+    }
+
+    /**
      * Get the value of id
      *
      * @return int|null

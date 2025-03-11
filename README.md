@@ -103,3 +103,68 @@ php bin/console app:import:regions \
    --remove-orphans \
    *.xlsx
 ```
+
+### Project Import Functionality
+
+The Project Import feature allows you to import projects from Excel files into the system. Here's how it works:
+
+#### Supported Importers
+
+The system supports multiple import formats:
+
+- **Standard Importer**: The default importer for Excel files with a specific column structure.
+- **Case Study Importer**: A specialized importer for case study projects.
+- **Legacy Importer**: For importing projects from legacy data formats.
+
+#### Import Process
+
+1. **Upload Phase**:
+   - Upload an Excel file through the web interface.
+   - The system stores the file and prepares it for preview.
+   - No images are downloaded at this stage.
+
+2. **Preview Phase**:
+   - The system reads the Excel file and displays a preview of the data.
+   - You can review the data for errors or warnings before proceeding.
+   - The preview shows validation results for each row.
+
+3. **Import Phase**:
+   - Select an LE Period for the imported projects.
+   - Start the import process.
+   - The system processes each row in the Excel file:
+     - Creates project entities
+     - Downloads images and files from URLs specified in the Excel file
+     - Associates projects with the selected LE Period
+   - A progress indicator shows the status of the import.
+
+#### Image Handling
+
+- Images are not downloaded during the upload or preview phases.
+- During the actual import process, the system:
+  - Reads image URLs from the Excel file
+  - Downloads the images from the specified URLs
+  - Processes and stores them with the project
+  - Handles various image formats and validates them
+
+#### Running Imports via Command Line
+
+You can also process pending imports via the command line:
+
+```
+php bin/console app:process-project-imports
+```
+
+This is useful for scheduling imports or processing large imports in the background.
+
+#### Excel File Structure
+
+The Standard Importer expects specific columns in the Excel file. Key columns include:
+
+- Project title and description
+- Start and end dates
+- Contact information
+- File attachments (with filename and URL pairs)
+- Geographic information
+- Categorization data
+
+Refer to the template files or contact the team for detailed Excel structure requirements.

@@ -9,6 +9,7 @@
 
       <div class="projects-component-title-actions">
         <a href="/api/v1/projects.xlsx" class="button" download>XLSX</a>
+        <router-link :to="'/projects/import'" class="button">Projekte importieren</router-link>
         <router-link :to="'/projects/add'" class="button primary"
           >Neuen Eintrag erstellen</router-link
         >

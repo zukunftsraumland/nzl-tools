@@ -4,6 +4,8 @@ import Backend from '../components/Backend';
 import Inbox from '../components/Inbox';
 import Project from '../components/Project';
 import Projects from '../components/Projects';
+import ProjectImport from '../components/ProjectImport';
+import ProjectImportPreview from '../components/ProjectImportPreview';
 import ProjectCollections from '../components/ProjectCollections';
 import ProjectCollection from '../components/ProjectCollection';
 import InteractiveGraphics from '../components/InteractiveGraphics';
@@ -64,6 +66,24 @@ const routes = [
                 path: 'projects',
                 name: 'projects',
                 component: Projects,
+            },
+            {
+                path: 'projects/import',
+                name: 'project-import',
+                component: ProjectImport,
+                meta: {
+                    requiresAuth: true,
+                    title: 'Project Import'
+                }
+            },
+            {
+                path: 'projects/import/:id/preview',
+                name: 'project-import-preview',
+                component: ProjectImportPreview,
+                meta: {
+                    requiresAuth: true,
+                    title: 'Project Import Preview'
+                }
             },
             {
                 path: 'project-collections',

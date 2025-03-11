@@ -90,33 +90,25 @@ export default {
     modelValue: {
       immediate: true,
       handler(newVal) {
-        console.log('EnhancedSelect modelValue changed:', newVal);
         if (newVal) {
-          console.log('Looking for option with id:', newVal.id, 'in options:', this.options);
           const option = this.options.find(opt => opt.id === newVal.id);
-          console.log('Found option:', option);
           if (option) {
             this.selectedOption = option;
           }
         } else {
           this.selectedOption = null;
         }
-        console.log('Selected option is now:', this.selectedOption);
       }
     },
     options: {
       immediate: true,
       handler(newOptions) {
-        console.log('EnhancedSelect options changed:', newOptions);
         if (newOptions.length > 0 && this.modelValue) {
-          console.log('Looking for option with id:', this.modelValue.id);
           const option = newOptions.find(opt => opt.id === this.modelValue.id);
-          console.log('Found option:', option);
           if (option) {
             this.selectedOption = option;
           }
         }
-        console.log('Selected option is now:', this.selectedOption);
       }
     },
     isOpen(newVal) {
@@ -163,13 +155,6 @@ export default {
         document.removeEventListener('click', el.clickOutsideEvent)
       }
     }
-  },
-  mounted() {
-    console.log('EnhancedSelect mounted with:', {
-      value: this.modelValue,
-      options: this.options,
-      selectedOption: this.selectedOption
-    });
   }
 }
 </script>

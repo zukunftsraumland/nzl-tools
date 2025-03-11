@@ -12,6 +12,7 @@ parameters:
     chmos_certificate: '%env(resolve:CHMOS_CERTIFICATE)%'
     tpoint_url: '%env(TPOINT_URL)%'
     node_js: '%env(NODE_JS)%'
+    project_import_upload_dir: '%kernel.project_dir%/var/uploads/project-imports'
 
 services:
     # default configuration for services in *this* file
@@ -46,4 +47,7 @@ services:
     App\Service\TpointService:
         bind:
             $url: '%env(TPOINT_URL)%'
-
+    # Configure ProjectImportManager with both the upload directory and custom logger
+    App\Service\ProjectImportManager:
+        bind:
+            $uploadDir: '%project_import_upload_dir%'

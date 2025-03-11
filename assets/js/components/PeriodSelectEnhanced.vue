@@ -104,11 +104,9 @@ export default {
     lePeriod: {
       immediate: true,
       handler(newVal) {
-        console.log('lePeriod changed:', newVal);
         if (this.periods.length > 0) {
           const periodId = newVal?.id || newVal;
           const period = this.periods.find(p => p.id === periodId);
-          console.log('Found period:', period);
           if (period) {
             this.selectedPeriod = period;
             this.selectedCategories = period.categories || [];
@@ -122,11 +120,9 @@ export default {
     leFundingCategory: {
       immediate: true,
       handler(newVal) {
-        console.log('leFundingCategory changed:', newVal);
         if (this.selectedCategories.length > 0) {
           const categoryId = newVal?.id || newVal;
           const category = this.selectedCategories.find(c => c.id === categoryId);
-          console.log('Found category:', category);
           if (category) {
             this.selectedCategory = category;
             this.selectedArticles = category.articles || [];
@@ -170,11 +166,9 @@ export default {
     periods: {
       immediate: true,
       handler(newPeriods) {
-        console.log('Periods loaded:', newPeriods);
         if (newPeriods.length > 0 && this.lePeriod) {
           const periodId = this.lePeriod?.id || this.lePeriod;
           const period = newPeriods.find(p => p.id === periodId);
-          console.log('Found period after load:', period);
           if (period) {
             this.selectedPeriod = period;
             this.selectedCategories = period.categories || [];
@@ -182,7 +176,6 @@ export default {
             if (this.leFundingCategory) {
               const categoryId = this.leFundingCategory?.id || this.leFundingCategory;
               const category = this.selectedCategories.find(c => c.id === categoryId);
-              console.log('Found category after load:', category);
               if (category) {
                 this.selectedCategory = category;
                 this.selectedArticles = category.articles || [];
@@ -190,7 +183,6 @@ export default {
                 if (this.leFundingArticle) {
                   const articleId = this.leFundingArticle?.id || this.leFundingArticle;
                   const article = this.selectedArticles.find(a => a.id === articleId);
-                  console.log('Found article after load:', article);
                   if (article) {
                     this.selectedArticle = article;
                     this.selectedMethods = article.methods || [];
@@ -198,7 +190,6 @@ export default {
                     if (this.leFundingMethod) {
                       const methodId = this.leFundingMethod?.id || this.leFundingMethod;
                       const method = this.selectedMethods.find(m => m.id === methodId);
-                      console.log('Found method after load:', method);
                       if (method) {
                         this.selectedMethod = method;
                       }
@@ -259,16 +250,7 @@ export default {
     }
   },
   async mounted() {
-    console.log('PeriodSelectEnhanced mounted with props:', {
-      lePeriod: this.lePeriod,
-      leFundingCategory: this.leFundingCategory
-    });
     await this.fetchPeriods();
-    console.log('After fetch, periods:', this.periods);
-    console.log('Selected values:', {
-      selectedPeriod: this.selectedPeriod,
-      selectedCategory: this.selectedCategory
-    });
   }
 };
 </script>

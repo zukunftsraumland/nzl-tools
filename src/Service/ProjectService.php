@@ -82,36 +82,43 @@ class ProjectService
 
     public function createProject($payload)
     {
-        $project = new Project();
 
-        $project->setCreatedAt(new \DateTime());
-        $project->setRandom(rand(0, 1000000));
+        
+        try {
+            $project = new Project();
+            
+            $project->setCreatedAt(new \DateTime());
+            $project->setRandom(rand(0, 1000000));
+            
+            $project = $this->applyProjectPayload($payload, $project);
+            
+            $this->em->persist($project);
+            
+            if (array_key_exists('inboxId', $payload) && $payload['inboxId']) {
+                /** @var Inbox $inbox */
+                $inbox = $this->em->getRepository(Inbox::class)->find($payload['inboxId']);
 
-        $project = $this->applyProjectPayload($payload, $project);
+                if (array_key_exists('merge', $payload) && $payload['merge']) {
+                    $inbox->setIsMerged(true);
+                } elseif ($inbox->getStatus() !== 'deleted') {
+                    $inbox->setInternalId($project->getId());
+                    $inbox->setStatus('update');
+                }
 
-        $this->em->persist($project);
-        $this->em->flush();
+                $project->setSource($inbox->getSource());
 
-        if (array_key_exists('inboxId', $payload) && $payload['inboxId']) {
-            /** @var Inbox $inbox */
-            $inbox = $this->em->getRepository(Inbox::class)->find($payload['inboxId']);
-
-            if (array_key_exists('merge', $payload) && $payload['merge']) {
-                $inbox->setIsMerged(true);
-            } elseif ($inbox->getStatus() !== 'deleted') {
-                $inbox->setInternalId($project->getId());
-                $inbox->setStatus('update');
+                $this->em->persist($inbox);
+                
             }
+            
+            $this->em->flush();
 
-            $project->setSource($inbox->getSource());
+            
+            return $project;
+        } catch (\Exception $e) {
 
-            $this->em->persist($inbox);
+            throw $e;
         }
-
-        $this->em->persist($project);
-        $this->em->flush();
-
-        return $project;
     }
 
     public function updateProject($project, $payload)
@@ -147,6 +154,20 @@ class ProjectService
 
     public function deleteProject($project)
     {
+        // First, find and update any import items that reference this project
+        $importItems = $this->em->getRepository(\App\Entity\ProjectImportItem::class)->findBy(['project' => $project]);
+
+        
+        foreach ($importItems as $importItem) {
+            // Set the project reference to null
+            $importItem->setProject(null);
+            $this->em->persist($importItem);
+        }
+        
+        // Flush changes to remove the references
+        $this->em->flush();
+        
+        // Now handle inbox items
         $inboxItems = $this->em->getRepository(Inbox::class)->findBy(['internalId' => $project->getId()]);
 
         foreach ($inboxItems as $inboxItem) {
@@ -154,6 +175,7 @@ class ProjectService
             $inboxItem->setMergedAt(new \DateTime());
         }
 
+        // Now we can safely remove the project
         $this->em->remove($project);
         $this->em->flush();
 
