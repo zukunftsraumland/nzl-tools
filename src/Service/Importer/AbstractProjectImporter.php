@@ -86,10 +86,6 @@ abstract class AbstractProjectImporter
             // The number of header rows may vary by importer type
             return $worksheet->getHighestRow() - $this->getHeaderRowCount();
         } catch (\Exception $e) {
-            $this->logger->error('Error counting rows: ' . $e->getMessage(), [
-                'filePath' => $filePath,
-                'exception' => $e
-            ]);
             
             throw new \Exception('Failed to count rows: ' . $e->getMessage());
         }
