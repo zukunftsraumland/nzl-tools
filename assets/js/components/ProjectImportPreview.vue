@@ -683,34 +683,54 @@ export default {
     this.$store.commit('loaders/showLoader', 'projectImport');
     this.isDataLoading = true;
     
-    // Load data
-    Promise.all([
-      this.fetchImportData(),
-      this.loadPreviewData(),
-      this.fetchLePeriods()
-    ]).then(() => {
-      // Set the LE Period automatically based on importerType
-      this.setLePeriodBasedOnImporterType();
-      
-      // Check if import is already processing
-      if (this.importData && this.importData.status === 'processing') {
-        this.isProcessing = true;
-        this.processedRows = this.importData.processedRows || 0;
-        this.totalRows = this.importData.totalRows || 0;
+    // Load data sequentially instead of with Promise.all to prevent one failure from breaking everything
+    this.fetchImportData()
+      .then(() => {
+        // After successfully loading import data, try to fetch LE periods
+        return this.fetchLePeriods().catch(err => {
+          console.error('Error fetching LE periods:', err);
+          // Don't throw here - let the process continue even if LE periods fail
+          return null;
+        });
+      })
+      .then(() => {
+        // Set the LE Period automatically based on importerType
+        this.setLePeriodBasedOnImporterType();
         
-        // Start polling for updates
-        this.startPolling();
-        
-        // Show a notification that the import is in progress
-        this.setStatusMessage('Ein Import ist bereits in Bearbeitung. Der Fortschritt wird automatisch aktualisiert.', 'info', 'info');
-      } else if (this.importData && this.importData.status === 'completed') {
-        // If already completed, just update the UI
-        this.isProcessing = false;
-      }
-    }).finally(() => {
-      this.isDataLoading = false;
-      this.$store.commit('loaders/hideLoader', 'projectImport');
-    });
+        // Try to load preview data, but don't let it break the flow if it fails
+        return this.loadPreviewData().catch(err => {
+          console.error('Error loading preview data:', err);
+          this.setStatusMessage('Vorschaudaten konnten nicht geladen werden. Der Import kann trotzdem gestartet werden.', 'warning', 'warning');
+          // Return empty array to continue
+          return [];
+        });
+      })
+      .then(() => {
+        // Check if import is already processing
+        if (this.importData && this.importData.status === 'processing') {
+          this.isProcessing = true;
+          this.processedRows = this.importData.processedRows || 0;
+          this.totalRows = this.importData.totalRows || 0;
+          
+          // Start polling for updates
+          this.startPolling();
+          
+          // Show a message that the import is in progress
+          this.setStatusMessage('Ein Import ist bereits in Bearbeitung. Der Fortschritt wird automatisch aktualisiert.', 'info', 'info');
+        } else if (this.importData && this.importData.status === 'completed') {
+          // If already completed, just update the UI
+          this.isProcessing = false;
+        }
+      })
+      .catch(err => {
+        // Handle any remaining errors
+        console.error('Error in initialization:', err);
+        this.setStatusMessage('Beim Laden der Daten ist ein Fehler aufgetreten. Bitte laden Sie die Seite neu.', 'error', 'error');
+      })
+      .finally(() => {
+        this.isDataLoading = false;
+        this.$store.commit('loaders/hideLoader', 'projectImport');
+      });
   },
   beforeUnmount() {
     // Clear any polling intervals when component is destroyed
@@ -828,40 +848,44 @@ export default {
       try {
         const response = await fetch(`/api/v1/project-imports/${this.importId}`, {
           method: 'GET',
-          credentials: 'include'
+          credentials: 'include',
+          // Add a reasonable timeout
+          signal: AbortSignal.timeout(15000) // 15 second timeout
         });
 
-        const data = await response.json();
-
-        if (response.ok) {
-          this.importData = data;
-          this.totalRows = data.totalRows || 0;
-          this.processedRows = data.processedRows || 0;
-
-          // If the import is already processing, set the processing state
-          if (data.status === 'processing') {
-            this.isProcessing = true;
-            this.processedRows = data.processedRows || 0;
-            this.totalRows = data.totalRows || 0;
-            
-            // Start polling for updates
-            this.startPolling();
-            
-            // Show a notification that the import is in progress
-            this.setStatusMessage('Ein Import ist bereits in Bearbeitung. Der Fortschritt wird automatisch aktualisiert.', 'info', 'info');
-          } else if (data.status === 'completed') {
-            // If already completed, just update the UI
-            this.isProcessing = false;
-          }
-          
-          return data;
-        } else {
-          this.setStatusMessage(data.error || 'Beim Laden der Import-Details ist ein Fehler aufgetreten.', 'error', 'error');
-          throw new Error(data.error || 'Beim Laden der Import-Details ist ein Fehler aufgetreten.');
+        // Check if response is OK
+        if (!response.ok) {
+          console.error(`Error fetching import data: ${response.status} ${response.statusText}`);
+          this.setStatusMessage(`Beim Laden der Import-Details ist ein Fehler aufgetreten (${response.status}).`, 'error', 'error');
+          throw new Error(`Failed to fetch import data: ${response.status}`);
         }
+
+        const data = await response.json();
+        
+        // Store import data
+        this.importData = data;
+        this.totalRows = data.totalRows || 0;
+        this.processedRows = data.processedRows || 0;
+
+        // If the import is already processing, set the processing state
+        if (data.status === 'processing') {
+          this.isProcessing = true;
+          
+          // Start polling for updates
+          this.startPolling();
+          
+          // Show a message that the import is in progress
+          this.setStatusMessage('Ein Import ist bereits in Bearbeitung. Der Fortschritt wird automatisch aktualisiert.', 'info', 'info');
+        } else if (data.status === 'completed') {
+          // If already completed, just update the UI
+          this.isProcessing = false;
+        }
+        
+        return data;
       } catch (error) {
+        console.error('Error fetching import data:', error);
         this.setStatusMessage('Beim Laden der Import-Details ist ein Fehler aufgetreten.', 'error', 'error');
-        throw error;
+        throw error; // We must throw here since this data is critical
       }
     },
     async loadPreviewData() {
@@ -871,34 +895,46 @@ export default {
         // This would be a new API endpoint to get preview data
         const response = await fetch(`/api/v1/project-imports/${this.importId}/preview`, {
           method: 'GET',
-          credentials: 'include'
+          credentials: 'include',
+          // Increase timeout by setting longer timeout
+          signal: AbortSignal.timeout(30000) // 30 second timeout
         });
 
-        const data = await response.json();
-
-        if (response.ok) {
-          // Store the raw data for each row
-          this.previewData = data.map(item => {
-            // Ensure description is available
-            if (item.payload && item.payload.description && !item.description) {
-              item.description = item.payload.description;
-            }
-
-            return {
-              ...item,
-              _rawData: item.payload || {},
-              description: item.description || (item.payload ? item.payload.description : '') || ''
-            };
-          });
-
-          return this.previewData;
-        } else {
-          this.setStatusMessage(data.error || 'Beim Laden der Vorschaudaten ist ein Fehler aufgetreten.', 'error', 'error');
-          throw new Error(data.error || 'Beim Laden der Vorschaudaten ist ein Fehler aufgetreten.');
+        // First check if response is OK before trying to parse JSON
+        if (!response.ok) {
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.indexOf("application/json") !== -1) {
+            // It's JSON but has an error
+            const data = await response.json();
+            this.setStatusMessage(data.error || 'Beim Laden der Vorschaudaten ist ein Fehler aufgetreten.', 'error', 'error');
+          } else {
+            // It's not JSON (e.g., HTML error page)
+            this.setStatusMessage(`Beim Laden der Vorschaudaten ist ein Fehler aufgetreten (${response.status}).`, 'error', 'error');
+          }
+          return [];
         }
+
+        const data = await response.json();
+        
+        // Store the raw data for each row
+        this.previewData = data.map(item => {
+          // Ensure description is available
+          if (item.payload && item.payload.description && !item.description) {
+            item.description = item.payload.description;
+          }
+
+          return {
+            ...item,
+            _rawData: item.payload || {},
+            description: item.description || (item.payload ? item.payload.description : '') || ''
+          };
+        });
+
+        return this.previewData;
       } catch (error) {
-        this.setStatusMessage('Beim Laden der Vorschaudaten ist ein Fehler aufgetreten.', 'error', 'error');
-        throw error;
+        console.error('Error in loadPreviewData:', error);
+        this.setStatusMessage('Beim Laden der Vorschaudaten ist ein Fehler aufgetreten. Möglicherweise dauert die Verarbeitung zu lange.', 'error', 'error');
+        return [];
       }
     },
     async startImport() {
@@ -1125,21 +1161,41 @@ export default {
       try {
         const response = await fetch('/api/v1/le-periods', {
           method: 'GET',
-          credentials: 'include'
+          credentials: 'include',
+          // Add a reasonable timeout
+          signal: AbortSignal.timeout(10000) // 10 second timeout
         });
 
-        const data = await response.json();
-
-        if (response.ok) {
-          this.lePeriods = data;
-          return data;
-        } else {
-          this.setStatusMessage(data.error || 'Beim Laden der LE Periods ist ein Fehler aufgetreten.', 'error', 'error');
-          throw new Error(data.error || 'Beim Laden der LE Periods ist ein Fehler aufgetreten.');
+        // Check if response is OK
+        if (!response.ok) {
+          console.error(`Error fetching LE periods: ${response.status} ${response.statusText}`);
+          
+          // This is a non-critical API, we can handle the error gracefully
+          // Set default periods if API fails
+          this.lePeriods = [
+            { id: 1, name: "LE 14-20" },
+            { id: 3, name: "GAP 23-27" }
+          ];
+          
+          return this.lePeriods;
         }
+
+        // Proceed with parsing the JSON response
+        const data = await response.json();
+        this.lePeriods = data;
+        return data;
       } catch (error) {
-        this.setStatusMessage('Beim Laden der LE Periods ist ein Fehler aufgetreten.', 'error', 'error');
-        throw error;
+        console.error('Error in fetchLePeriods:', error);
+        
+        // Set default values if API fails so the component can still work
+        this.lePeriods = [
+          { id: 1, name: "LE 14-20" },
+          { id: 3, name: "GAP 23-27" }
+        ];
+        
+        // Show error but don't throw - we can recover from this
+        this.setStatusMessage('Beim Laden der LE Periods ist ein Fehler aufgetreten. Standard-Werte werden verwendet.', 'warning', 'warning');
+        return this.lePeriods;
       }
     },
     getSelectedPeriodName() {
