@@ -1,10 +1,9 @@
 <template>
-    <div>
-        <Notifications />
         <router-view v-slot="{ Component }">
+            <Notifications />
+
             <component :is="Component"></component>
         </router-view>
-    </div>
 </template>
 
 <script>

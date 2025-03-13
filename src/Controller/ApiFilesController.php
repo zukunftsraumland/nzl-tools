@@ -117,7 +117,7 @@ class ApiFilesController extends AbstractController
         return $this->json($result);
     }
     
-    #[Route(path: '/view/{id}.{extension}', name: 'view_image', requirements: ['extension' => 'jpg|png|gif|JPG|PNG|GIF'], methods: ['GET'])]
+    #[Route(path: '/view/{id}.{extension}', name: 'view_image', requirements: ['extension' => 'jpg|jpeg|png|gif|JPG|JPEG|PNG|GIF'], methods: ['GET'])]
     public function viewImage(Request $request, EntityManagerInterface $em,
                               NormalizerInterface $normalizer): Response
     {
