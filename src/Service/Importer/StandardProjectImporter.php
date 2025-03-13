@@ -723,7 +723,7 @@ class StandardProjectImporter extends AbstractProjectImporter
                         'name' => $fileData['name'],
                         'extension' => $fileData['extension'],
                         'mimeType' => $fileData['mimeType'],
-                        'description' => $data[$columnWithPictureCopyRightText] ?? '',
+                        'description' => $fileData['name'] ?? '',
                     ];
 
                 }
