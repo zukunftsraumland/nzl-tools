@@ -678,6 +678,27 @@ class StandardProjectImporter extends AbstractProjectImporter
         $successCount = 0;
         $errorCount = 0;
         
+        // Initialize arrays to track existing file IDs
+        $existingImageIds = [];
+        $existingFileIds = [];
+        
+        // First populate existing IDs from payload if they exist
+        if (isset($payload['images']) && is_array($payload['images'])) {
+            foreach ($payload['images'] as $image) {
+                if (isset($image['id'])) {
+                    $existingImageIds[] = $image['id'];
+                }
+            }
+        }
+        
+        if (isset($payload['files']) && is_array($payload['files'])) {
+            foreach ($payload['files'] as $file) {
+                if (isset($file['id'])) {
+                    $existingFileIds[] = $file['id'];
+                }
+            }
+        }
+        
         foreach ($filePairs as $pair) {
             $filenameCol = $pair[0];
             $urlCol = $pair[1];
@@ -706,26 +727,36 @@ class StandardProjectImporter extends AbstractProjectImporter
                 $isImage = $this->isImageFile($filename);
                 
                 if ($isImage) {
-                    // Add to images array
-                    $payload['images'][] = [
-                        'id' => $fileData['id'],
-                        'name' => $fileData['name'],
-                        'extension' => $fileData['extension'],
-                        'mimeType' => $fileData['mimeType'],
-                        'copyright' => $data[$columnWithPictureCopyRightText] ?? '',
-                        'description' => $fileData['name'] ?? ''
-                    ];
-
+                    // Check if this image ID already exists in our payload
+                    if (!in_array($fileData['id'], $existingImageIds)) {
+                        // Add to images array
+                        $payload['images'][] = [
+                            'id' => $fileData['id'],
+                            'name' => $fileData['name'],
+                            'extension' => $fileData['extension'],
+                            'mimeType' => $fileData['mimeType'],
+                            'copyright' => $data[$columnWithPictureCopyRightText] ?? '',
+                            'description' => $fileData['name'] ?? ''
+                        ];
+                        
+                        // Add to our tracking array to prevent duplicates
+                        $existingImageIds[] = $fileData['id'];
+                    }
                 } else {
-                    // Add to files array
-                    $payload['files'][] = [
-                        'id' => $fileData['id'],
-                        'name' => $fileData['name'],
-                        'extension' => $fileData['extension'],
-                        'mimeType' => $fileData['mimeType'],
-                        'description' => $fileData['name'] ?? '',
-                    ];
-
+                    // Check if this file ID already exists in our payload
+                    if (!in_array($fileData['id'], $existingFileIds)) {
+                        // Add to files array
+                        $payload['files'][] = [
+                            'id' => $fileData['id'],
+                            'name' => $fileData['name'],
+                            'extension' => $fileData['extension'],
+                            'mimeType' => $fileData['mimeType'],
+                            'description' => $fileData['name'] ?? '',
+                        ];
+                        
+                        // Add to our tracking array to prevent duplicates
+                        $existingFileIds[] = $fileData['id'];
+                    }
                 }
                 
                 $successCount++;
