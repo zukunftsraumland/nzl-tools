@@ -120,6 +120,7 @@
       </div>
 
       <!-- LE Period Selection Section -->
+      <!-- Commented out as we now automatically select LE Period based on importerType 
       <div class="row mt-4" v-if="!isDataLoading && !isProcessing && importData && importData.status === 'pending'">
         <div class="col-md-12">
           <div class="card">
@@ -168,6 +169,30 @@
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      -->
+
+      <!-- New info banner about automatic LE Period selection -->
+      <div class="row mt-4" v-if="!isDataLoading && !isProcessing && importData && importData.status === 'pending'">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-header">
+              <h3>
+                <i class="material-icons">event</i>
+                LE Periode
+              </h3>
+            </div>
+            <div class="card-body">
+              <div class="le-period-info">
+                <i class="material-icons">info</i>
+                <p>
+                  Basierend auf dem ausgewählten Import-Typ wird die passende LE Period automatisch zugewiesen: 
+                  <strong>{{ getSelectedPeriodName() }}</strong>
+                </p>
               </div>
             </div>
           </div>
@@ -602,47 +627,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Create LE Period Modal -->
-      <div class="modal" v-if="showCreateLePeriodModal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3>
-              <i class="material-icons">add_circle</i>
-              Neue LE Period erstellen
-            </h3>
-            <button class="close" @click="showCreateLePeriodModal = false">
-              <i class="material-icons">close</i>
-            </button>
-          </div>
-          <div class="modal-body">
-            <div class="le-period-create-info">
-              <i class="material-icons info-icon">info</i>
-              <p>Erstellen Sie eine neue LE Period, die allen importierten Projekten zugewiesen wird.</p>
-            </div>
-
-            <div class="form-group">
-              <label for="new-le-period-name">
-                <i class="material-icons">event</i>
-                Name:
-              </label>
-              <input type="text" id="new-le-period-name" class="form-control" v-model="newLePeriodName"
-                placeholder="Name der neuen LE Period" @keyup.enter="createLePeriod" />
-            </div>
-
-            <div class="modal-actions">
-              <button class="button" @click="showCreateLePeriodModal = false">
-                Abbrechen
-              </button>
-              <button class="button primary" @click="createLePeriod" :disabled="!newLePeriodName || isCreatingLePeriod">
-                <i class="material-icons" v-if="isCreatingLePeriod">hourglass_empty</i>
-                <i class="material-icons" v-else>save</i>
-                {{ isCreatingLePeriod ? 'Wird erstellt...' : 'Erstellen' }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -664,9 +648,6 @@ export default {
       isDataLoading: false,
       lePeriods: [],
       selectedLePeriodId: '',
-      showCreateLePeriodModal: false,
-      newLePeriodName: '',
-      isCreatingLePeriod: false,
       statusFilter: 'all',
       validCount: 0,
       warningCount: 0,
@@ -691,6 +672,9 @@ export default {
       this.loadPreviewData(),
       this.fetchLePeriods()
     ]).then(() => {
+      // Set the LE Period automatically based on importerType
+      this.setLePeriodBasedOnImporterType();
+      
       // Check if import is already processing
       if (this.importData && this.importData.status === 'processing') {
         this.isProcessing = true;
@@ -909,15 +893,8 @@ export default {
       }
     },
     async startImport() {
-      // Check if a LE period is selected
-      if (!this.selectedLePeriodId) {
-        this.$store.dispatch('notifications/add', {
-          type: 'error',
-          message: 'Bitte wählen Sie eine LE Period aus, bevor Sie den Import starten.'
-        });
-        return;
-      }
-
+      // We no longer need to check if a LE period is selected as it's done automatically
+      
       if (!confirm('Sind Sie sicher, dass Sie den Import starten möchten?')) {
         return;
       }
@@ -1147,22 +1124,6 @@ export default {
     toggleRawData() {
       this.showRawData = !this.showRawData;
     },
-    testModal() {
-      // Create a test row if no rows are available
-      const testRow = this.previewData.length > 0 ? this.previewData[0] : {
-        rowNumber: 1,
-        title: 'Test Projekt',
-        description: 'Dies ist ein Test',
-        projectCode: 'TEST-001',
-        startDate: new Date().toISOString(),
-        endDate: new Date().toISOString(),
-        status: 'valid',
-        message: '',
-        _rawData: { topics: ['Test'], states: ['Test'] }
-      };
-
-      this.showRowDetails(testRow);
-    },
     getFinancingLabel(id) {
       const labels = {
         'costsGap': 'GAP Strategieplan',
@@ -1197,46 +1158,6 @@ export default {
           message: 'Beim Laden der LE Periods ist ein Fehler aufgetreten.'
         });
         throw error;
-      }
-    },
-    async createLePeriod() {
-      this.isCreatingLePeriod = true;
-
-      try {
-        const response = await fetch('/api/v1/le-periods', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            name: this.newLePeriodName
-          })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          this.lePeriods.push(data);
-          this.selectedLePeriodId = data.id;
-          this.showCreateLePeriodModal = false;
-          this.$store.dispatch('notifications/add', {
-            type: 'success',
-            message: 'Die neue LE Period wurde erstellt.'
-          });
-        } else {
-          this.isCreatingLePeriod = false;
-          this.$store.dispatch('notifications/add', {
-            type: 'error',
-            message: data.error || 'Beim Erstellen der neuen LE Period ist ein Fehler aufgetreten.'
-          });
-        }
-      } catch (error) {
-        this.isCreatingLePeriod = false;
-        this.$store.dispatch('notifications/add', {
-          type: 'error',
-          message: 'Beim Erstellen der neuen LE Period ist ein Fehler aufgetreten.'
-        });
       }
     },
     getSelectedPeriodName() {
@@ -1328,6 +1249,21 @@ export default {
         return value.toLocaleString();
       } else {
         return 'Nicht unterstützter Datentyp';
+      }
+    },
+    // New method to set LE Period based on importerType
+    setLePeriodBasedOnImporterType() {
+      if (this.importData && this.importData.importerType) {
+        if (this.importData.importerType === 'legacy') {
+          // For Legacy importer, use "LE 14-20" (id: 1)
+          this.selectedLePeriodId = 1;
+        } else {
+          // For Standard and CaseStudy importers, use "GAP 23-27" (id: 3)
+          this.selectedLePeriodId = 3;
+        }
+        
+        // Log which LE Period was selected
+        console.log(`Automatically selected LE Period based on importer type (${this.importData.importerType}): ID=${this.selectedLePeriodId}, Name=${this.getSelectedPeriodName()}`);
       }
     }
   }

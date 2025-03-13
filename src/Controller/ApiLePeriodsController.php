@@ -53,53 +53,6 @@ class ApiLePeriodsController extends AbstractController
     }
     
     /**
-     * Create a new LE Period
-     */
-    #[Route(path: '', name: 'create', methods: ['POST'])]
-    #[IsGranted('ROLE_EDITOR')]
-    #[OA\RequestBody(
-        description: 'LE Period data',
-        required: true,
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(property: 'name', type: 'string')
-            ]
-        )
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'Returns the created LE Period',
-        content: new OA\JsonContent(
-            type: 'object',
-            properties: [
-                new OA\Property(property: 'id', type: 'integer'),
-                new OA\Property(property: 'name', type: 'string')
-            ]
-        )
-    )]
-    #[OA\Tag(name: 'LE Periods')]
-    #[Security(name: 'cookieAuth')]
-    public function create(Request $request, EntityManagerInterface $em): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
-        
-        if (!isset($data['name']) || empty($data['name'])) {
-            return $this->json(['error' => 'Name is required'], 400);
-        }
-                
-        $lePeriod = new LEPeriod();
-        $lePeriod->setName($data['name']);
-        
-        $em->persist($lePeriod);
-        $em->flush();
-        
-        return $this->json([
-            'id' => $lePeriod->getId(),
-            'name' => $lePeriod->getName()
-        ]);
-    }
-    
-    /**
      * Get a single LE Period
      */
     #[Route(path: '/{id}', name: 'get', methods: ['GET'])]
