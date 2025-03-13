@@ -123,9 +123,7 @@ class ApiProjectImportsController extends AbstractController
             // Create the import
             $user = $this->getUser();
             
-            // Debug: Log all form parameters
-            error_log('Project Import - Form parameters: ' . print_r($request->request->all(), true));
-            
+           
             // Get the importer type from the request (default to 'standard')
             // For multipart/form-data, we need to use $request->request->get()
             $requestedImporterType = $request->request->get('importerType', 'standard');
@@ -144,7 +142,6 @@ class ApiProjectImportsController extends AbstractController
             // Determine the importer type based on file content
             try {
                 $detectedImporterType = $importService->detectImporterType($tempFilePath);
-                error_log('Detected importer type: ' . $detectedImporterType);
                 
                 // Use the detected type
                 $importerType = $detectedImporterType;
@@ -152,9 +149,6 @@ class ApiProjectImportsController extends AbstractController
                 // Delete the temporary file as we no longer need it
                 @unlink($tempFilePath);
                 
-                // Debug: Log the importer type detection details
-                error_log('Project Import - File detection: detected=' . $detectedImporterType . 
-                          ', requested=' . $requestedImporterType . ', using=' . $importerType);
                 
                 // Create the import with the original file and detected type
                 $import = $importService->createImport($file, $user, $importerType);

@@ -65,7 +65,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         $payload['caseStudy'] = true;
         
         // Debug the data array to see what keys are available
-        error_log('Case Study Import Data Keys: ' . print_r(array_keys($data), true));
         
         // Map fields according to the Excel header names (Q21, Q22, etc.)
         // These names should match exactly what's in row 4 of the Excel file
@@ -88,8 +87,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             'transferable' => $data['Q34'] ?? null,
         ];
         
-        // Log the fields we found
-        error_log('Case Study Fields Found: ' . print_r(array_filter($caseStudyFields), true));
         
         // Assign them to the payload
         foreach ($caseStudyFields as $field => $value) {
@@ -124,10 +121,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             }
         }
         
-        // Log any column values we found
-        if (!empty($columnValues)) {
-            error_log('Case Study Column Values Found: ' . print_r($columnValues, true));
-        }
         
         // Clear any file/image entries that might have been added by the parent's processFileAttachmentsFromExcel
         // This is necessary because the parent method may have interpreted these columns as file attachments
@@ -169,7 +162,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         }
         
         // Log the input for debugging
-        error_log('Case Study Tags - Processing keywords: ' . $keywords);
         
         // Define special multi-word tags that should not be split
         $specialTags = [
@@ -191,7 +183,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 $remainingKeywords = str_replace($specialTag, '', $remainingKeywords);
                 
                 // Log the extraction
-                error_log('Case Study Tags - Extracted special tag: ' . $specialTag);
+                
             }
         }
         
@@ -203,7 +195,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             $normalTags = explode(' ', $remainingKeywords);
             
             // Log the normal tags
-            error_log('Case Study Tags - Split normal tags: ' . print_r($normalTags, true));
+            
         } else {
             $normalTags = [];
         }
@@ -223,7 +215,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         }
         
         // Log the final tags
-        error_log('Case Study Tags - Final tag count: ' . count($payload['tags']));
+        
     }
     
     /**
@@ -245,7 +237,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         $payload['synergyFundTags'] = [];
         $payload['synergyGoalTags'] = [];
         
-        error_log('Processing synergy fund tags and synergy goal tags');
         
         // Process synergyFundTags (columns CL-CP)
         $synergyFundTagMappings = [
@@ -259,7 +250,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         foreach ($synergyFundTagMappings as $column => $tagInfo) {
             // Check if the column exists and has a value of 1
             if (isset($data[$column]) && $data[$column] == 1) {
-                error_log("Adding synergyFundTag: {$tagInfo['name']} (ID: {$tagInfo['id']}) from column $column");
                 
                 // First try to find the tag by ID
                 $tag = $this->em->getRepository(\App\Entity\Tag::class)->find($tagInfo['id']);
@@ -279,9 +269,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                         'name' => $tag->getName(),
                         'context' => 'synergyFundTag'
                     ];
-                    error_log("Added synergyFundTag: {$tag->getName()} (ID: {$tag->getId()})");
-                } else {
-                    error_log("Warning: Tag not found for {$tagInfo['name']} (ID: {$tagInfo['id']})");
                 }
             }
         }
@@ -300,7 +287,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         foreach ($synergyGoalTagMappings as $column => $tagInfo) {
             // Check if the column exists and has a value of 1
             if (isset($data[$column]) && $data[$column] == 1) {
-                error_log("Adding synergyGoalTag: {$tagInfo['name']} (ID: {$tagInfo['id']}) from column $column");
                 
                 // First try to find the tag by ID
                 $tag = $this->em->getRepository(\App\Entity\Tag::class)->find($tagInfo['id']);
@@ -320,15 +306,11 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                         'name' => $tag->getName(),
                         'context' => 'synergyGoalTag'
                     ];
-                    error_log("Added synergyGoalTag: {$tag->getName()} (ID: {$tag->getId()})");
-                } else {
-                    error_log("Warning: Tag not found for {$tagInfo['name']} (ID: {$tagInfo['id']})");
                 }
             }
         }
         
-        error_log("Processed synergy tags: " . count($payload['synergyFundTags']) . " fund tags, " . 
-                 count($payload['synergyGoalTags']) . " goal tags");
+        
     }
     
     /**
@@ -359,7 +341,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
      */
     private function processCaseStudyFileAttachments(array $data, array &$payload): void
     {
-        error_log("Processing case study file attachments");
         
         // Initialize arrays to track existing file IDs
         $existingImageIds = [];
@@ -387,7 +368,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             $filename = $data['BO'];
             $url = $data['BP'];
             
-            error_log("Processing case study file: $filename, $url");
             
             try {
                 $fileData = $this->downloadAttachmentFromUrl($url, $filename);
@@ -404,7 +384,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                             'description' => $fileData['name'] ?? '',
                         ];
                         
-                        error_log("Added case study file attachment: " . $fileData['name']);
+                        
                     }
                 }
             } catch (\Exception $e) {
@@ -417,7 +397,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             $filename = $data['BQ'];
             $url = $data['BR'];
             
-            error_log("Processing case study image: $filename, $url");
             
             try {
                 $fileData = $this->downloadAttachmentFromUrl($url, $filename);
@@ -439,7 +418,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                                 'description' => $fileData['name'] ?? ''
                             ];
                             
-                            error_log("Added case study image attachment: " . $fileData['name']);
+                            
                         }
                     } else {
                         // If it's not an image but in the image column, we'll treat it as a regular file
@@ -452,7 +431,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                                 'description' => $fileData['name'] ?? '',
                             ];
                             
-                            error_log("Added case study image as regular file: " . $fileData['name']);
+
                         }
                     }
                 }
@@ -528,8 +507,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                         break; // Success, exit the loop
                     }
                     
-                    $error = error_get_last();
-                    error_log("File download attempt $attempts failed: " . ($error['message'] ?? 'Unknown error'));
+
                     
                     // Wait before retrying
                     if ($attempts < $maxAttempts) {
@@ -546,14 +524,11 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             }
             
             if ($fileContents === false || $fileContents === null) {
-                $error = error_get_last();
-                error_log("File download failed after $maxAttempts attempts: " . ($error['message'] ?? 'Unknown error'));
                 return null;
             }
             
             // Check if we got an empty response
             if (empty($fileContents)) {
-                error_log("File download returned empty content: $url");
                 return null;
             }
             
@@ -694,7 +669,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             
             return $result;
         } catch (\Exception $e) {
-            error_log('Error in CaseStudyProjectImporter::processImportItem: ' . $e->getMessage());
             return [
                 'rowNumber' => $rowIndex,
                 'title' => '',
@@ -734,15 +708,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 }
             }
             
-            // Log the headers
-            error_log('Excel Column Headers for Case Study Import: ' . print_r($headers, true));
-            
-            // Specifically log the columns we're interested in (BV-CI)
-            $interestingColumns = array_filter($headers, function($key) {
-                return in_array($key, ['BV', 'BW', 'BX', 'BY', 'BZ', 'CA', 'CB', 'CC', 'CD', 'CE', 'CF', 'CG', 'CH', 'CI']);
-            }, ARRAY_FILTER_USE_KEY);
-            
-            error_log('Case Study Specific Column Headers: ' . print_r($interestingColumns, true));
             
         } catch (\Exception $e) {
             error_log('Error logging Excel headers: ' . $e->getMessage());

@@ -332,10 +332,8 @@ class ProjectImportManager
      */
     public function detectImporterType(string $filePath): string
     {
-        error_log('Starting importer type detection for file: ' . $filePath);
         
         if (!file_exists($filePath)) {
-            error_log('Error: File does not exist: ' . $filePath);
             return 'standard';
         }
         
@@ -344,7 +342,6 @@ class ProjectImportManager
             $spreadsheet = IOFactory::load($filePath);
             $worksheet = $spreadsheet->getActiveSheet();
             
-            error_log('Successfully loaded Excel file for detection');
             
             // We'll check multiple rows and a range of columns for case study markers
             $markerFound = false;
@@ -357,14 +354,10 @@ class ProjectImportManager
                 // CY is column 103 in 1-based indexing (if within range)
                 if ($highestColumnIndex >= 103) {
                     $cyValue = $worksheet->getCellByColumnAndRow(103, 4)->getValue();
-                    error_log('Detected value in column CY (103), row 4: ' . ($cyValue ?? 'null'));
                     
                     if ($cyValue === 'Q39.7') {
-                        error_log('Detected case study import based on column CY=Q39.7');
                         $markerFound = true;
                     }
-                } else {
-                    error_log('Column CY (103) is out of range. Highest column index is: ' . $highestColumnIndex);
                 }
             } catch (\Exception $e) {
                 error_log('Error checking CY value: ' . $e->getMessage());
@@ -383,7 +376,6 @@ class ProjectImportManager
                     $headerValue = $worksheet->getCellByColumnAndRow($col, 4)->getValue();
                     
                     if (in_array($headerValue, $caseStudyHeaders)) {
-                        error_log("Found case study header: $headerValue in column $col");
                         $markerFound = true;
                         break;
                     }
@@ -395,11 +387,8 @@ class ProjectImportManager
                 return 'casestudy';
             }
             
-            error_log('No case study markers found, treating as standard import');
             return 'standard';
         } catch (\Exception $e) {
-            error_log('Error detecting importer type: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
-            error_log('Stack trace: ' . $e->getTraceAsString());
             // Default to standard import if detection fails
             return 'standard';
         }

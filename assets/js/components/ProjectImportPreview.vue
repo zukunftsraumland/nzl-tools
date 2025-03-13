@@ -18,8 +18,16 @@
     <div class="project-import-preview-component-content">
       <!-- Add status message component -->
       <div v-if="statusMessage" class="status-message" :class="statusMessageType">
-        <i class="material-icons">{{ statusMessageIcon }}</i>
-        <span>{{ statusMessage }}</span>
+        <div class="status-message-content">
+          <i class="material-icons">{{ statusMessageIcon }}</i>
+          <span>{{ statusMessage }}</span>
+        </div>
+        <div v-if="statusMessageWithAction" class="status-message-actions">
+          <button @click="retryLoadPreviewData" class="button small">
+            <i class="material-icons">refresh</i> 
+            Erneut versuchen
+          </button>
+        </div>
       </div>
 
       <!-- Import Details Section -->
@@ -325,9 +333,48 @@
       <div class="row mt-4" v-else-if="!isDataLoading && !isProcessing && importData">
         <div class="col-md-12">
           <div class="card">
+            <div class="card-header">
+              <h3>
+                <i class="material-icons">preview</i>
+                Vorschau der zu importierenden Projekte
+              </h3>
+              <div class="card-header-actions" v-if="importData.status === 'pending'">
+                <button class="button primary" @click="startImport" 
+                  :disabled="isProcessing || !importData || importData.status !== 'pending' || !selectedLePeriodId">
+                  <i class="material-icons">play_arrow</i>
+                  Import starten
+                </button>
+              </div>
+            </div>
             <div class="card-body">
-              <p>Keine Vorschaudaten verfügbar. Bitte laden Sie die Vorschau neu.</p>
-              <button class="button" @click="loadPreviewData">Vorschau laden</button>
+              <div class="no-preview-info" :class="{'case-study': importData.importerType === 'casestudy'}">
+                <div class="no-preview-icon">
+                  <i class="material-icons">{{ importData.importerType === 'casestudy' ? 'info' : 'visibility_off' }}</i>
+                </div>
+                <div class="no-preview-message">
+                  <h4>{{ importData.importerType === 'casestudy' ? 'Case Study Import ohne Vorschau' : 'Keine Vorschaudaten verfügbar' }}</h4>
+                  <p v-if="importData.importerType === 'casestudy'">
+                    Bei Case Study Importen kann die Vorschaugenerierung aufgrund der komplexen Datenstruktur mehr Zeit benötigen, 
+                    als der Server erlaubt. Dies hindert den eigentlichen Import nicht, der trotzdem korrekt durchgeführt wird.
+                  </p>
+                  <p v-else>
+                    Es konnten keine Vorschaudaten geladen werden. Dies kann an einer komplexen oder sehr großen Excel-Datei liegen.
+                    Sie können den Import trotzdem starten.
+                  </p>
+                </div>
+              </div>
+              
+              <div class="retry-actions">
+                <button class="button" @click="loadPreviewData">
+                  <i class="material-icons">refresh</i>
+                  Vorschau erneut laden versuchen
+                </button>
+                <button v-if="importData.status === 'pending'" class="button primary ml-2" @click="startImport" 
+                  :disabled="isProcessing || !importData || importData.status !== 'pending' || !selectedLePeriodId">
+                  <i class="material-icons">play_arrow</i>
+                  Import ohne Vorschau starten
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -672,7 +719,8 @@ export default {
       importStartedNotificationShown: false,
       statusMessage: '',
       statusMessageType: '',
-      statusMessageIcon: ''
+      statusMessageIcon: '',
+      statusMessageWithAction: false
     };
   },
   created() {
@@ -683,49 +731,16 @@ export default {
     this.$store.commit('loaders/showLoader', 'projectImport');
     this.isDataLoading = true;
     
-    // Load data sequentially instead of with Promise.all to prevent one failure from breaking everything
+    // Load import data first, as it's critical
     this.fetchImportData()
       .then(() => {
-        // After successfully loading import data, try to fetch LE periods
-        return this.fetchLePeriods().catch(err => {
-          console.error('Error fetching LE periods:', err);
-          // Don't throw here - let the process continue even if LE periods fail
-          return null;
-        });
-      })
-      .then(() => {
-        // Set the LE Period automatically based on importerType
-        this.setLePeriodBasedOnImporterType();
-        
-        // Try to load preview data, but don't let it break the flow if it fails
-        return this.loadPreviewData().catch(err => {
-          console.error('Error loading preview data:', err);
-          this.setStatusMessage('Vorschaudaten konnten nicht geladen werden. Der Import kann trotzdem gestartet werden.', 'warning', 'warning');
-          // Return empty array to continue
-          return [];
-        });
-      })
-      .then(() => {
-        // Check if import is already processing
-        if (this.importData && this.importData.status === 'processing') {
-          this.isProcessing = true;
-          this.processedRows = this.importData.processedRows || 0;
-          this.totalRows = this.importData.totalRows || 0;
-          
-          // Start polling for updates
-          this.startPolling();
-          
-          // Show a message that the import is in progress
-          this.setStatusMessage('Ein Import ist bereits in Bearbeitung. Der Fortschritt wird automatisch aktualisiert.', 'info', 'info');
-        } else if (this.importData && this.importData.status === 'completed') {
-          // If already completed, just update the UI
-          this.isProcessing = false;
-        }
+        // If import data load successful, continue with LE periods and preview data
+        this.initializeAfterImportData();
       })
       .catch(err => {
-        // Handle any remaining errors
-        console.error('Error in initialization:', err);
-        this.setStatusMessage('Beim Laden der Daten ist ein Fehler aufgetreten. Bitte laden Sie die Seite neu.', 'error', 'error');
+        // Critical failure - can't recover from this
+        console.error('Critical error fetching import data:', err);
+        this.setStatusMessage('Beim Laden der Import-Details ist ein kritischer Fehler aufgetreten. Bitte laden Sie die Seite neu.', 'error', 'error');
       })
       .finally(() => {
         this.isDataLoading = false;
@@ -830,15 +845,24 @@ export default {
   },
   methods: {
     setStatusMessage(message, type, icon) {
-     this.statusMessage = message;
-     this.statusMessageType = type;
-     this.statusMessageIcon = icon;
-   },
-   clearStatusMessage() {
-     this.statusMessage = '';
-     this.statusMessageType = '';
-     this.statusMessageIcon = '';
-   },
+      this.statusMessage = message;
+      this.statusMessageType = type;
+      this.statusMessageIcon = icon;
+      
+      // If it's a timeout error, add retry button
+      if (type === 'warning' && (icon === 'timer' || message.includes('zu lange'))) {
+        // Append retry button HTML
+        this.statusMessageWithAction = true;
+      } else {
+        this.statusMessageWithAction = false;
+      }
+    },
+    clearStatusMessage() {
+      this.statusMessage = '';
+      this.statusMessageType = '';
+      this.statusMessageIcon = '';
+      this.statusMessageWithAction = false;
+    },
     isLoading(key) {
       return this.$store.getters['loaders/isLoading'](key);
     },
@@ -850,7 +874,7 @@ export default {
           method: 'GET',
           credentials: 'include',
           // Add a reasonable timeout
-          signal: AbortSignal.timeout(15000) // 15 second timeout
+          signal: AbortSignal.timeout(30000) // 30 second timeout
         });
 
         // Check if response is OK
@@ -866,6 +890,16 @@ export default {
         this.importData = data;
         this.totalRows = data.totalRows || 0;
         this.processedRows = data.processedRows || 0;
+
+        // If it's a case study import, show a specific message about preview data
+        if (data.importerType === 'casestudy') {
+          console.log('Case study import detected - preparing for possible extended loading times');
+          this.setStatusMessage(
+            'Case Study Import erkannt. Die Vorschaudaten können bei diesem Importtyp länger zum Laden benötigen. Sie können den Import auch ohne Vorschau starten.', 
+            'info', 
+            'info'
+          );
+        }
 
         // If the import is already processing, set the processing state
         if (data.status === 'processing') {
@@ -890,26 +924,47 @@ export default {
     },
     async loadPreviewData() {
       this.isDataLoading = true;
+      this.setStatusMessage('Lade Vorschaudaten...', 'info', 'info');
       
       try {
+        // Show status message about loading preview data
+        if (this.importData && this.importData.importerType === 'casestudy') {
+          this.setStatusMessage(
+            'Lade Vorschaudaten für Case Study Import... Dies kann bis zu einer Minute dauern. Der Import kann bei Timeout trotzdem gestartet werden.', 
+            'info', 
+            'info'
+          );
+        }
+        
+        // Use even longer timeout for preview data - 45 seconds for normal, 60 for case study
+        const controller = new AbortController();
+        const timeoutDuration = this.importData && this.importData.importerType === 'casestudy' ? 60000 : 45000;
+        const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+        
+        console.log(`Setting preview data timeout to ${timeoutDuration/1000} seconds for ${this.importData ? this.importData.importerType : 'unknown'} import type`);
+        
         // This would be a new API endpoint to get preview data
         const response = await fetch(`/api/v1/project-imports/${this.importId}/preview`, {
           method: 'GET',
           credentials: 'include',
-          // Increase timeout by setting longer timeout
-          signal: AbortSignal.timeout(30000) // 30 second timeout
+          signal: controller.signal
         });
+
+        // Clear the timeout
+        clearTimeout(timeoutId);
 
         // First check if response is OK before trying to parse JSON
         if (!response.ok) {
+          console.error(`Preview data request failed with status: ${response.status}`);
+          
           const contentType = response.headers.get("content-type");
           if (contentType && contentType.indexOf("application/json") !== -1) {
             // It's JSON but has an error
             const data = await response.json();
-            this.setStatusMessage(data.error || 'Beim Laden der Vorschaudaten ist ein Fehler aufgetreten.', 'error', 'error');
+            this.setStatusMessage(data.error || 'Beim Laden der Vorschaudaten ist ein Fehler aufgetreten.', 'warning', 'warning');
           } else {
             // It's not JSON (e.g., HTML error page)
-            this.setStatusMessage(`Beim Laden der Vorschaudaten ist ein Fehler aufgetreten (${response.status}).`, 'error', 'error');
+            this.setStatusMessage(`Beim Laden der Vorschaudaten ist ein Fehler aufgetreten (${response.status}). Der Import kann trotzdem gestartet werden.`, 'warning', 'warning');
           }
           return [];
         }
@@ -930,11 +985,43 @@ export default {
           };
         });
 
+        // Clear status message if successful
+        this.clearStatusMessage();
         return this.previewData;
       } catch (error) {
         console.error('Error in loadPreviewData:', error);
-        this.setStatusMessage('Beim Laden der Vorschaudaten ist ein Fehler aufgetreten. Möglicherweise dauert die Verarbeitung zu lange.', 'error', 'error');
+        
+        // Specific message for timeout errors
+        if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+          // Special message for case study imports
+          if (this.importData && this.importData.importerType === 'casestudy') {
+            this.setStatusMessage(
+              `Die Vorschaudaten für den Case Study Import konnten nicht geladen werden, da der Server zu lange für die Antwort benötigt hat. 
+               Dies ist bei Case Study Importen mit vielen Daten normal. 
+               Sie können den Import trotzdem starten - die Projekte werden korrekt importiert.`, 
+              'warning', 
+              'timer'
+            );
+          } else {
+            this.setStatusMessage(
+              `Die Vorschaudaten konnten nicht geladen werden, da der Server zu lange für die Antwort benötigt hat. 
+               Das ist normal bei großen Excel-Dateien. 
+               Sie können den Import trotzdem starten.`, 
+              'warning', 
+              'timer'
+            );
+          }
+        } else {
+          this.setStatusMessage(
+            'Beim Laden der Vorschaudaten ist ein Fehler aufgetreten. Sie können den Import trotzdem starten.', 
+            'warning', 
+            'warning'
+          );
+        }
+        
         return [];
+      } finally {
+        this.isDataLoading = false;
       }
     },
     async startImport() {
@@ -1163,7 +1250,7 @@ export default {
           method: 'GET',
           credentials: 'include',
           // Add a reasonable timeout
-          signal: AbortSignal.timeout(10000) // 10 second timeout
+          signal: AbortSignal.timeout(30000) // 30 second timeout
         });
 
         // Check if response is OK
@@ -1301,7 +1388,6 @@ export default {
         }
         
         // Log which LE Period was selected
-        console.log(`Automatically selected LE Period based on importer type (${this.importData.importerType}): ID=${this.selectedLePeriodId}, Name=${this.getSelectedPeriodName()}`);
       }
     },
     getImporterTypeLabel(importerType) {
@@ -1314,6 +1400,120 @@ export default {
           return 'Case Study';
         default:
           return importerType;
+      }
+    },
+    // Add this new method for sequential loading after import data
+    async initializeAfterImportData() {
+      try {
+        // After successfully loading import data, try to fetch LE periods
+        await this.fetchLePeriods().catch(err => {
+          console.error('Error fetching LE periods:', err);
+          // Don't throw here - let the process continue even if LE periods fail
+          this.setStatusMessage('LE Perioden konnten nicht geladen werden. Standard-Werte werden verwendet.', 'warning', 'warning');
+          return null;
+        });
+        
+        // Set the LE Period automatically based on importerType
+        this.setLePeriodBasedOnImporterType();
+        
+        // Try to load preview data, but don't let it break the flow if it fails
+        await this.loadPreviewData().catch(err => {
+          console.error('Error loading preview data:', err);
+          return [];
+        });
+        
+        // Check if import is already processing
+        if (this.importData && this.importData.status === 'processing') {
+          this.isProcessing = true;
+          this.processedRows = this.importData.processedRows || 0;
+          this.totalRows = this.importData.totalRows || 0;
+          
+          // Start polling for updates
+          this.startPolling();
+          
+          // Show a message that the import is in progress
+          this.setStatusMessage('Ein Import ist bereits in Bearbeitung. Der Fortschritt wird automatisch aktualisiert.', 'info', 'info');
+        } else if (this.importData && this.importData.status === 'completed') {
+          // If already completed, just update the UI
+          this.isProcessing = false;
+        }
+      } catch (err) {
+        // Handle any remaining errors
+        console.error('Error in initialization:', err);
+        this.setStatusMessage('Beim Laden der Daten ist ein Fehler aufgetreten.', 'error', 'error');
+      }
+    },
+    
+    // Add this new method to retry loading preview data
+    async retryLoadPreviewData() {
+      this.setStatusMessage('Versuche erneut, Vorschaudaten zu laden...', 'info', 'refresh');
+      this.isDataLoading = true;
+      
+      try {
+        // Use an even longer timeout for the retry - 90 seconds for case studies
+        const controller = new AbortController();
+        const timeoutDuration = this.importData && this.importData.importerType === 'casestudy' ? 90000 : 60000;
+        const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+        
+        console.log(`Setting retry preview data timeout to ${timeoutDuration/1000} seconds for ${this.importData ? this.importData.importerType : 'unknown'} import type`);
+        
+        const response = await fetch(`/api/v1/project-imports/${this.importId}/preview`, {
+          method: 'GET',
+          credentials: 'include',
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to load preview data: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        this.previewData = data.map(item => {
+          return {
+            ...item,
+            _rawData: item.payload || {},
+            description: item.description || (item.payload ? item.payload.description : '') || ''
+          };
+        });
+        
+        this.clearStatusMessage();
+        return this.previewData;
+      } catch (error) {
+        console.error('Error in retry load preview data:', error);
+        
+        if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+          // Special message for case study imports
+          if (this.importData && this.importData.importerType === 'casestudy') {
+            this.setStatusMessage(
+              `Die Vorschaudaten für den Case Study Import konnten trotz eines erneuten Versuchs nicht geladen werden. 
+               Dies ist bei komplexen Case Study Dateien normal und verhindert nicht den erfolgreichen Import.
+               Sie können den Import trotzdem starten.`, 
+              'warning', 
+              'timer'
+            );
+          } else {
+            this.setStatusMessage(
+              `Die Vorschaudaten konnten trotz eines erneuten Versuchs nicht geladen werden. 
+               Dies deutet auf eine sehr große oder komplexe Datei hin. 
+               Sie können den Import trotzdem starten oder es später erneut versuchen.`, 
+              'warning', 
+              'timer'
+            );
+          }
+        } else {
+          this.setStatusMessage(
+            'Beim erneuten Laden der Vorschaudaten ist ein Fehler aufgetreten. Sie können den Import trotzdem starten.', 
+            'warning', 
+            'warning'
+          );
+        }
+        
+        return [];
+      } finally {
+        this.isDataLoading = false;
       }
     }
   }
@@ -1476,8 +1676,34 @@ export default {
   margin-top: 15px;
   margin-bottom: 15px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   font-size: 0.95rem;
+  flex-direction: column;
+}
+
+.status-message-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.status-message-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.status-message-actions .button {
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+}
+
+.status-message-actions .button i {
+  font-size: 16px;
+  margin-right: 4px;
 }
 
 .status-message i {
@@ -1501,5 +1727,62 @@ export default {
   background-color: #e3f2fd;
   color: #1976d2;
   border: 1px solid #bbdefb;
+}
+
+.status-message.warning {
+  background-color: #fff8e1;
+  color: #f57f17;
+  border: 1px solid #ffe082;
+}
+
+/* No preview info styling */
+.no-preview-info {
+  display: flex;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  align-items: flex-start;
+}
+
+.no-preview-info.case-study {
+  background-color: #e8f5e9;
+  border-left: 4px solid #4caf50;
+}
+
+.no-preview-icon {
+  margin-right: 15px;
+  color: #757575;
+}
+
+.no-preview-info.case-study .no-preview-icon {
+  color: #4caf50;
+}
+
+.no-preview-icon i {
+  font-size: 32px;
+}
+
+.no-preview-message h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+  color: #424242;
+}
+
+.no-preview-message p {
+  margin: 0;
+  color: #616161;
+  line-height: 1.5;
+}
+
+.retry-actions {
+  display: flex;
+  margin-top: 15px;
+  justify-content: flex-start;
+}
+
+.ml-2 {
+  margin-left: 10px;
 }
 </style>
