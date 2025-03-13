@@ -16,6 +16,12 @@
     </div>
 
     <div class="project-import-preview-component-content">
+      <!-- Add status message component -->
+      <div v-if="statusMessage" class="status-message" :class="statusMessageType">
+        <i class="material-icons">{{ statusMessageIcon }}</i>
+        <span>{{ statusMessage }}</span>
+      </div>
+
       <!-- Import Details Section -->
       <div class="row">
         <div class="col-md-12">
@@ -66,6 +72,14 @@
                           'badge-danger': importData.status === 'failed'
                         }" class="badge">
                           {{ getStatusLabel(importData.status) }}
+                        </span>
+                      </span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Import-Typ:</span>
+                      <span class="detail-value">
+                        <span class="badge import-type-badge" :class="'import-type-' + importData.importerType">
+                          {{ getImporterTypeLabel(importData.importerType) }}
                         </span>
                       </span>
                     </div>
@@ -655,7 +669,10 @@ export default {
       activeTab: 'general',
       filteredDetails: {},
       importStartTime: null,
-      importStartedNotificationShown: false
+      importStartedNotificationShown: false,
+      statusMessage: '',
+      statusMessageType: '',
+      statusMessageIcon: ''
     };
   },
   created() {
@@ -685,10 +702,7 @@ export default {
         this.startPolling();
         
         // Show a notification that the import is in progress
-        this.$store.dispatch('notifications/add', {
-          type: 'info',
-          message: 'Ein Import ist bereits in Bearbeitung. Der Fortschritt wird automatisch aktualisiert.'
-        });
+        this.setStatusMessage('Ein Import ist bereits in Bearbeitung. Der Fortschritt wird automatisch aktualisiert.', 'info', 'info');
       } else if (this.importData && this.importData.status === 'completed') {
         // If already completed, just update the UI
         this.isProcessing = false;
@@ -795,6 +809,16 @@ export default {
     }
   },
   methods: {
+    setStatusMessage(message, type, icon) {
+     this.statusMessage = message;
+     this.statusMessageType = type;
+     this.statusMessageIcon = icon;
+   },
+   clearStatusMessage() {
+     this.statusMessage = '';
+     this.statusMessageType = '';
+     this.statusMessageIcon = '';
+   },
     isLoading(key) {
       return this.$store.getters['loaders/isLoading'](key);
     },
@@ -824,10 +848,7 @@ export default {
             this.startPolling();
             
             // Show a notification that the import is in progress
-            this.$store.dispatch('notifications/add', {
-              type: 'info',
-              message: 'Ein Import ist bereits in Bearbeitung. Der Fortschritt wird automatisch aktualisiert.'
-            });
+            this.setStatusMessage('Ein Import ist bereits in Bearbeitung. Der Fortschritt wird automatisch aktualisiert.', 'info', 'info');
           } else if (data.status === 'completed') {
             // If already completed, just update the UI
             this.isProcessing = false;
@@ -835,17 +856,11 @@ export default {
           
           return data;
         } else {
-          this.$store.dispatch('notifications/add', {
-            type: 'error',
-            message: data.error || 'Beim Laden der Import-Details ist ein Fehler aufgetreten.'
-          });
+          this.setStatusMessage(data.error || 'Beim Laden der Import-Details ist ein Fehler aufgetreten.', 'error', 'error');
           throw new Error(data.error || 'Beim Laden der Import-Details ist ein Fehler aufgetreten.');
         }
       } catch (error) {
-        this.$store.dispatch('notifications/add', {
-          type: 'error',
-          message: 'Beim Laden der Import-Details ist ein Fehler aufgetreten.'
-        });
+        this.setStatusMessage('Beim Laden der Import-Details ist ein Fehler aufgetreten.', 'error', 'error');
         throw error;
       }
     },
@@ -878,17 +893,11 @@ export default {
 
           return this.previewData;
         } else {
-          this.$store.dispatch('notifications/add', {
-            type: 'error',
-            message: data.error || 'Beim Laden der Vorschaudaten ist ein Fehler aufgetreten.'
-          });
+          this.setStatusMessage(data.error || 'Beim Laden der Vorschaudaten ist ein Fehler aufgetreten.', 'error', 'error');
           throw new Error(data.error || 'Beim Laden der Vorschaudaten ist ein Fehler aufgetreten.');
         }
       } catch (error) {
-        this.$store.dispatch('notifications/add', {
-          type: 'error',
-          message: 'Beim Laden der Vorschaudaten ist ein Fehler aufgetreten.'
-        });
+        this.setStatusMessage('Beim Laden der Vorschaudaten ist ein Fehler aufgetreten.', 'error', 'error');
         throw error;
       }
     },
@@ -908,10 +917,7 @@ export default {
       this.importStartedNotificationShown = false;
       
       // Show a notification that the import is starting
-      this.$store.dispatch('notifications/add', {
-        type: 'info',
-        message: 'Der Import wird gestartet. Bitte haben Sie etwas Geduld...'
-      });
+      this.setStatusMessage('Der Import wird gestartet. Bitte haben Sie etwas Geduld...', 'info', 'info');
 
       try {
         const response = await fetch(`/api/v1/project-imports/${this.importId}/process`, {
@@ -938,27 +944,18 @@ export default {
             // If we're still processing after 2 seconds, show the "import started" notification
             if (this.isProcessing && !this.importStartedNotificationShown) {
               this.importStartedNotificationShown = true;
-              this.$store.dispatch('notifications/add', {
-                type: 'success',
-                message: 'Der Import wurde gestartet und läuft im Hintergrund. Der Fortschritt wird automatisch aktualisiert.'
-              });
+              this.setStatusMessage('Der Import wurde gestartet und läuft im Hintergrund. Der Fortschritt wird automatisch aktualisiert.', 'success', 'info');
             }
           }, 2000);
         } else {
           this.isProcessing = false;
 
-          this.$store.dispatch('notifications/add', {
-            type: 'error',
-            message: data.error || 'Beim Starten des Imports ist ein Fehler aufgetreten.'
-          });
+          this.setStatusMessage(data.error || 'Beim Starten des Imports ist ein Fehler aufgetreten.', 'error', 'error');
         }
       } catch (error) {
         this.isProcessing = false;
 
-        this.$store.dispatch('notifications/add', {
-          type: 'error',
-          message: 'Beim Starten des Imports ist ein Fehler aufgetreten.'
-        });
+        this.setStatusMessage('Beim Starten des Imports ist ein Fehler aufgetreten.', 'error', 'error');
       } finally {
         this.$store.commit('loaders/hideLoader', 'projectImport');
       }
@@ -1005,12 +1002,9 @@ export default {
               }
               
               // Show completion message
-              this.$store.dispatch('notifications/add', {
-                type: data.status === 'completed' ? 'success' : 'error',
-                message: data.status === 'completed' 
-                  ? 'Der Import wurde erfolgreich abgeschlossen.' 
-                  : 'Der Import wurde mit Fehlern abgeschlossen.'
-              });
+              this.setStatusMessage(data.status === 'completed' 
+                ? 'Der Import wurde erfolgreich abgeschlossen.' 
+                : 'Der Import wurde mit Fehlern abgeschlossen.', data.status === 'completed' ? 'success' : 'error', data.status === 'completed' ? 'check_circle' : 'error');
             }
           } else {
             console.error('Error in polling response:', data);
@@ -1020,10 +1014,7 @@ export default {
             this.pollingInterval = null;
             this.isProcessing = false;
             
-            this.$store.dispatch('notifications/add', {
-              type: 'error',
-              message: 'Beim Abrufen des Import-Status ist ein Fehler aufgetreten.'
-            });
+            this.setStatusMessage('Beim Abrufen des Import-Status ist ein Fehler aufgetreten.', 'error', 'error');
           }
         } catch (error) {
           console.error('Error polling for import status:', error);
@@ -1033,10 +1024,7 @@ export default {
           this.pollingInterval = null;
           this.isProcessing = false;
           
-          this.$store.dispatch('notifications/add', {
-            type: 'error',
-            message: 'Beim Abrufen des Import-Status ist ein Fehler aufgetreten.'
-          });
+          this.setStatusMessage('Beim Abrufen des Import-Status ist ein Fehler aufgetreten.', 'error', 'error');
         }
       }, 1000);
     },
@@ -1146,17 +1134,11 @@ export default {
           this.lePeriods = data;
           return data;
         } else {
-          this.$store.dispatch('notifications/add', {
-            type: 'error',
-            message: data.error || 'Beim Laden der LE Periods ist ein Fehler aufgetreten.'
-          });
+          this.setStatusMessage(data.error || 'Beim Laden der LE Periods ist ein Fehler aufgetreten.', 'error', 'error');
           throw new Error(data.error || 'Beim Laden der LE Periods ist ein Fehler aufgetreten.');
         }
       } catch (error) {
-        this.$store.dispatch('notifications/add', {
-          type: 'error',
-          message: 'Beim Laden der LE Periods ist ein Fehler aufgetreten.'
-        });
+        this.setStatusMessage('Beim Laden der LE Periods ist ein Fehler aufgetreten.', 'error', 'error');
         throw error;
       }
     },
@@ -1264,6 +1246,18 @@ export default {
         
         // Log which LE Period was selected
         console.log(`Automatically selected LE Period based on importer type (${this.importData.importerType}): ID=${this.selectedLePeriodId}, Name=${this.getSelectedPeriodName()}`);
+      }
+    },
+    getImporterTypeLabel(importerType) {
+      switch (importerType) {
+        case 'legacy':
+          return 'Legacy';
+        case 'standard':
+          return 'Standard';
+        case 'casestudy':
+          return 'Case Study';
+        default:
+          return importerType;
       }
     }
   }
@@ -1388,5 +1382,68 @@ export default {
 .selected-period-info i {
   margin-right: 5px;
   font-size: 18px;
+}
+
+.badge-info {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.import-type-badge {
+  font-size: 0.9rem;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+/* Type-specific styling */
+.import-type-legacy {
+  background-color: #6c757d;
+  color: white;
+}
+
+.import-type-standard {
+  background-color: #007bff;
+  color: white;
+}
+
+.import-type-casestudy {
+  background-color: #28a745;
+  color: white;
+}
+
+/* Add CSS for status message component at the end of the style section */
+.status-message {
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.status-message i {
+  margin-right: 10px;
+  font-size: 20px;
+}
+
+.status-message.error {
+  background-color: #ffebee;
+  color: #d32f2f;
+  border: 1px solid #ffcdd2;
+}
+
+.status-message.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.status-message.info {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
 }
 </style>

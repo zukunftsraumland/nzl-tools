@@ -17,6 +17,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 #[Route(path: '/api/v1/project-imports', name: 'api_project_imports_')]
 class ApiProjectImportsController extends AbstractController
@@ -121,11 +122,57 @@ class ApiProjectImportsController extends AbstractController
         try {
             // Create the import
             $user = $this->getUser();
-
             
-            $import = $importService->createImport($file, $user);
+            // Debug: Log all form parameters
+            error_log('Project Import - Form parameters: ' . print_r($request->request->all(), true));
             
-            return new JsonResponse($normalizer->normalize($import, null, ['groups' => ['id', 'project_import']]));
+            // Get the importer type from the request (default to 'standard')
+            // For multipart/form-data, we need to use $request->request->get()
+            $requestedImporterType = $request->request->get('importerType', 'standard');
+            
+            // Create a temporary copy of the file for detection
+            $originalFilePath = $file->getPathname();
+            $tempDir = sys_get_temp_dir();
+            $tempFilename = uniqid('import_detect_') . '.' . $file->guessExtension();
+            $tempFilePath = $tempDir . '/' . $tempFilename;
+            
+            // Copy the file instead of moving it
+            if (!copy($originalFilePath, $tempFilePath)) {
+                throw new \Exception('Failed to create temporary file for type detection');
+            }
+            
+            // Determine the importer type based on file content
+            try {
+                $detectedImporterType = $importService->detectImporterType($tempFilePath);
+                error_log('Detected importer type: ' . $detectedImporterType);
+                
+                // Use the detected type
+                $importerType = $detectedImporterType;
+                
+                // Delete the temporary file as we no longer need it
+                @unlink($tempFilePath);
+                
+                // Debug: Log the importer type detection details
+                error_log('Project Import - File detection: detected=' . $detectedImporterType . 
+                          ', requested=' . $requestedImporterType . ', using=' . $importerType);
+                
+                // Create the import with the original file and detected type
+                $import = $importService->createImport($file, $user, $importerType);
+                
+                $response = $normalizer->normalize($import, null, ['groups' => ['id', 'project_import']]);
+                
+                // Add the detected importer type to the response
+                $response['detectedImporterType'] = $importerType;
+                $response['importerTypeName'] = $this->getImporterTypeName($importerType, $importService);
+                
+                return new JsonResponse($response);
+            } catch (\Exception $e) {
+                // Clean up the temporary file if it exists
+                if (file_exists($tempFilePath)) {
+                    @unlink($tempFilePath);
+                }
+                throw $e;
+            }
         } catch (\Exception $e) {
             
             return new JsonResponse([
@@ -336,5 +383,18 @@ class ApiProjectImportsController extends AbstractController
     {
         $importers = $importManager->getImporters();
         return $this->json($importers);
+    }
+
+    private function getImporterTypeName(string $type, ProjectImportManager $importService): string
+    {
+        $importers = $importService->getImporters();
+        
+        foreach ($importers as $importer) {
+            if ($importer['type'] === $type) {
+                return $importer['name'];
+            }
+        }
+        
+        return 'Unbekannt';
     }
 } 

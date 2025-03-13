@@ -37,7 +37,6 @@ import posts from './modules/posts';
 import tags from './modules/tags';
 import localWorkgroups from './modules/local-workgroups';
 import leStructure from './modules/le-structure';
-import notifications from './modules/notifications';
 
 //const debug = process.env.NODE_ENV !== 'production';
 const debug = false;
@@ -82,7 +81,6 @@ export default createStore({
         tags,
         localWorkgroups,
         leStructure,
-        notifications,
     },
     strict: debug,
     plugins: debug ? [createLogger()] : []

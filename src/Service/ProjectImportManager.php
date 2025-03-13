@@ -322,6 +322,90 @@ class ProjectImportManager
     }
 
     /**
+     * Detect importer type based on Excel file content
+     * 
+     * Examines the Excel file to determine if it's a standard import or case study import.
+     * If column CY contains the value 'Q39.7', it's considered a case study import.
+     * 
+     * @param string $filePath Path to the Excel file
+     * @return string The detected importer type ('standard' or 'casestudy')
+     */
+    public function detectImporterType(string $filePath): string
+    {
+        error_log('Starting importer type detection for file: ' . $filePath);
+        
+        if (!file_exists($filePath)) {
+            error_log('Error: File does not exist: ' . $filePath);
+            return 'standard';
+        }
+        
+        try {
+            // Load the spreadsheet
+            $spreadsheet = IOFactory::load($filePath);
+            $worksheet = $spreadsheet->getActiveSheet();
+            
+            error_log('Successfully loaded Excel file for detection');
+            
+            // We'll check multiple rows and a range of columns for case study markers
+            $markerFound = false;
+            
+            // Get the highest column index to ensure we don't go out of bounds
+            $highestColumnIndex = Coordinate::columnIndexFromString($worksheet->getHighestColumn());
+            
+            // Case study marker strategy 1: Check for Q39.7 in column CY row 4
+            try {
+                // CY is column 103 in 1-based indexing (if within range)
+                if ($highestColumnIndex >= 103) {
+                    $cyValue = $worksheet->getCellByColumnAndRow(103, 4)->getValue();
+                    error_log('Detected value in column CY (103), row 4: ' . ($cyValue ?? 'null'));
+                    
+                    if ($cyValue === 'Q39.7') {
+                        error_log('Detected case study import based on column CY=Q39.7');
+                        $markerFound = true;
+                    }
+                } else {
+                    error_log('Column CY (103) is out of range. Highest column index is: ' . $highestColumnIndex);
+                }
+            } catch (\Exception $e) {
+                error_log('Error checking CY value: ' . $e->getMessage());
+            }
+            
+            // Case study marker strategy 2: Look for case study specific headers
+            // Check columns BV through CI in row 4 for case study field headers
+            if (!$markerFound) {
+                $caseStudyHeaders = [
+                    'Q21', 'Q22', 'Q23', 'Q24', 'Q25', 'Q26', 'Q27', 
+                    'Q28', 'Q29', 'Q30', 'Q31', 'Q32', 'Q33', 'Q34'
+                ];
+                
+                // Scan the header row (row 4) for case study specific headers
+                for ($col = 1; $col <= min(120, $highestColumnIndex); $col++) {
+                    $headerValue = $worksheet->getCellByColumnAndRow($col, 4)->getValue();
+                    
+                    if (in_array($headerValue, $caseStudyHeaders)) {
+                        error_log("Found case study header: $headerValue in column $col");
+                        $markerFound = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Use the result of our detection
+            if ($markerFound) {
+                return 'casestudy';
+            }
+            
+            error_log('No case study markers found, treating as standard import');
+            return 'standard';
+        } catch (\Exception $e) {
+            error_log('Error detecting importer type: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+            // Default to standard import if detection fails
+            return 'standard';
+        }
+    }
+
+    /**
      * Import projects from an Excel file
      * 
      * @param ProjectImport $import The import record

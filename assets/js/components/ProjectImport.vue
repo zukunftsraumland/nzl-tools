@@ -51,10 +51,15 @@
                       <i class="material-icons">description</i>
                       <span>{{ file.name }}</span>
                     </div>
+                    
+                    <div class="import-type-detection" v-if="file">
+                      <i class="material-icons">auto_awesome</i>
+                      <span>Der Import-Typ wird automatisch erkannt</span>
+                    </div>
                   </div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" v-if="false">
                   <label for="importerType">
                     <i class="material-icons">category</i>
                     Import-Typ auswählen
@@ -87,13 +92,16 @@
                       <i class="material-icons processing-icon">sync</i>
                       <h4>Datei wird hochgeladen und vorbereitet</h4>
                     </div>
-                    <div class="progress">
-                      <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" 
-                        style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
-                        Bitte warten...
-                      </div>
+                    <div v-if="detectedImporterTypeName" class="detected-type-info">
+                      <i class="material-icons">check_circle</i>
+                      <span>Erkannter Datei-Typ: <strong>{{ detectedImporterTypeName }}</strong></span>
                     </div>
                   </div>
+                </div>
+                
+                <div v-if="statusMessage" class="status-message" :class="statusMessageType">
+                  <i class="material-icons">{{ statusMessageIcon }}</i>
+                  <span>{{ statusMessage }}</span>
                 </div>
               </div>
             </div>
@@ -120,6 +128,7 @@
                       <th>ID</th>
                       <th>Dateiname</th>
                       <th>Status</th>
+                      <th>Import-Typ</th>
                       <th>Fortschritt</th>
                       <th>Erstellt am</th>
                       <th>Aktionen</th>
@@ -149,6 +158,11 @@
                           class="badge"
                         >
                           {{ getStatusLabel(importItem.status) }}
+                        </span>
+                      </td>
+                      <td>
+                        <span v-if="importItem.importerType" class="badge import-type-badge" :class="'import-type-' + importItem.importerType">
+                          {{ getImporterTypeLabel(importItem.importerType) }}
                         </span>
                       </td>
                       <td>
@@ -275,6 +289,14 @@
                         </span>
                       </span>
                     </div>
+                    <div class="detail-item" v-if="selectedImport.importerType">
+                      <span class="detail-label">Import-Typ:</span>
+                      <span class="detail-value">
+                        <span class="badge import-type-badge" :class="'import-type-' + selectedImport.importerType">
+                          {{ getImporterTypeLabel(selectedImport.importerType) }}
+                        </span>
+                      </span>
+                    </div>
                   </div>
                 </div>
                 
@@ -378,7 +400,11 @@ export default {
       showImportDetails: false,
       selectedImport: null,
       importers: [],
-      importerType: 'standard'
+      importerType: 'standard',
+      detectedImporterTypeName: null,
+      statusMessage: '',
+      statusMessageType: '',
+      statusMessageIcon: ''
     };
   },
   created() {
@@ -409,81 +435,76 @@ export default {
             this.importerType = this.importers[0].type;
           }
         } else {
-          this.$store.dispatch('notifications/add', {
-            type: 'error',
-            message: data.error || 'Beim Laden der Importtypen ist ein Fehler aufgetreten.'
-          });
+          this.setStatusMessage(data.error || 'Beim Laden der Importtypen ist ein Fehler aufgetreten.', 'error', 'error');
         }
       } catch (error) {
-        this.$store.dispatch('notifications/add', {
-          type: 'error',
-          message: 'Beim Laden der Importtypen ist ein Fehler aufgetreten.'
-        });
+        this.setStatusMessage('Beim Laden der Importtypen ist ein Fehler aufgetreten.', 'error', 'error');
       } finally {
         this.$store.commit('loaders/hideLoader', 'projectImport');
       }
     },
     async uploadFile() {
       if (!this.file) {
-        this.$store.dispatch('notifications/add', {
-          type: 'error',
-          message: 'Bitte wählen Sie eine Datei aus.'
-        });
+        this.setStatusMessage('Bitte wählen Sie eine Datei aus.', 'error', 'error');
         return;
       }
 
       this.isUploading = true;
       this.$store.commit('loaders/showLoader', 'projectImport');
       
-      // Show a notification that the upload is starting
-      this.$store.dispatch('notifications/add', {
-        type: 'info',
-        message: 'Die Datei wird hochgeladen und vorbereitet. Dies kann einige Momente dauern...'
-      });
+      this.setStatusMessage('Die Datei wird hochgeladen und vorbereitet...', 'info', 'info');
 
       try {
+        console.log('uploadFile: Starting upload with importerType', this.importerType);
         const formData = new FormData();
         formData.append('file', this.file);
         formData.append('importerType', this.importerType);
 
+        console.log('uploadFile: Sending API request');
         const response = await fetch('/api/v1/project-imports', {
           method: 'POST',
           body: formData,
           credentials: 'include'
         });
 
+        console.log('uploadFile: Received response', response.status, response.statusText);
         const data = await response.json();
+        console.log('uploadFile: Response data', data);
 
         if (response.ok) {
-          this.$store.dispatch('notifications/add', {
-            type: 'success',
-            message: 'Die Datei wurde erfolgreich hochgeladen und vorbereitet.'
-          });
+          this.setStatusMessage('Die Datei wurde erfolgreich hochgeladen und vorbereitet.', 'success', 'check_circle');
+          
           this.file = null;
           this.$refs.file.value = '';
           this.fetchImports();
           
-          // Redirect to preview page for the newly created import
+          if (data && data.importerTypeName) {
+            this.detectedImporterTypeName = data.importerTypeName;
+          }
+          
           if (data && data.id) {
-            // Show a notification that we're redirecting to the preview page
-            this.$store.dispatch('notifications/add', {
-              type: 'info',
-              message: 'Sie werden zur Vorschauseite weitergeleitet...'
-            });
+            this.setStatusMessage('Sie werden zur Vorschauseite weitergeleitet...', 'info', 'info');
             
             this.previewImport(data);
           }
         } else {
-          this.$store.dispatch('notifications/add', {
-            type: 'error',
-            message: data.error || 'Beim Hochladen der Datei ist ein Fehler aufgetreten.'
-          });
+          let errorMessage = 'Beim Hochladen der Datei ist ein Fehler aufgetreten.';
+          
+          if (data.error) {
+            errorMessage = data.error;
+            
+            if (data.message) {
+              errorMessage += ': ' + data.message;
+            }
+          }
+          
+          console.error('Upload error:', data);
+          
+          this.setStatusMessage(errorMessage, 'error', 'error');
         }
       } catch (error) {
-        this.$store.dispatch('notifications/add', {
-          type: 'error',
-          message: 'Beim Hochladen der Datei ist ein Fehler aufgetreten.'
-        });
+        console.error('Upload exception:', error);
+        this.setStatusMessage('Beim Hochladen der Datei ist ein Fehler aufgetreten: ' + (error.message || 'Unbekannter Fehler'), 'error', 'error');
       } finally {
         this.isUploading = false;
         this.$store.commit('loaders/hideLoader', 'projectImport');
@@ -502,17 +523,12 @@ export default {
 
         if (response.ok) {
           this.imports = data;
+          this.clearStatusMessage();
         } else {
-          this.$store.dispatch('notifications/add', {
-            type: 'error',
-            message: data.error || 'Beim Laden der Importe ist ein Fehler aufgetreten.'
-          });
+          this.setStatusMessage(data.error || 'Beim Laden der Importe ist ein Fehler aufgetreten.', 'error', 'error');
         }
       } catch (error) {
-        this.$store.dispatch('notifications/add', {
-          type: 'error',
-          message: 'Beim Laden der Importe ist ein Fehler aufgetreten.'
-        });
+        this.setStatusMessage('Beim Laden der Importe ist ein Fehler aufgetreten.', 'error', 'error');
       } finally {
         this.$store.commit('loaders/hideLoader', 'projectImport');
       }
@@ -531,23 +547,17 @@ export default {
         if (response.ok) {
           this.selectedImport = data;
           this.showImportDetails = true;
+          this.clearStatusMessage();
         } else {
-          this.$store.dispatch('notifications/add', {
-            type: 'error',
-            message: data.error || 'Beim Laden der Import-Details ist ein Fehler aufgetreten.'
-          });
+          this.setStatusMessage(data.error || 'Beim Laden der Import-Details ist ein Fehler aufgetreten.', 'error', 'error');
         }
       } catch (error) {
-        this.$store.dispatch('notifications/add', {
-          type: 'error',
-          message: 'Beim Laden der Import-Details ist ein Fehler aufgetreten.'
-        });
+        this.setStatusMessage('Beim Laden der Import-Details ist ein Fehler aufgetreten.', 'error', 'error');
       } finally {
         this.$store.commit('loaders/hideLoader', 'projectImport');
       }
     },
     previewImport(importItem) {
-      // Navigate to the preview page
       this.$router.push({ name: 'project-import-preview', params: { id: importItem.id } });
     },
     async deleteImport(importItem) {
@@ -566,22 +576,13 @@ export default {
         const data = await response.json();
 
         if (response.ok) {
-          this.$store.dispatch('notifications/add', {
-            type: 'success',
-            message: 'Der Import wurde erfolgreich gelöscht.'
-          });
+          this.setStatusMessage('Der Import wurde erfolgreich gelöscht.', 'success', 'check_circle');
           this.fetchImports();
         } else {
-          this.$store.dispatch('notifications/add', {
-            type: 'error',
-            message: data.error || 'Beim Löschen des Imports ist ein Fehler aufgetreten.'
-          });
+          this.setStatusMessage(data.error || 'Beim Löschen des Imports ist ein Fehler aufgetreten.', 'error', 'error');
         }
       } catch (error) {
-        this.$store.dispatch('notifications/add', {
-          type: 'error',
-          message: 'Beim Löschen des Imports ist ein Fehler aufgetreten.'
-        });
+        this.setStatusMessage('Beim Löschen des Imports ist ein Fehler aufgetreten.', 'error', 'error');
       } finally {
         this.$store.commit('loaders/hideLoader', 'projectImport');
       }
@@ -606,6 +607,20 @@ export default {
         default:
           return status;
       }
+    },
+    setStatusMessage(message, type, icon) {
+      this.statusMessage = message;
+      this.statusMessageType = type;
+      this.statusMessageIcon = icon;
+    },
+    clearStatusMessage() {
+      this.statusMessage = '';
+      this.statusMessageType = '';
+      this.statusMessageIcon = '';
+    },
+    getImporterTypeLabel(type) {
+      const importer = this.importers.find(i => i.type === type);
+      return importer ? importer.name : type;
     }
   }
 };
@@ -721,6 +736,25 @@ export default {
 .selected-file i {
   margin-right: 10px;
   color: #6090d8;
+}
+
+.import-type-detection {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  border-left: 4px solid #6090d8;
+}
+
+.import-type-detection i {
+  margin-right: 10px;
+  color: #6090d8;
+}
+
+.import-type-detection span {
+  font-weight: bold;
 }
 
 .badge {
@@ -1039,5 +1073,78 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.detected-type-info {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  border: 1px solid #c8e6c9;
+}
+
+.detected-type-info i {
+  margin-right: 8px;
+  color: #2e7d32;
+}
+
+.status-message {
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.status-message i {
+  margin-right: 10px;
+  font-size: 20px;
+}
+
+.status-message.error {
+  background-color: #ffebee;
+  color: #d32f2f;
+  border: 1px solid #ffcdd2;
+}
+
+.status-message.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.status-message.info {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+}
+
+.import-type-badge {
+  font-size: 0.9rem;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+/* Type-specific styling */
+.import-type-legacy {
+  background-color: #6c757d;
+  color: white;
+}
+
+.import-type-standard {
+  background-color: #007bff;
+  color: white;
+}
+
+.import-type-casestudy {
+  background-color: #28a745;
+  color: white;
 }
 </style> 
