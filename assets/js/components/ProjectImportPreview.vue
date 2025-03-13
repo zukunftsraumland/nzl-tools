@@ -281,7 +281,7 @@
                       <th>Projektcode</th>
                       <th>Start Datum</th>
                       <th>End Datum</th>
-                      <th>LE-Kategorie</th>
+                      <th v-if="!importData || importData.importerType !== 'casestudy'">LE-Kategorie</th>
                       <th>Lokale Arbeitsgruppe</th>
                       <th>Status</th>
                     </tr>
@@ -307,7 +307,7 @@
                       <td>{{ item.projectCode }}</td>
                       <td>{{ formatDate(item.startDate) }}</td>
                       <td>{{ formatDate(item.endDate) }}</td>
-                      <td>{{ item.leCategory }}</td>
+                      <td v-if="!importData || importData.importerType !== 'casestudy'">{{ item.leCategory }}</td>
                       <td>{{ item.localWorkgroup }}</td>
                       <td>
                         <span :class="{
@@ -453,12 +453,12 @@
                             <span class="detail-label">Projektcode:</span>
                             <span class="detail-value">{{ selectedRow.projectCode }}</span>
                           </div>
-                          <div class="detail-item">
+                          <div class="detail-item" v-if="!importData || importData.importerType !== 'casestudy'">
                             <span class="detail-label">LE-Kategorie:</span>
                             <span class="detail-value">{{ selectedRow.leCategory }}</span>
                           </div>
-                          <div class="detail-item">
-                            <span class="detail-label">Lokale Arbeitsgruppe:</span>
+                          <div class="detail-item" v-if="!importData || importData.importerType !== 'casestudy'">
+                            <span class="detail-label" >Lokale Arbeitsgruppe:</span>
                             <span class="detail-value">{{ selectedRow.localWorkgroup }}</span>
                           </div>
                           <div class="detail-item">
@@ -488,15 +488,15 @@
                       </div>
 
                       <div class="row-details-card"
-                        v-if="selectedRow._rawData && selectedRow._rawData.tagNames && selectedRow._rawData.tagNames.length">
+                        v-if="selectedRow._rawData && selectedRow._rawData.tags && selectedRow._rawData.tags.length">
                         <div class="row-details-card-header">
                           <i class="material-icons">local_offer</i>
                           <h4>Schlagworte</h4>
                         </div>
                         <div class="row-details-card-body">
                           <ul class="tags-list">
-                            <li v-for="(tag, i) in selectedRow._rawData.tagNames" :key="'tag-' + i">
-                              {{ tag }}
+                            <li v-for="(tag, i) in selectedRow._rawData.tags" :key="'tag-' + i">
+                              {{ tag.name }}
                             </li>
                           </ul>
                         </div>
@@ -771,13 +771,15 @@ export default {
       return data.map(item => {
         const result = { ...item };
 
-        // Add LE-Category name if available
-        if (item.payload && item.payload.leFundingCategoryName) {
-          result.leCategory = item.payload.leFundingCategoryName;
-        } else if (item.payload && item.payload.leFundingCategoryId) {
-          result.leCategory = `Kategorie ID: ${item.payload.leFundingCategoryId}`;
-        } else {
-          result.leCategory = '-';
+        // Ensure LE-Category information is available
+        if (this.importData && this.importData.importerType !== 'casestudy') {
+          if (!item.leCategory && item.payload && item.payload.leFundingCategoryName) {
+            result.leCategory = item.payload.leFundingCategoryName;
+          } else if (!item.leCategory && item.payload && item.payload.leFundingCategoryId) {
+            result.leCategory = `Kategorie ID: ${item.payload.leFundingCategoryId}`;
+          } else if (!item.leCategory) {
+            result.leCategory = '-';
+          }
         }
 
         // Add LocalWorkgroup name if available
@@ -826,7 +828,7 @@ export default {
           }
 
           // Filter out specific keys that are displayed in other sections
-          const excludedKeys = ['contacts', 'links', 'videos', 'states', 'topicNames', 'tagNames', 'financing',
+          const excludedKeys = ['contacts', 'links', 'videos', 'states', 'topicNames', 'tags', 'financing',
             'title', 'projectCode', 'startDate', 'endDate'];
 
           this.filteredDetails = Object.entries(newRow._rawData)
@@ -930,7 +932,7 @@ export default {
         // Show status message about loading preview data
         if (this.importData && this.importData.importerType === 'casestudy') {
           this.setStatusMessage(
-            'Lade Vorschaudaten für Case Study Import... Dies kann bis zu einer Minute dauern. Der Import kann bei Timeout trotzdem gestartet werden.', 
+            'Lade Vorschaudaten für Case Study Import... Dies kann bis zu einer Minute dauern. Der Import kann bei einer Zeitüberschreitung trotzdem gestartet werden.', 
             'info', 
             'info'
           );
@@ -1006,14 +1008,14 @@ export default {
             this.setStatusMessage(
               `Die Vorschaudaten konnten nicht geladen werden, da der Server zu lange für die Antwort benötigt hat. 
                Das ist normal bei großen Excel-Dateien. 
-               Sie können den Import trotzdem starten.`, 
+               Sie können den Import trotzdem starten oder es später erneut versuchen.`, 
               'warning', 
               'timer'
             );
           }
         } else {
           this.setStatusMessage(
-            'Beim Laden der Vorschaudaten ist ein Fehler aufgetreten. Sie können den Import trotzdem starten.', 
+            'Beim erneuten Laden der Vorschaudaten ist ein Fehler aufgetreten. Sie können den Import trotzdem starten.', 
             'warning', 
             'warning'
           );
@@ -1210,12 +1212,14 @@ export default {
       }
 
       // Ensure LE-Category information is available
-      if (!row.leCategory && row.payload && row.payload.leFundingCategoryName) {
-        row.leCategory = row.payload.leFundingCategoryName;
-      } else if (!row.leCategory && row.payload && row.payload.leFundingCategoryId) {
-        row.leCategory = `Kategorie ID: ${row.payload.leFundingCategoryId}`;
-      } else if (!row.leCategory) {
-        row.leCategory = '-';
+      if (this.importData && this.importData.importerType !== 'casestudy') {
+        if (!row.leCategory && row.payload && row.payload.leFundingCategoryName) {
+          row.leCategory = row.payload.leFundingCategoryName;
+        } else if (!row.leCategory && row.payload && row.payload.leFundingCategoryId) {
+          row.leCategory = `Kategorie ID: ${row.payload.leFundingCategoryId}`;
+        } else if (!row.leCategory) {
+          row.leCategory = '-';
+        }
       }
 
       // Ensure LocalWorkgroup information is available
@@ -1223,7 +1227,7 @@ export default {
         row.localWorkgroup = row.payload.localWorkgroupName;
       } else if (!row.localWorkgroup && row.payload && row.payload.localWorkgroupId) {
         row.localWorkgroup = `Arbeitsgruppe ID: ${row.payload.localWorkgroupId}`;
-      } else if (!row.localWorkgroup) {
+      } else {
         row.localWorkgroup = '-';
       }
 

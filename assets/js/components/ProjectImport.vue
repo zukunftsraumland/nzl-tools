@@ -359,7 +359,7 @@
                     aria-valuemin="0"
                     aria-valuemax="100"
                   >
-                    {{ selectedImport.progress }}%
+                    {{ selectedImport.progress || 0 }}%
                   </div>
                 </div>
               </div>
@@ -455,21 +455,17 @@ export default {
       this.setStatusMessage('Die Datei wird hochgeladen und vorbereitet...', 'info', 'info');
 
       try {
-        console.log('uploadFile: Starting upload with importerType', this.importerType);
         const formData = new FormData();
         formData.append('file', this.file);
         formData.append('importerType', this.importerType);
 
-        console.log('uploadFile: Sending API request');
         const response = await fetch('/api/v1/project-imports', {
           method: 'POST',
           body: formData,
           credentials: 'include'
         });
 
-        console.log('uploadFile: Received response', response.status, response.statusText);
         const data = await response.json();
-        console.log('uploadFile: Response data', data);
 
         if (response.ok) {
           this.setStatusMessage('Die Datei wurde erfolgreich hochgeladen und vorbereitet.', 'success', 'check_circle');

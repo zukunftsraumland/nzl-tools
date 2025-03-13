@@ -39,7 +39,7 @@ class StandardProjectImporter extends AbstractProjectImporter
      */
     public function getName(): string
     {
-        return 'Standard Projektimport';
+        return 'Standard';
     }
 
     /**

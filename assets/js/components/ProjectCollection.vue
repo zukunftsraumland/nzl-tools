@@ -117,26 +117,24 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-sm-3" v-if="$env.PROJECTS_ENABLE_END_DATE">
+                        <div class="col-sm-3">
                             <div class="form-group">
-                                <label for="endDate">Ende (Jahr)</label>
-                                <div class="select-wrapper">
-                                    <select id="endDate" class="form-control" @change="addFilter({type: 'endDate', value: $event.target.value}); $event.target.value = null;">
-                                        <option></option>
-                                        <option v-for="year in years" :value="year+'-01-01'">{{ year }}</option>
-                                    </select>
-                                </div>
+                                <label for="endDate">Jahr</label>
+                                <enhanced-select
+                                    :options="years.map(year => ({ id: year, name: year.toString() }))"
+                                    placeholder="Jahr auswählen"
+                                    @change="(option) => addFilter({type: 'endDate', value: option ? `${option.id}-01-01` : null})"
+                                />
                             </div>
                         </div>
                         <div class="col-sm-3" v-if="$env.PROJECTS_ENABLE_TOPICS">
                             <div class="form-group">
                                 <label for="topic">Thema</label>
-                                <div class="select-wrapper">
-                                    <select id="topic" class="form-control" @change="addFilter({type: 'topic', value: $event.target.value}); $event.target.value = null;">
-                                        <option></option>
-                                        <option v-for="topic in topics.filter(topic => !topic.context || topic.context === 'project')">{{topic.name}}</option>
-                                    </select>
-                                </div>
+                                <enhanced-select
+                                    :options="topics.filter(topic => !topic.context || topic.context === 'project')"
+                                    placeholder="Thema auswählen"
+                                    @change="(option) => addFilter({type: 'topic', value: option?.name})"
+                                />
                             </div>
                         </div>
                         <div class="col-sm-3" v-if="$env.PROJECTS_ENABLE_PROGRAMS">
@@ -266,6 +264,7 @@
     import {translateField} from '../utils/filters';
     import EmbedProjectsView from './EmbedProjectsView';
     import moment from 'moment';
+    import EnhancedSelect from './EnhancedSelect.vue';
 
     export default {
         data() {
@@ -288,6 +287,7 @@
         components: {
             draggable,
             EmbedProjectsView,
+            EnhancedSelect,
         },
         computed: {
             ...mapState({

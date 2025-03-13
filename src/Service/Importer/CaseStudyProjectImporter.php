@@ -34,7 +34,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
      */
     public function getName(): string
     {
-        return 'CaseStudy Projektimport';
+        return 'CaseStudy';
     }
 
     /**
@@ -212,10 +212,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                     'context' => 'tag'
                 ];
             }
-        }
-        
-        // Log the final tags
-        
+        }        
     }
     
     /**
@@ -712,5 +709,258 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         } catch (\Exception $e) {
             error_log('Error logging Excel headers: ' . $e->getMessage());
         }
+    }
+    
+    /**
+     * Override the generatePreview method to create a more efficient version for case studies
+     * 
+     * This optimized version skips expensive operations like file downloading and database lookups
+     * during preview generation to prevent timeouts on the live server.
+     * 
+     * {@inheritdoc}
+     */
+    public function generatePreview(ProjectImport $import): array
+    {
+        $results = [];
+        
+        try {
+            $filePath = $import->getFilePath();
+            
+            // Check if the file path is already absolute
+            if (!file_exists($filePath)) {
+                // If not absolute, prepend the upload directory
+                $filePath = $this->uploadDir . '/' . $filePath;
+            }
+            
+            // Load the spreadsheet
+            $spreadsheet = IOFactory::load($filePath);
+            $worksheet = $spreadsheet->getActiveSheet();
+            
+            // Get the header row index
+            $headerRowIndex = $this->getHeaderRowCount();
+            
+            // Get the highest column and row
+            $highestColumnIndex = Coordinate::columnIndexFromString($worksheet->getHighestColumn());
+            $highestRow = $worksheet->getHighestRow();
+            
+            // Build header mapping from row 4 (field names)
+            $headerMapping = [];
+            
+            for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                $columnLetter = Coordinate::stringFromColumnIndex($col);
+                $fieldName = $worksheet->getCellByColumnAndRow($col, $headerRowIndex)->getValue();
+                if (!empty($fieldName)) {
+                    $headerMapping[$columnLetter] = $fieldName;
+                }
+            }
+            
+            // Process the rows to generate preview
+            $maxPreviewRows = 100; // Limit the number of rows for preview
+            $rowLimit = min($highestRow, $maxPreviewRows + $headerRowIndex);
+            
+            for ($rowIndex = $headerRowIndex + 1; $rowIndex <= $rowLimit; $rowIndex++) {
+                // Extract data from the row
+                $rowData = [];
+                
+                for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                    $columnLetter = Coordinate::stringFromColumnIndex($col);
+                    $value = $worksheet->getCellByColumnAndRow($col, $rowIndex)->getValue();
+                    
+                    // Map cell data
+                    if (isset($headerMapping[$columnLetter])) {
+                        $rowData[$headerMapping[$columnLetter]] = $value;
+                    }
+                    
+                    // Also store data by column letter for direct access
+                    $rowData[$columnLetter] = $value;
+                }
+                
+                // Skip empty rows
+                if (empty($rowData)) {
+                    continue;
+                }
+                
+                // Prepare basic payload without expensive operations
+                $payload = $this->preparePreviewPayload($rowData);
+                
+                // Add basic case study fields to payload (without database lookups)
+                $payload['caseStudy'] = true;
+                
+                // Map the essential fields needed for preview
+                $previewItem = [
+                    'rowNumber' => $rowIndex - $headerRowIndex,
+                    'title' => $payload['title'] ?? '',
+                    'description' => $payload['description'] ?? '',
+                    'projectCode' => $payload['projectCode'] ?? '',
+                    'startDate' => $payload['startDate'] ?? null,
+                    'endDate' => $payload['endDate'] ?? null,
+                    'status' => 'valid', // Default to valid for preview
+                    'payload' => $payload
+                ];
+                
+                // Basic validation for preview (minimal)
+                if (empty($previewItem['title'])) {
+                    $previewItem['status'] = 'warning';
+                    $previewItem['message'] = 'Projekt hat keinen Titel';
+                }
+                
+                $results[] = $previewItem;
+            }
+            
+            return $results;
+        } catch (\Exception $e) {
+            error_log('Error generating case study preview: ' . $e->getMessage());
+            return [
+                [
+                    'rowNumber' => 1,
+                    'title' => 'Fehler beim Generieren der Vorschau',
+                    'description' => 'Es ist ein Fehler aufgetreten: ' . $e->getMessage(),
+                    'projectCode' => '',
+                    'startDate' => null,
+                    'endDate' => null,
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                    'payload' => []
+                ]
+            ];
+        }
+    }
+    
+    /**
+     * Prepare a lightweight project payload for preview generation
+     * 
+     * This is a stripped-down version of prepareProjectPayload that skips
+     * expensive operations like file downloads and database lookups.
+     *
+     * @param array $data The Excel row data
+     * @return array The payload for preview
+     */
+    private function preparePreviewPayload(array $data): array
+    {
+        $payload = [];
+        
+        // Basic project fields
+        $payload['title'] = $data['title'] ?? $data['Q2.1'] ?? $data['A'] ?? '';
+        $payload['description'] = $data['description'] ?? $data['Q11'] ?? $data['AN'] ?? '';
+        $payload['projectCode'] = $data['projectCode'] ?? $data['Q2.2'] ?? $data['B'] ?? '';
+        
+        // Parse dates
+        if (!empty($data['Q2.3']) || !empty($data['C'])) {
+            $startDateValue = $data['Q2.3'] ?? $data['C'] ?? null;
+            if ($startDateValue) {
+                if ($startDateValue instanceof \DateTime) {
+                    $payload['startDate'] = $startDateValue->format('Y-m-d');
+                } else if (is_numeric($startDateValue)) {
+                    // Excel date
+                    $payload['startDate'] = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($startDateValue)->format('Y-m-d');
+                } else {
+                    // Try to parse the date string
+                    try {
+                        $payload['startDate'] = (new \DateTime($startDateValue))->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        // Ignore date parsing errors for preview
+                    }
+                }
+            }
+        }
+        
+        if (!empty($data['Q2.4']) || !empty($data['D'])) {
+            $endDateValue = $data['Q2.4'] ?? $data['D'] ?? null;
+            if ($endDateValue) {
+                if ($endDateValue instanceof \DateTime) {
+                    $payload['endDate'] = $endDateValue->format('Y-m-d');
+                } else if (is_numeric($endDateValue)) {
+                    // Excel date
+                    $payload['endDate'] = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($endDateValue)->format('Y-m-d');
+                } else {
+                    // Try to parse the date string
+                    try {
+                        $payload['endDate'] = (new \DateTime($endDateValue))->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        // Ignore date parsing errors for preview
+                    }
+                }
+            }
+        }
+        
+        // Include basic case study fields without DB lookups
+        // Map case study specific fields from columns BV-CI to improve preview data
+        $caseStudyFields = [
+            'exemplary' => $data['Q21'] ?? $data['BV'] ?? null,
+            'initialContext' => $data['Q22'] ?? $data['BW'] ?? null,
+            'initialContextGoals' => $data['Q23'] ?? $data['BX'] ?? null,
+            'fundingMethod' => $data['Q24'] ?? $data['BY'] ?? null,
+            'fundingMethodStakeholders' => $data['Q25'] ?? $data['BZ'] ?? null,
+            'resultsQuantity' => $data['Q26'] ?? $data['CA'] ?? null,
+            'resultsQuality' => $data['Q27'] ?? $data['CB'] ?? null,
+            'innovations' => $data['Q28'] ?? $data['CC'] ?? null,
+            'additionalValue' => $data['Q29'] ?? $data['CD'] ?? null,
+            'integrationYoungCitizen' => $data['Q30'] ?? $data['CE'] ?? null,
+            'integrationFemaleCitizen' => $data['Q31'] ?? $data['CF'] ?? null,
+            'integrationMinorities' => $data['Q32'] ?? $data['CG'] ?? null,
+            'learningExperience' => $data['Q33'] ?? $data['CH'] ?? null,
+            'transferable' => $data['Q34'] ?? $data['CI'] ?? null,
+        ];
+        
+        foreach ($caseStudyFields as $field => $value) {
+            if (!empty($value)) {
+                $payload[$field] = $value;
+            }
+        }
+        
+        // For preview only, include placeholder tags without DB lookups
+        if (!empty($data['Q4']) || isset($data['U'])) {
+            $keywords = $data['Q4'] ?? $data['U'] ?? '';
+            if (!empty($keywords)) {
+                // Initialize the tags array in payload
+                $payload['tags'] = [];
+                
+                // Process tags directly into the payload
+                $this->processTagsForCaseStudy($keywords, $payload);
+                
+                // No need to extract names into a separate array, the full tags array is available
+            }
+        }
+        
+        // For synergy tags, just indicate their presence in preview without DB lookups
+        $synergyFundTagsPresent = false;
+        $synergyGoalTagsPresent = false;
+        
+        // Check for synergy fund tags (columns CL-CP)
+        foreach (['CL', 'CM', 'CN', 'CO', 'CP'] as $column) {
+            if (isset($data[$column]) && $data[$column] == 1) {
+                $synergyFundTagsPresent = true;
+                break;
+            }
+        }
+        
+        // Check for synergy goal tags (columns CS-CY)
+        foreach (['CS', 'CT', 'CU', 'CV', 'CW', 'CX', 'CY'] as $column) {
+            if (isset($data[$column]) && $data[$column] == 1) {
+                $synergyGoalTagsPresent = true;
+                break;
+            }
+        }
+        
+        // Add placeholder indicators for synergy tags
+        if ($synergyFundTagsPresent) {
+            $payload['hasSynergyFundTags'] = true;
+        }
+        
+        if ($synergyGoalTagsPresent) {
+            $payload['hasSynergyGoalTags'] = true;
+        }
+        
+        // Add local workgroup name without DB lookup
+        if (!empty($data['Q3.8']) || !empty($data['L'])) {
+            $payload['localWorkgroupName'] = $data['Q3.8'] ?? $data['L'] ?? '';
+        }
+        
+        // Add LE category name without DB lookup
+        if (!empty($data['Q3.7']) || !empty($data['K'])) {
+            $payload['leFundingCategoryName'] = $data['Q3.7'] ?? $data['K'] ?? '';
+        }
+        
+        return $payload;
     }
 } 
