@@ -761,7 +761,22 @@ export default {
             'title', 'projectCode', 'startDate', 'endDate'];
 
           this.filteredDetails = Object.entries(newRow._rawData)
-            .filter(([key]) => !excludedKeys.includes(key))
+            .filter(([key, value]) => {
+              // Exclude keys in the exclusion list
+              if (excludedKeys.includes(key)) return false;
+              
+              // Filter out empty arrays
+              if (Array.isArray(value) && value.length === 0) return false;
+              
+              // Filter out empty strings
+              if (value === '') return false;
+              
+              // Filter out null or undefined values
+              if (value === null || value === undefined) return false;
+              
+              // Keep everything else
+              return true;
+            })
             .reduce((obj, [key, value]) => {
               obj[key] = value;
               return obj;
