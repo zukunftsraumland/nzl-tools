@@ -97,7 +97,7 @@
                 <div class="import-details-card">
                   <div class="import-details-card-header">
                     <i class="material-icons">schedule</i>
-                    <h4>Zeitinformationen</h4>
+                    <h4>Zeitinformationen / Le-Periode</h4>
                   </div>
                   <div class="import-details-card-body">
                     <div class="detail-item">
@@ -107,6 +107,15 @@
                     <div class="detail-item">
                       <span class="detail-label">Aktualisiert am:</span>
                       <span class="detail-value">{{ formatDate(importData.updatedAt) }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <div class="le-period-info">
+                        <i class="material-icons">info</i>
+                        <p>
+                          Die passende LE Period wurde automatisch zugewiesen: 
+                          <strong>{{ getSelectedPeriodName() }}</strong>
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -135,86 +144,6 @@
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- LE Period Selection Section -->
-      <!-- Commented out as we now automatically select LE Period based on importerType 
-      <div class="row mt-4" v-if="!isDataLoading && !isProcessing && importData && importData.status === 'pending'">
-        <div class="col-md-12">
-          <div class="card">
-            <div class="card-header">
-              <h3>
-                <i class="material-icons">event</i>
-                LE Periode
-              </h3>
-            </div>
-            <div class="card-body">
-              <div class="le-period-info">
-                <i class="material-icons">info</i>
-                <p>
-                  Bitte wählen Sie eine LE Period aus, die allen importierten Projekten zugewiesen werden soll.
-                  Die LE Period ist erforderlich, die Fördermethoden werden automatisch anhand der LE Period zugewiesen.
-                </p>
-              </div>
-
-              <div class="le-period-selection">
-                <div class="form-group">
-                  <div class="row">
-                    <div class="col-md-6">
-                      <div class="form-group">
-                        <label for="le-period-select">
-                          <i class="material-icons">event</i>
-                          LE Period auswählen:
-                        </label>
-                        <div class="select-wrapper">
-                          <select id="le-period-select" class="form-control" v-model="selectedLePeriodId"
-                            :disabled="isProcessing" required>
-                            <option value="">Keine LE Period auswählen</option>
-                            <option v-for="period in lePeriods" :key="period.id" :value="period.id">
-                              {{ period.name }}
-                            </option>
-                          </select>
-                        </div>
-                        <div class="selected-period-info" v-if="selectedLePeriodId">
-                          <i class="material-icons">check_circle</i>
-                          <span>LE Period ausgewählt: {{ getSelectedPeriodName() }}</span>
-                        </div>
-                        <div class="validation-error" v-else>
-                          <i class="material-icons">warning</i>
-                          <span>Eine LE Period muss ausgewählt werden, bevor der Import gestartet werden kann.</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      -->
-
-      <!-- New info banner about automatic LE Period selection -->
-      <div class="row mt-4" v-if="!isDataLoading && !isProcessing && importData && importData.status === 'pending'">
-        <div class="col-md-12">
-          <div class="card">
-            <div class="card-header">
-              <h3>
-                <i class="material-icons">event</i>
-                LE Periode
-              </h3>
-            </div>
-            <div class="card-body">
-              <div class="le-period-info">
-                <i class="material-icons">info</i>
-                <p>
-                  Basierend auf dem ausgewählten Import-Typ wird die passende LE Period automatisch zugewiesen: 
-                  <strong>{{ getSelectedPeriodName() }}</strong>
-                </p>
               </div>
             </div>
           </div>
