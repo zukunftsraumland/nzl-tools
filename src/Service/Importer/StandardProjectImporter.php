@@ -773,7 +773,6 @@ class StandardProjectImporter extends AbstractProjectImporter
      */
     public function generatePreview(ProjectImport $import): array
     {
-        
         try {
             // Use the correct file path - don't concatenate uploadDir with the full path
             $filePath = $import->getFilePath();
@@ -788,16 +787,17 @@ class StandardProjectImporter extends AbstractProjectImporter
             $spreadsheet = IOFactory::load($filePath);
             $worksheet = $spreadsheet->getActiveSheet();
             
-            // Get the highest row and column indexes
+            // Get the header row index and highest row
+            $headerRowIndex = $this->getHeaderRowCount();
             $highestRow = $worksheet->getHighestRow();
             $highestColumnIndex = Coordinate::columnIndexFromString($worksheet->getHighestColumn());
             
             // Initialize arrays to store headers and data
             $headerMapping = [];
-            $parentHeaders = [];
             $previewData = [];
             
             // Get parent headers from row 1
+            $parentHeaders = [];
             for ($col = 1; $col <= $highestColumnIndex; $col++) {
                 $parentHeader = $worksheet->getCellByColumnAndRow($col, 1)->getValue();
                 if (!empty($parentHeader)) {
@@ -805,14 +805,27 @@ class StandardProjectImporter extends AbstractProjectImporter
                 }
             }
             
-            // Get field names from row 4
+            // Build header mapping from row 4 (field names)
             for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                $columnLetter = Coordinate::stringFromColumnIndex($col);
                 $fieldName = $worksheet->getCellByColumnAndRow($col, 4)->getValue();
                 if (!empty($fieldName)) {
-                    // Store the mapping
-                    $headerMapping[$col] = [
+                    $headerMapping[$columnLetter] = $fieldName;
+                }
+                
+                // Also store parent-field mapping
+                if (!empty($fieldName)) {
+                    // Find the parent header for this column
+                    $currentParent = null;
+                    foreach ($parentHeaders as $parentCol => $parentValue) {
+                        if ($parentCol <= $col) {
+                            $currentParent = $parentValue;
+                        }
+                    }
+                    
+                    $headerMapping[$columnLetter] = [
                         'field' => $fieldName,
-                        'parent' => $parentHeaders[$col] ?? null
+                        'parent' => $currentParent
                     ];
                 }
             }
@@ -821,45 +834,99 @@ class StandardProjectImporter extends AbstractProjectImporter
             $leCategoryNameMapping = $this->getLeCategoryNameMapping();
             $localWorkgroupNameMapping = $this->getLocalWorkgroupNameMapping();
             
-            // Process each row starting from row 5 (after headers)
-            for ($row = 5; $row <= $highestRow; $row++) {
+            // Process the rows to generate preview
+            $maxPreviewRows = 100; // Limit the number of rows for preview
+            $rowLimit = min($highestRow, $maxPreviewRows + $headerRowIndex);
+            
+            for ($rowIndex = $headerRowIndex + 1; $rowIndex <= $rowLimit; $rowIndex++) {
+                // Extract data from the row
                 $rowData = [];
                 
                 // Process each column
                 for ($col = 1; $col <= $highestColumnIndex; $col++) {
-                    if (isset($headerMapping[$col])) {
-                        $cellValue = $worksheet->getCellByColumnAndRow($col, $row)->getValue();
-                        $fieldName = $headerMapping[$col]['field'];
-                        $rowData[$fieldName] = $cellValue;
+                    $columnLetter = Coordinate::stringFromColumnIndex($col);
+                    $value = $worksheet->getCellByColumnAndRow($col, $rowIndex)->getValue();
+                    
+                    // Store by field name if it exists in the mapping
+                    if (isset($headerMapping[$columnLetter]) && is_array($headerMapping[$columnLetter])) {
+                        $fieldName = $headerMapping[$columnLetter]['field'];
+                        $rowData[$fieldName] = $value;
                     }
+                    
+                    // Also store by column letter for direct access
+                    $rowData[$columnLetter] = $value;
                 }
                 
-                // Process the row data to create a project payload
-                $result = $this->processImportItem($import, $row - 4);
+                // Skip empty rows
+                if (empty($rowData)) {
+                    continue;
+                }
+                
+                // Prepare lightweight payload for preview
+                $payload = $this->preparePreviewPayload($rowData);
                 
                 // Add LE category name if available
-                if (isset($result['payload']['leFundingCategoryId']) && is_numeric($result['payload']['leFundingCategoryId'])) {
-                    $excelCategoryId = (int)$result['payload']['leFundingCategoryId'];
+                if (isset($payload['leFundingCategoryId']) && is_numeric($payload['leFundingCategoryId'])) {
+                    $excelCategoryId = (int)$payload['leFundingCategoryId'];
                     if (isset($leCategoryNameMapping[$excelCategoryId])) {
-                        $result['payload']['leFundingCategoryName'] = $leCategoryNameMapping[$excelCategoryId];
+                        $payload['leFundingCategoryName'] = $leCategoryNameMapping[$excelCategoryId];
                     }
                 }
                 
                 // Add local workgroup name if available
-                if (isset($result['payload']['localWorkgroupId']) && is_numeric($result['payload']['localWorkgroupId'])) {
-                    $excelWorkgroupId = (int)$result['payload']['localWorkgroupId'];
+                if (isset($payload['localWorkgroupId']) && is_numeric($payload['localWorkgroupId'])) {
+                    $excelWorkgroupId = (int)$payload['localWorkgroupId'];
                     if (isset($localWorkgroupNameMapping[$excelWorkgroupId])) {
-                        $result['payload']['localWorkgroupName'] = $localWorkgroupNameMapping[$excelWorkgroupId];
+                        $payload['localWorkgroupName'] = $localWorkgroupNameMapping[$excelWorkgroupId];
                     }
                 }
                 
-                $previewData[] = $result;
+                // Create a preview result item
+                $previewItem = [
+                    'rowNumber' => $rowIndex - $headerRowIndex,
+                    'title' => $payload['title'] ?? 'Untitled',
+                    'description' => $payload['description'] ?? '',
+                    'projectCode' => $payload['projectCode'] ?? '',
+                    'startDate' => $payload['startDate'] ?? null,
+                    'endDate' => $payload['endDate'] ?? null,
+                    'status' => 'valid', // Default to valid
+                    'message' => '',
+                    'payload' => $payload
+                ];
+                
+                // Validate required fields
+                if (empty($previewItem['title'])) {
+                    $previewItem['status'] = 'error';
+                    $previewItem['message'] = 'Project title (Q2.1) is required';
+                }
+                
+                // Check if project with the same title already exists
+                if (!empty($previewItem['title'])) {
+                    $existingProject = $this->findProjectByTitle($previewItem['title']);
+                    if ($existingProject) {
+                        $previewItem['status'] = 'warning';
+                        $previewItem['message'] = 'Projekt mit diesem Namen existiert bereits';
+                    }
+                }
+                
+                $previewData[] = $previewItem;
             }
             
             return $previewData;
         } catch (\Exception $e) {
-            
-            throw $e;
+            return [
+                [
+                    'rowNumber' => 1,
+                    'title' => 'Error generating preview',
+                    'description' => 'An error occurred: ' . $e->getMessage(),
+                    'projectCode' => '',
+                    'startDate' => null,
+                    'endDate' => null,
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                    'payload' => []
+                ]
+            ];
         }
     }
 
@@ -1198,45 +1265,11 @@ class StandardProjectImporter extends AbstractProjectImporter
     }
 
     /**
-     * Map a financing entry from Excel to the standard financing types
-     * 
-     * @param array &$financingArray The financing array to update
-     * @param array $entry The entry to map with 'id' and 'value' keys
-     */
-    private function mapFinancingEntry(array &$financingArray, array $entry): void
-    {
-        $id = strtolower((string)$entry['id']);
-        $value = (float)$entry['value'];
-        
-        // Skip if value is not numeric or is zero
-        if (!is_numeric($value) || $value == 0) {
-            return;
-        }
-        
-        // Map to one of our standard financing types
-        if (strpos($id, 'gap') !== false || strpos($id, 'strategieplan') !== false || $id == 'ak') {
-            $financingArray[0]['value'] = $value;
-        } else if (strpos($id, 'private') !== false || strpos($id, 'eigen') !== false || $id == 'al') {
-            $financingArray[1]['value'] = $value;
-        } else if (strpos($id, 'external') !== false || strpos($id, 'andere') !== false || $id == 'am') {
-            $financingArray[2]['value'] = $value;
-        } else {
-            // If we can't map it, put it in the first one that's empty
-            foreach ($financingArray as $index => $item) {
-                if ($item['value'] == 0) {
-                    $financingArray[$index]['value'] = $value;
-                    break;
-                }
-            }
-        }
-    }
-
-    /**
      * Get the mapping between Excel LE-Category IDs and their names
      * 
      * @return array Mapping from Excel ID to category name
      */
-    private function getLeCategoryNameMapping(): array
+    protected function getLeCategoryNameMapping(): array
     {
         return [
             1 => '73-01 Investitionen in die landwirtschaftliche Erzeugung',
@@ -1422,11 +1455,11 @@ class StandardProjectImporter extends AbstractProjectImporter
     }
 
     /**
-     * Get the mapping between Excel LocalWorkgroup IDs and their names
+     * Get a mapping of LocalWorkgroup IDs to their names
      * 
-     * @return array Mapping from Excel ID to workgroup name
+     * @return array Associative array mapping numeric IDs to string names
      */
-    private function getLocalWorkgroupNameMapping(): array
+    protected function getLocalWorkgroupNameMapping(): array
     {
         return [
             1 => 'BGL01 Nordburgenland plus',
@@ -1737,5 +1770,411 @@ class StandardProjectImporter extends AbstractProjectImporter
         }
         
         return $string;
+    }
+
+    /**
+     * Prepare a lightweight project payload for preview generation
+     * 
+     * This is a stripped-down version of prepareProjectPayload that skips
+     * expensive operations like file downloads and database lookups.
+     *
+     * @param array $data The Excel row data
+     * @return array The payload for preview
+     */
+    private function preparePreviewPayload(array $data): array
+    {
+        $payload = [
+            'isPublic' => false,
+            'projectCode' => $data['Q2.2'] ?? '',
+            'title' => $data['Q2.1'] ?? '',
+            'keywords' => $data['Q4'] ?? '',
+            'description' => $data['Q11'] ?? '',
+            'projectCosts' => $data['Q9'] ?? null,
+            'cooperationProjectAt' => isset($data['Q8.1']) ? (bool)$data['Q8.1'] : false,
+            'cooperationProjectEu' => isset($data['Q8.2']) ? (bool)$data['Q8.2'] : false,
+            'topics' => [],
+            'tags' => [],
+            'geographicRegions' => [],
+            'countries' => [],
+            'states' => [],
+            'programs' => [],
+            'instruments' => [],
+            'businessSectors' => [],
+            'financing' => [],
+            'contacts' => [],
+            'links' => [],
+            'videos' => [],
+            'images' => [],
+            'files' => [],
+            'dates' => [],
+            'translations' => [],
+            'fundingMethod' => '',
+            'lat' => null,
+            'lng' => null,
+            'localWorkgroup' => null,
+            'caseStudy' => false,
+            'exemplary' => '',
+            'initialContext' => '',
+            'initialContextGoals' => '',
+            'additionalValue' => '',
+            'additionalValueResult' => '',
+            'innovations' => '',
+            'integrationYoungCitizen' => '',
+            'integrationFemaleCitizen' => '',
+            'integrationMinorities' => '',
+            'learningExperience' => '',
+            'transferable' => '',
+            'transferDetails' => '',
+            'fundingMethodStakeholders' => '',
+            'resultsQuality' => '',
+            'resultsQuantity' => '',
+            // Store the LE-Category ID from column AF
+            'leFundingCategoryId' => isset($data['AF']) && is_numeric($data['AF']) ? (int)$data['AF'] : null,
+            // Store the LocalWorkgroup ID from column AG
+            'localWorkgroupId' => isset($data['AG']) && is_numeric($data['AG']) ? (int)$data['AG'] : null
+        ];
+
+        // Parse dates
+        if (!empty($data['Q2.3']) || !empty($data['C'])) {
+            $startDateValue = $data['Q2.3'] ?? $data['C'] ?? null;
+            if ($startDateValue) {
+                if ($startDateValue instanceof \DateTime) {
+                    $payload['startDate'] = $startDateValue->format('Y-m-d');
+                } else if (is_numeric($startDateValue)) {
+                    // Excel date
+                    $payload['startDate'] = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($startDateValue)->format('Y-m-d');
+                } else {
+                    // Try to parse the date string
+                    try {
+                        $payload['startDate'] = (new \DateTime($startDateValue))->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        // Ignore date parsing errors for preview
+                    }
+                }
+            }
+        }
+        
+        if (!empty($data['Q2.4']) || !empty($data['D'])) {
+            $endDateValue = $data['Q2.4'] ?? $data['D'] ?? null;
+            if ($endDateValue) {
+                if ($endDateValue instanceof \DateTime) {
+                    $payload['endDate'] = $endDateValue->format('Y-m-d');
+                } else if (is_numeric($endDateValue)) {
+                    // Excel date
+                    $payload['endDate'] = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($endDateValue)->format('Y-m-d');
+                } else {
+                    // Try to parse the date string
+                    try {
+                        $payload['endDate'] = (new \DateTime($endDateValue))->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        // Ignore date parsing errors for preview
+                    }
+                }
+            }
+        }
+
+        // Process keywords and convert them to tags (simple version without DB lookups)
+        if (!empty($payload['keywords'])) {
+            $keywords = explode(',', $payload['keywords']);
+            foreach ($keywords as $keyword) {
+                $keyword = trim($keyword);
+                if (!empty($keyword)) {
+                    $payload['tags'][] = [
+                        'name' => $keyword,
+                        'context' => 'tag'
+                    ];
+                }
+            }
+        }
+
+        // Process topics (Q3.1 to Q3.16) - simplified for preview
+        $topicMapping = [
+            'Q3.1' => 'Klimaschutz',
+            'Q3.2' => 'Klimawandelanpassung',
+            'Q3.3' => 'Nachhaltige Land- und Forstwirtschaft',
+            'Q3.4' => 'Lebensmittelverarbeitung und Kulinarik',
+            'Q3.5' => 'Vermarktung und Vertrieb',
+            'Q3.6' => 'Umwelt und Biodiversität',
+            'Q3.7' => 'Naturschutz',
+            'Q3.8' => 'Ländliche Wirtschaft / KMU',
+            'Q3.9' => 'Tourismus',
+            'Q3.10' => 'Mobilität',
+            'Q3.11' => 'Gemeinwohl, Soziales und Daseinsvorsorge',
+            'Q3.12' => 'Jugend',
+            'Q3.13' => 'Kultur und kulturelles Erbe',
+            'Q3.14' => 'Gleichstellung',
+            'Q3.15' => 'Digitalisierung',
+            'Q3.16' => 'Bildung, Sensibilisierung und Wissenstransfer',
+        ];
+
+        // Map topics by topic ID (simplified for preview)
+        $topicMappingByTopicId = [
+            'Q3.1' => 35,
+            'Q3.2' => 36,
+            'Q3.3' => 37,
+            'Q3.4' => 38,
+            'Q3.5' => 39,
+            'Q3.6' => 40,
+            'Q3.7' => 41,
+            'Q3.8' => 42,
+            'Q3.9' => 43,
+            'Q3.10' => 44,
+            'Q3.11' => 45,
+            'Q3.12' => 46,
+            'Q3.13' => 47,
+            'Q3.14' => 48,
+            'Q3.15' => 49,
+            'Q3.16' => 50,
+        ];
+        
+        // Add topic IDs for preview
+        $topicEntities = [];
+        foreach ($topicMappingByTopicId as $key => $topicId) {
+            if (isset($data[$key]) && $data[$key]) {
+                $topicEntities[] = [
+                    'id' => $topicId,
+                    'name' => $topicMapping[$key]
+                ];
+            }
+        }
+        $payload['topics'] = $topicEntities;
+        
+        // Process states (Q5.1 to Q5.9) - simplified for preview
+        $stateMapping = [
+            'Q5.1' => 'Burgenland',
+            'Q5.2' => 'Kärnten',
+            'Q5.3' => 'Niederösterreich',
+            'Q5.4' => 'Oberösterreich',
+            'Q5.5' => 'Salzburg',
+            'Q5.6' => 'Steiermark',
+            'Q5.7' => 'Tirol',
+            'Q5.8' => 'Vorarlberg',
+            'Q5.9' => 'Wien',
+        ];
+
+        $stateMappingByStateId = [
+            'Q5.1' => '2',
+            'Q5.2' => '3',
+            'Q5.3' => '4',
+            'Q5.4' => '5',
+            'Q5.5' => '6',
+            'Q5.6' => '7',
+            'Q5.7' => '8',
+            'Q5.8' => '1',
+            'Q5.9' => '9',
+        ];
+        
+        // Check if all states are selected (Q5.10)
+        if (isset($data['Q5.10']) && $data['Q5.10']) {
+            foreach ($stateMapping as $key => $stateName) {
+                $payload['states'][] = [
+                    'id' => $stateMappingByStateId[$key],
+                    'name' => $stateName
+                ];
+            }
+        } else {
+            // Add selected states
+            foreach ($stateMapping as $key => $stateName) {
+                if (isset($data[$key]) && $data[$key]) {
+                    $payload['states'][] = [
+                        'id' => $stateMappingByStateId[$key],
+                        'name' => $stateName
+                    ];
+                }
+            }
+        }
+        
+        
+        // Initialize standard financing structure with expected IDs
+        $payload['financing'] = [
+            ['id' => 'costsGap', 'value' => 0],     // GAP Strategieplan
+            ['id' => 'costsPrivate', 'value' => 0], // Private und Eigenmittel
+            ['id' => 'costsExternal', 'value' => 0] // Andere Finanzquellen
+        ];
+        
+        // Process financing from specific columns (AK, AL, AM) - simplified
+        // Column AK = GAP Strategieplan
+        if (isset($data['AK'])) {
+            $value = $data['AK'];
+            if (is_string($value)) {
+                $value = str_replace(',', '.', $value);
+            }
+            $value = (float)$value;
+            
+            if ($value > 0) {
+                $payload['financing'][0]['value'] = $value;
+            }
+        }
+        
+        // Column AL = Private und Eigenmittel
+        if (isset($data['AL'])) {
+            $value = $data['AL'];
+            if (is_string($value)) {
+                $value = str_replace(',', '.', $value);
+            }
+            $value = (float)$value;
+            
+            if ($value > 0) {
+                $payload['financing'][1]['value'] = $value;
+            }
+        }
+        
+        // Column AM = Andere Finanzquellen
+        if (isset($data['AM'])) {
+            $value = $data['AM'];
+            if (is_string($value)) {
+                $value = str_replace(',', '.', $value);
+            }
+            $value = (float)$value;
+            
+            if ($value > 0) {
+                $payload['financing'][2]['value'] = $value;
+            }
+        }
+        
+        // Simplified contact processing - just create a basic structure without all the details
+        if (!empty($data['Q12'])) {
+            $contact = [
+                'firstName' => $data['Q12.1'] ?? '',
+                'lastName' => $data['Q12.2'] ?? '',
+                'email' => $data['Q12.3'] ?? '',
+                'phone' => $data['Q12.4'] ?? '',
+                'organization' => $data['Q12.5'] ?? '',
+                'position' => $data['Q12.6'] ?? '',
+                'isPublic' => true
+            ];
+            
+            if (!empty($contact['firstName']) || !empty($contact['lastName']) || !empty($contact['email'])) {
+                $payload['contacts'][] = $contact;
+            }
+        }
+        
+        // Process links (columns AY to BH) - simplified to include only essential info
+        $linkColumns = ['AY', 'AZ', 'BA', 'BB', 'BC', 'BD', 'BE', 'BF', 'BG', 'BH'];
+        
+        // Process links in pairs (label + url)
+        for ($i = 0; $i < count($linkColumns) - 1; $i += 2) {
+            $labelColumn = $linkColumns[$i];
+            $urlColumn = $linkColumns[$i + 1];
+            
+            // Skip if both columns are empty
+            if (empty($data[$labelColumn]) && empty($data[$urlColumn])) {
+                continue;
+            }
+            
+            $label = !empty($data[$labelColumn]) ? $data[$labelColumn] : '';
+            $url = !empty($data[$urlColumn]) ? $data[$urlColumn] : '';
+            
+            // If we have a URL in the label column and no URL in the URL column,
+            // treat the label as a URL
+            if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
+                $url = $label;
+                $label = '';
+            }
+            
+            // Skip if no URL is available
+            if (empty($url)) {
+                continue;
+            }
+            
+            // Ensure URL has a protocol (simplified)
+            if (!preg_match('~^(?:f|ht)tps?://~i', $url)) {
+                $url = 'https://' . $url;
+            }
+            
+            $payload['links'][] = [
+                'url' => $url,
+                'label' => $label,
+                'value' => $url
+            ];
+        }
+        
+        // Process videos (columns BI to BN) - simplified to include only essential info
+        $videoColumns = ['BI', 'BJ', 'BK', 'BL', 'BM', 'BN'];
+        
+        // Process videos in pairs (label + url)
+        for ($i = 0; $i < count($videoColumns) - 1; $i += 2) {
+            $labelColumn = $videoColumns[$i];
+            $urlColumn = $videoColumns[$i + 1];
+            
+            // Skip if both columns are empty
+            if (empty($data[$labelColumn]) && empty($data[$urlColumn])) {
+                continue;
+            }
+            
+            $label = !empty($data[$labelColumn]) ? $data[$labelColumn] : '';
+            $url = !empty($data[$urlColumn]) ? $data[$urlColumn] : '';
+            
+            // If we have a URL in the label column and no URL in the URL column,
+            // treat the label as a URL
+            if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
+                $url = $label;
+                $label = '';
+            }
+            
+            // Skip if no URL is available
+            if (empty($url)) {
+                continue;
+            }
+            
+            // Ensure URL has a protocol (simplified)
+            if (!preg_match('~^(?:f|ht)tps?://~i', $url)) {
+                $url = 'https://' . $url;
+            }
+            
+            $payload['videos'][] = [
+                'url' => $url,
+                'label' => $label,
+                'value' => $url
+            ];
+        }
+        
+        // For files and images, we'll just indicate their presence without downloading them
+        // Check if file attachments are present (columns BO to CR)
+        $filePairs = [
+            ['BO', 'BP'], ['BQ', 'BR'], ['BS', 'BT'], ['BU', 'BV'], ['BW', 'BX'], 
+            ['BY', 'BZ'], ['CA', 'CB'], ['CC', 'CD'], ['CE', 'CF'], ['CG', 'CH'], 
+            ['CI', 'CJ'], ['CK', 'CL'], ['CM', 'CN'], ['CO', 'CP'], ['CQ', 'CR'],
+            ['CS', 'CT'], ['CU', 'CV'], ['CW', 'CX'], ['CY', 'CZ']
+        ];
+        
+        foreach ($filePairs as $index => $pair) {
+            $filenameCol = $pair[0];
+            $urlCol = $pair[1];
+            
+            // Skip if either filename or URL is empty
+            if (empty($data[$filenameCol]) || empty($data[$urlCol])) {
+                continue;
+            }
+            
+            $filename = $data[$filenameCol];
+            $url = $data[$urlCol];
+            
+            // Determine if it's an image or document (simplified)
+            $isImage = $this->isImageFile($filename);
+            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            $mimeType = $this->getMimeTypeFromFilename($filename);
+            
+            // Create a placeholder entry for preview without actually downloading
+            $fileEntry = [
+                'id' => "preview_file_" . ($index + 1),
+                'name' => $filename,
+                'originalName' => $filename,
+                'extension' => $extension,
+                'mimeType' => $mimeType,
+                'description' => $filename,
+                'size' => 0, // Unknown size for preview
+                'preview_only' => true // Mark as preview only
+            ];
+            
+            if ($isImage) {
+                $fileEntry['copyright'] = $data['DA'] ?? '';
+                $payload['images'][] = $fileEntry;
+            } else {
+                $payload['files'][] = $fileEntry;
+            }
+        }
+        
+        return $payload;
     }
 } 

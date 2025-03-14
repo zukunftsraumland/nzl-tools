@@ -142,6 +142,23 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         // Process files from columns CJ onwards (if implementation is needed)
         $this->processCaseStudyFileAttachments($data, $payload);
         
+        // Extract localWorkgroupId from column AG and map to name
+        if (isset($data['AG']) && is_numeric($data['AG'])) {
+            $localWorkgroupId = (int)$data['AG'];
+            $payload['localWorkgroupId'] = $localWorkgroupId;
+            
+            // Get the LocalWorkgroup name from mapping
+            $localWorkgroupNameMapping = $this->getLocalWorkgroupNameMapping();
+            if (isset($localWorkgroupNameMapping[$localWorkgroupId])) {
+                $payload['localWorkgroupName'] = $localWorkgroupNameMapping[$localWorkgroupId];
+            }
+        }
+        
+        // Add LE category name without DB lookup
+        if (!empty($data['Q3.7']) || !empty($data['K'])) {
+            $payload['leFundingCategoryName'] = $data['Q3.7'] ?? $data['K'] ?? '';
+        }
+        
         return $payload;
     }
     
@@ -804,6 +821,15 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                     $previewItem['message'] = 'Projekt hat keinen Titel';
                 }
                 
+                // Check if project with the same title already exists
+                if (!empty($previewItem['title'])) {
+                    $existingProject = $this->findProjectByTitle($previewItem['title']);
+                    if ($existingProject) {
+                        $previewItem['status'] = 'warning';
+                        $previewItem['message'] = 'Projekt mit diesem Namen existiert bereits';
+                    }
+                }
+                
                 $results[] = $previewItem;
             }
             
@@ -951,16 +977,28 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             $payload['hasSynergyGoalTags'] = true;
         }
         
-        // Add local workgroup name without DB lookup
-        if (!empty($data['Q3.8']) || !empty($data['L'])) {
-            $payload['localWorkgroupName'] = $data['Q3.8'] ?? $data['L'] ?? '';
+        // Extract localWorkgroupId from column AG and map to name
+        if (isset($data['AG']) && is_numeric($data['AG'])) {
+            $localWorkgroupId = (int)$data['AG'];
+            $payload['localWorkgroupId'] = $localWorkgroupId;
+            
+            // Get the LocalWorkgroup name from mapping
+            $localWorkgroupNameMapping = $this->getLocalWorkgroupNameMapping();
+            if (isset($localWorkgroupNameMapping[$localWorkgroupId])) {
+                $payload['localWorkgroupName'] = $localWorkgroupNameMapping[$localWorkgroupId];
+            }
         }
         
         // Add LE category name without DB lookup
-        if (!empty($data['Q3.7']) || !empty($data['K'])) {
-            $payload['leFundingCategoryName'] = $data['Q3.7'] ?? $data['K'] ?? '';
+        if (!empty($data['Q6']) || !empty($data['AF'])) {
+            $excelCategoryId = $data['Q6'] ?? $data['AF'] ?? null;
+            $leCategoryNameMapping = $this->getLeCategoryNameMapping();
+            if (isset($leCategoryNameMapping[$excelCategoryId])) {
+                $payload['leFundingCategoryName'] = $leCategoryNameMapping[$excelCategoryId];
+            }
         }
         
         return $payload;
     }
+
 } 

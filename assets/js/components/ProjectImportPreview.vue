@@ -281,7 +281,7 @@
                       <th>Projektcode</th>
                       <th>Start Datum</th>
                       <th>End Datum</th>
-                      <th v-if="!importData || importData.importerType !== 'casestudy'">LE-Kategorie</th>
+                      <th>LE-Kategorie</th>
                       <th>Lokale Arbeitsgruppe</th>
                       <th>Status</th>
                     </tr>
@@ -307,8 +307,8 @@
                       <td>{{ item.projectCode }}</td>
                       <td>{{ formatDate(item.startDate) }}</td>
                       <td>{{ formatDate(item.endDate) }}</td>
-                      <td v-if="!importData || importData.importerType !== 'casestudy'">{{ item.leCategory }}</td>
-                      <td>{{ item.localWorkgroup }}</td>
+                      <td>{{ item.payload.leFundingCategoryName }}</td>
+                      <td>{{ item.payload.localWorkgroupName }}</td>
                       <td>
                         <span :class="{
                           'badge-success': item.status === 'valid',
@@ -455,7 +455,7 @@
                           </div>
                           <div class="detail-item" v-if="!importData || importData.importerType !== 'casestudy'">
                             <span class="detail-label">LE-Kategorie:</span>
-                            <span class="detail-value">{{ selectedRow.leCategory }}</span>
+                            <span class="detail-value">{{ selectedRow.payload.leFundingCategoryName }}</span>
                           </div>
                           <div class="detail-item" v-if="!importData || importData.importerType !== 'casestudy'">
                             <span class="detail-label" >Lokale Arbeitsgruppe:</span>
