@@ -258,7 +258,7 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
+        v-if="project.caseStudy || project.initialContext"
         :fields="[
           {
             name: 'initialContext',
@@ -279,7 +279,7 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
+        v-if="project.caseStudy || project.initialContextGoals"
         :fields="[
           {
             name: 'initialContextGoals',
@@ -300,7 +300,7 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
+        v-if="project.caseStudy || project.fundingMethod"
         :fields="[
           {
             name: 'fundingMethod',
@@ -321,7 +321,7 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
+        v-if="project.caseStudy || project.fundingMethodStakeholders"
         :fields="[
           {
             name: 'fundingMethodStakeholders',
@@ -510,7 +510,7 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
+        v-if="project.caseStudy || project.learningExperience"
         :fields="[
           {
             name: 'learningExperience',

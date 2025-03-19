@@ -218,7 +218,7 @@ class ApiProjectImportsController extends AbstractController
                     property: 'lePeriodId',
                     type: 'integer',
                     nullable: true,
-                    description: 'ID of the LE Period to assign to all imported projects'
+                    description: 'ID of the LE Period to assign to all imported projects (not used for legacy importer)'
                 )
             ]
         )
@@ -244,9 +244,9 @@ class ApiProjectImportsController extends AbstractController
         $data = json_decode($request->getContent(), true) ?: [];
         $lePeriodId = $data['lePeriodId'] ?? null;
         
-        // If a LE Period ID is provided, fetch the LE Period entity
+        // Only use lePeriodId if not a legacy importer
         $lePeriod = null;
-        if ($lePeriodId) {
+        if ($lePeriodId && $import->getImporterType() !== 'legacy') {
             $lePeriod = $em->getRepository(LEPeriod::class)->find($lePeriodId);
             if (!$lePeriod) {
                 return new JsonResponse(['error' => 'LE Period not found'], Response::HTTP_BAD_REQUEST);
@@ -263,7 +263,9 @@ class ApiProjectImportsController extends AbstractController
             ], Response::HTTP_BAD_REQUEST);
         }
         
-        return new JsonResponse($normalizer->normalize($import, null, ['groups' => ['id', 'project_import']]));
+        return $this->json($normalizer->normalize($import, null, [
+            'groups' => ['id', 'project_import'],
+        ]));
     }
 
     #[Route(path: '/{id}/preview', name: 'preview', methods: ['GET'], requirements: ['id' => '\d+'])]

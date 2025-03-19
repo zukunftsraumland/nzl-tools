@@ -324,47 +324,42 @@ class ProjectImportManager
     /**
      * Detect importer type based on Excel file content
      * 
-     * Examines the Excel file to determine if it's a standard import or case study import.
-     * If column CY contains the value 'Q39.7', it's considered a case study import.
+     * Examines the Excel file to determine if it's a standard import, case study import, or legacy import.
+     * - If column CY contains the value 'Q39.7', it's considered a case study import.
+     * - If cell A1 contains the value 'PUBLISHING_DATE', it's considered a legacy import.
+     * - Otherwise, it's considered a standard import.
      * 
      * @param string $filePath Path to the Excel file
-     * @return string The detected importer type ('standard' or 'casestudy')
+     * @return string The detected importer type ('standard', 'casestudy', or 'legacy')
      */
     public function detectImporterType(string $filePath): string
     {
-        
-        if (!file_exists($filePath)) {
-            return 'standard';
-        }
-        
         try {
-            // Load the spreadsheet
+            // Load the Excel file
             $spreadsheet = IOFactory::load($filePath);
             $worksheet = $spreadsheet->getActiveSheet();
             
-            
-            // We'll check multiple rows and a range of columns for case study markers
-            $markerFound = false;
-            
-            // Get the highest column index to ensure we don't go out of bounds
-            $highestColumnIndex = Coordinate::columnIndexFromString($worksheet->getHighestColumn());
-            
-            // Case study marker strategy 1: Check for Q39.7 in column CY row 4
-            try {
-                // CY is column 103 in 1-based indexing (if within range)
-                if ($highestColumnIndex >= 103) {
-                    $cyValue = $worksheet->getCellByColumnAndRow(103, 4)->getValue();
-                    
-                    if ($cyValue === 'Q39.7') {
-                        $markerFound = true;
-                    }
-                }
-            } catch (\Exception $e) {
-                error_log('Error checking CY value: ' . $e->getMessage());
+            // Check for legacy import format (PUBLISHING_DATE in cell A1)
+            $a1Value = $worksheet->getCell('A1')->getValue();
+            if ($a1Value === 'PUBLISHING_DATE') {
+                return 'legacy';
             }
             
-            // Case study marker strategy 2: Look for case study specific headers
-            // Check columns BV through CI in row 4 for case study field headers
+            // Get the highest column index
+            $highestColumn = $worksheet->getHighestColumn();
+            $highestColumnIndex = Coordinate::columnIndexFromString($highestColumn);
+            
+            // Check for case study marker in column CY
+            $markerFound = false;
+            
+            // Check if column CY exists and contains the value 'Q39.7'
+            if ($highestColumnIndex >= Coordinate::columnIndexFromString('CY')) {
+                $cyValue = $worksheet->getCell('CY4')->getValue();
+                if ($cyValue === 'Q39.7') {
+                    $markerFound = true;
+                }
+            }
+            
             if (!$markerFound) {
                 $caseStudyHeaders = [
                     'Q21', 'Q22', 'Q23', 'Q24', 'Q25', 'Q26', 'Q27', 

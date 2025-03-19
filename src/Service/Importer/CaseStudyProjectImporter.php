@@ -133,7 +133,22 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         // Process tags with our special case study logic
         if (!empty($data['Q4']) || isset($data['U'])) {
             $keywords = $data['Q4'] ?? $data['U'] ?? '';
-            $this->processTagsForCaseStudy($keywords, $payload);
+            $allKeywords = explode(',', $keywords);
+
+            // Process keywords and convert them to tags
+            if (!empty($allKeywords)) {
+                foreach ($allKeywords as $keyword) {
+                    // TODO: Check if its actually a keyword and not a text because the data coming from the export is not always clean. 
+                    $keyword = trim($keyword);
+                    if (!empty($keyword)) {
+                        $payload['tags'][] = [
+                            'name' => $keyword,
+                            'context' => 'tag'
+                        ];
+                    }
+                }
+            }
+            // $this->processTagsForCaseStudy($keywords, $payload);
         }
         
         // Process synergy fund tags and synergy goal tags
@@ -153,6 +168,14 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 $payload['localWorkgroupName'] = $localWorkgroupNameMapping[$localWorkgroupId];
             }
         }
+
+        if(isset($data['Q8.2']) && $data['Q8.2'] == 1) {
+            $payload['cooperationProjectAt'] = true;
+        }
+
+        if(isset($data['Q8.3']) && $data['Q8.3'] == 1) {
+            $payload['cooperationProjectEu'] = true;
+        }
         
         // Add LE category name without DB lookup
         if (!empty($data['Q3.7']) || !empty($data['K'])) {
@@ -162,76 +185,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         return $payload;
     }
     
-    /**
-     * Process tags for case study imports
-     * 
-     * Unlike standard imports which split tags by comma, case study imports
-     * split tags by space, except for certain special multi-word tags that
-     * should be preserved as a single tag.
-     * 
-     * @param string $keywords The keywords string from column U / Q4
-     * @param array &$payload The project payload to update
-     */
-    protected function processTagsForCaseStudy(string $keywords, array &$payload): void
-    {
-        if (empty($keywords)) {
-            return;
-        }
-        
-        // Log the input for debugging
-        
-        // Define special multi-word tags that should not be split
-        $specialTags = [
-            'Demographischer Wandel',
-            'Ganzheitliches Lernen',
-            'Wald und Erlebnispädagogik'
-        ];
-        
-        // Extract special tags first
-        $remainingKeywords = $keywords;
-        $extractedTags = [];
-        
-        foreach ($specialTags as $specialTag) {
-            if (strpos($remainingKeywords, $specialTag) !== false) {
-                // Add the special tag
-                $extractedTags[] = $specialTag;
-                
-                // Remove it from the remaining keywords
-                $remainingKeywords = str_replace($specialTag, '', $remainingKeywords);
-                
-                // Log the extraction
-                
-            }
-        }
-        
-        // Trim and clean up the remaining keywords
-        $remainingKeywords = trim(preg_replace('/\s+/', ' ', $remainingKeywords));
-        
-        // Split the remaining keywords by space
-        if (!empty($remainingKeywords)) {
-            $normalTags = explode(' ', $remainingKeywords);
-            
-            // Log the normal tags
-            
-        } else {
-            $normalTags = [];
-        }
-        
-        // Combine special tags and normal tags
-        $allTags = array_merge($extractedTags, $normalTags);
-        
-        // Add all tags to the payload
-        foreach ($allTags as $tag) {
-            $tag = trim($tag);
-            if (!empty($tag)) {
-                $payload['tags'][] = [
-                    'name' => $tag,
-                    'context' => 'tag'
-                ];
-            }
-        }        
-    }
-    
+   
     /**
      * Process synergy fund tags and synergy goal tags from Excel data
      * 
@@ -402,7 +356,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                     }
                 }
             } catch (\Exception $e) {
-                error_log("Error processing case study file: " . $e->getMessage());
+                
             }
         }
         
@@ -450,7 +404,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                     }
                 }
             } catch (\Exception $e) {
-                error_log("Error processing case study image: " . $e->getMessage());
+                
             }
         }
     }
@@ -528,7 +482,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                         sleep(1);
                     }
                 } catch (\Exception $e) {
-                    error_log("Exception in file download attempt $attempts: " . $e->getMessage());
+                    
                     
                     // Wait before retrying
                     if ($attempts < $maxAttempts) {
@@ -587,7 +541,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 'description' => ''
             ];
         } catch (\Exception $e) {
-            error_log("Exception in downloadAttachmentFromUrl: " . $e->getMessage());
+            
             return null;
         }
     }
@@ -724,7 +678,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             
             
         } catch (\Exception $e) {
-            error_log('Error logging Excel headers: ' . $e->getMessage());
+            
         }
     }
     
@@ -835,7 +789,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             
             return $results;
         } catch (\Exception $e) {
-            error_log('Error generating case study preview: ' . $e->getMessage());
+            
             return [
                 [
                     'rowNumber' => 1,
@@ -937,14 +891,20 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         // For preview only, include placeholder tags without DB lookups
         if (!empty($data['Q4']) || isset($data['U'])) {
             $keywords = $data['Q4'] ?? $data['U'] ?? '';
-            if (!empty($keywords)) {
-                // Initialize the tags array in payload
-                $payload['tags'] = [];
-                
-                // Process tags directly into the payload
-                $this->processTagsForCaseStudy($keywords, $payload);
-                
-                // No need to extract names into a separate array, the full tags array is available
+            $allKeywords = explode(',', $keywords);
+
+            // Process keywords and convert them to tags
+            if (!empty($allKeywords)) {
+                foreach ($allKeywords as $keyword) {
+                    // TODO: Check if its actually a keyword and not a text because the data coming from the export is not always clean. 
+                    $keyword = trim($keyword);
+                    if (!empty($keyword)) {
+                        $payload['tags'][] = [
+                            'name' => $keyword,
+                            'context' => 'tag'
+                        ];
+                    }
+                }
             }
         }
         

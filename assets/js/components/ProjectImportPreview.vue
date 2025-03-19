@@ -236,8 +236,8 @@
                       <td>{{ item.projectCode }}</td>
                       <td>{{ formatDate(item.startDate) }}</td>
                       <td>{{ formatDate(item.endDate) }}</td>
-                      <td>{{ item.payload.leFundingCategoryName }}</td>
-                      <td>{{ item.payload.localWorkgroupName }}</td>
+                      <td>{{ item.payload?.leFundingCategoryName || item.leCategory || 'N/A' }}</td>
+                      <td>{{ item.payload?.localWorkgroupName || item.localWorkgroup || 'N/A' }}</td>
                       <td>
                         <span :class="{
                           'badge-success': item.status === 'valid',
@@ -354,10 +354,6 @@
                     <i class="material-icons">link</i>
                     Links & Videos
                   </button>
-                  <button class="tab-button" :class="{ active: activeTab === 'raw' }" @click="activeTab = 'raw'">
-                    <i class="material-icons">code</i>
-                    Rohdaten
-                  </button>
                 </div>
 
                 <div class="tab-content">
@@ -382,13 +378,13 @@
                             <span class="detail-label">Projektcode:</span>
                             <span class="detail-value">{{ selectedRow.projectCode }}</span>
                           </div>
-                          <div class="detail-item" v-if="!importData || importData.importerType !== 'casestudy'">
+                          <div class="detail-item">
                             <span class="detail-label">LE-Kategorie:</span>
-                            <span class="detail-value">{{ selectedRow.payload.leFundingCategoryName }}</span>
+                            <span class="detail-value">{{ selectedRow?.payload?.leFundingCategoryName || selectedRow?.leCategory || 'N/A' }}</span>
                           </div>
-                          <div class="detail-item" v-if="!importData || importData.importerType !== 'casestudy'">
-                            <span class="detail-label" >Lokale Arbeitsgruppe:</span>
-                            <span class="detail-value">{{ selectedRow.localWorkgroup }}</span>
+                          <div class="detail-item">
+                            <span class="detail-label" >LAG:</span>
+                            <span class="detail-value">{{ selectedRow.payload?.localWorkgroupName || selectedRow.localWorkgroup || 'N/A' }}</span>
                           </div>
                           <div class="detail-item">
                             <span class="detail-label">Start Datum:</span>
@@ -411,6 +407,21 @@
                           <ul class="tags-list">
                             <li v-for="(topic, i) in selectedRow._rawData.topicNames" :key="'topic-' + i">
                               {{ topic }}
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+
+                      <div class="row-details-card"
+                        v-else-if="selectedRow._rawData && selectedRow._rawData.topics && selectedRow._rawData.topics.length">
+                        <div class="row-details-card-header">
+                          <i class="material-icons">label</i>
+                          <h4>Themen</h4>
+                        </div>
+                        <div class="row-details-card-body">
+                          <ul class="tags-list">
+                            <li v-for="(topic, i) in selectedRow._rawData.topics" :key="'topic-' + i">
+                              {{ typeof topic === 'object' && topic !== null ? topic.name : topic }}
                             </li>
                           </ul>
                         </div>
@@ -447,6 +458,36 @@
                       </div>
 
                       <div class="row-details-card"
+                        v-if="selectedRow._rawData && selectedRow._rawData.geographicRegionNames && selectedRow._rawData.geographicRegionNames.length">
+                        <div class="row-details-card-header">
+                          <i class="material-icons">terrain</i>
+                          <h4>Geographische Region</h4>
+                        </div>
+                        <div class="row-details-card-body">
+                          <ul class="tags-list">
+                            <li v-for="(region, i) in selectedRow._rawData.geographicRegionNames" :key="'region-' + i">
+                              {{ region }}
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+
+                      <div class="row-details-card"
+                        v-else-if="selectedRow._rawData && selectedRow._rawData.geographicRegions && selectedRow._rawData.geographicRegions.length">
+                        <div class="row-details-card-header">
+                          <i class="material-icons">terrain</i>
+                          <h4>Geographische Region</h4>
+                        </div>
+                        <div class="row-details-card-body">
+                          <ul class="tags-list">
+                            <li v-for="(region, i) in selectedRow._rawData.geographicRegions" :key="'region-' + i">
+                              {{ typeof region === 'object' && region !== null ? region.name : region }}
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+
+                      <div class="row-details-card"
                         v-if="selectedRow._rawData && selectedRow._rawData.financing && selectedRow._rawData.financing.length">
                         <div class="row-details-card-header">
                           <i class="material-icons">euro_symbol</i>
@@ -461,6 +502,49 @@
                             :key="'finance-' + i">
                             <span class="detail-label">{{ getFinancingLabel(finance.id) }}:</span>
                             <span class="detail-value">{{ finance.value }}%</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="row-details-card" 
+                        v-if="selectedRow._rawData && selectedRow._rawData.localWorkgroupNames && selectedRow._rawData.localWorkgroupNames.length">
+                        <div class="row-details-card-header">
+                          <i class="material-icons">group_work</i>
+                          <h4>Kooperierende Arbeitsgruppen</h4>
+                        </div>
+                        <div class="row-details-card-body">
+                          <ul class="tags-list">
+                            <li v-for="(workgroup, i) in selectedRow._rawData.localWorkgroupNames" :key="'workgroup-' + i">
+                              {{ workgroup }}
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                      
+                      <div class="row-details-card"
+                        v-else-if="selectedRow._rawData && selectedRow._rawData.localWorkgroups && selectedRow._rawData.localWorkgroups.length">
+                        <div class="row-details-card-header">
+                          <i class="material-icons">group_work</i>
+                          <h4>Kooperierende Arbeitsgruppen</h4>
+                        </div>
+                        <div class="row-details-card-body">
+                          <ul class="tags-list">
+                            <li v-for="(workgroup, i) in selectedRow._rawData.localWorkgroups" :key="'workgroup-' + i">
+                              {{ typeof workgroup === 'object' && workgroup !== null ? workgroup.name : workgroup }}
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                      
+                      <div class="row-details-card" 
+                        v-if="selectedRow._rawData && selectedRow._rawData.formattedDates">
+                        <div class="row-details-card-header">
+                          <i class="material-icons">event</i>
+                          <h4>Projektdaten</h4>
+                        </div>
+                        <div class="row-details-card-body">
+                          <div class="detail-item">
+                            <span class="detail-value">{{ selectedRow._rawData.formattedDates }}</span>
                           </div>
                         </div>
                       </div>
@@ -491,7 +575,7 @@
                         </div>
                       </div>
                     </div>
-
+                    
                     <div v-if="Object.keys(filteredDetails).length === 0" class="no-data">
                       <i class="material-icons">info</i>
                       <p>Keine weiteren Details vorhanden</p>
@@ -584,27 +668,10 @@
                         </div>
                       </div>
                     </div>
-
+                    
                     <div class="no-data" v-if="!hasLinksOrVideos">
                       <i class="material-icons">info</i>
                       <p>Keine Links oder Videos vorhanden</p>
-                    </div>
-                  </div>
-
-                  <!-- Raw Data Tab -->
-                  <div class="tab-pane" :class="{ active: activeTab === 'raw' }">
-                    <div class="raw-data-controls">
-                      <button class="button small" @click="toggleRawData">
-                        {{ showRawData ? 'Rohdaten ausblenden' : 'Rohdaten anzeigen' }}
-                      </button>
-                      <div class="raw-data-info">
-                        <i class="material-icons">info</i>
-                        <span>Zeigt alle unverarbeiteten Daten aus der Excel-Datei</span>
-                      </div>
-                    </div>
-                    <pre v-if="showRawData" class="raw-data">{{ JSON.stringify(selectedRow._rawData, null, 2) }}</pre>
-                    <div v-else class="no-data">
-                      <p>Klicken Sie auf "Rohdaten anzeigen", um die vollständigen Daten zu sehen.</p>
                     </div>
                   </div>
                 </div>
@@ -634,7 +701,6 @@ export default {
       pollingInterval: null,
       showRowDetailsModal: false,
       selectedRow: null,
-      showRawData: false,
       isDataLoading: false,
       lePeriods: [],
       selectedLePeriodId: '',
@@ -668,7 +734,6 @@ export default {
       })
       .catch(err => {
         // Critical failure - can't recover from this
-        console.error('Critical error fetching import data:', err);
         this.setStatusMessage('Beim Laden der Import-Details ist ein kritischer Fehler aufgetreten. Bitte laden Sie die Seite neu.', 'error', 'error');
       })
       .finally(() => {
@@ -757,8 +822,48 @@ export default {
           }
 
           // Filter out specific keys that are displayed in other sections
-          const excludedKeys = ['contacts', 'links', 'videos', 'states', 'topicNames', 'tags', 'financing',
-            'title', 'projectCode', 'startDate', 'endDate'];
+          const excludedKeys = [
+            'contacts', 'links', 'videos', 'states', 'topicNames', 'tags', 'financing',
+            'title', 'projectCode', 'startDate', 'endDate', '_originalTopics', '_originalGeographicRegions',
+            '_originalLocalWorkgroups', '_originalDates', 'formattedDates', 'caseStudy', 'leFundingCategoryName', 'localWorkgroupName', 'localWorkgroupId', 'hasSynergyGoalTags', 'leFundingCategoryId'
+          ];
+
+          // Process topics, regions, and workgroups before filtering
+          if (this.importData && this.importData.importerType === 'legacy') {
+            // For Legacy importer, convert topics, geographicRegions, and localWorkgroups to their name arrays
+            if (newRow._rawData.topics && Array.isArray(newRow._rawData.topics) && newRow._rawData.topics.length > 0) {
+              if (!newRow._rawData.topicNames) {
+                newRow._rawData.topicNames = newRow._rawData.topics.map(topic => 
+                  typeof topic === 'object' && topic !== null ? topic.name : topic
+                );
+              }
+            }
+            
+            if (newRow._rawData.geographicRegions && Array.isArray(newRow._rawData.geographicRegions) && newRow._rawData.geographicRegions.length > 0) {
+              if (!newRow._rawData.geographicRegionNames) {
+                newRow._rawData.geographicRegionNames = newRow._rawData.geographicRegions.map(region => 
+                  typeof region === 'object' && region !== null ? region.name : region
+                );
+              }
+            }
+            
+            if (newRow._rawData.localWorkgroups && Array.isArray(newRow._rawData.localWorkgroups) && newRow._rawData.localWorkgroups.length > 0) {
+              if (!newRow._rawData.localWorkgroupNames) {
+                newRow._rawData.localWorkgroupNames = newRow._rawData.localWorkgroups.map(workgroup => 
+                  typeof workgroup === 'object' && workgroup !== null ? workgroup.name : workgroup
+                );
+              }
+            }
+            
+            // Format dates if they exist
+            if (newRow._rawData.dates && Array.isArray(newRow._rawData.dates) && newRow._rawData.dates.length > 0) {
+              if (!newRow._rawData.formattedDates) {
+                newRow._rawData.formattedDates = newRow._rawData.dates.map(d => {
+                  return `${d.type === 'startDate' ? 'Start: ' : 'Ende: '} ${this.formatDate(d.date)}`;
+                }).join(', ');
+              }
+            }
+          }
 
           this.filteredDetails = Object.entries(newRow._rawData)
             .filter(([key, value]) => {
@@ -825,7 +930,6 @@ export default {
 
         // Check if response is OK
         if (!response.ok) {
-          console.error(`Error fetching import data: ${response.status} ${response.statusText}`);
           this.setStatusMessage(`Beim Laden der Import-Details ist ein Fehler aufgetreten (${response.status}).`, 'error', 'error');
           throw new Error(`Failed to fetch import data: ${response.status}`);
         }
@@ -839,7 +943,6 @@ export default {
 
         // If it's a case study import, show a specific message about preview data
         if (data.importerType === 'casestudy') {
-          console.log('Case study import detected - preparing for possible extended loading times');
           this.setStatusMessage(
             'Case Study Import erkannt. Die Vorschaudaten können bei diesem Importtyp länger zum Laden benötigen. Sie können den Import auch ohne Vorschau starten.', 
             'info', 
@@ -863,7 +966,6 @@ export default {
         
         return data;
       } catch (error) {
-        console.error('Error fetching import data:', error);
         this.setStatusMessage('Beim Laden der Import-Details ist ein Fehler aufgetreten.', 'error', 'error');
         throw error; // We must throw here since this data is critical
       }
@@ -886,9 +988,7 @@ export default {
         const controller = new AbortController();
         const timeoutDuration = this.importData && this.importData.importerType === 'casestudy' ? 60000 : 45000;
         const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
-        
-        console.log(`Setting preview data timeout to ${timeoutDuration/1000} seconds for ${this.importData ? this.importData.importerType : 'unknown'} import type`);
-        
+                
         // This would be a new API endpoint to get preview data
         const response = await fetch(`/api/v1/project-imports/${this.importId}/preview`, {
           method: 'GET',
@@ -901,7 +1001,6 @@ export default {
 
         // First check if response is OK before trying to parse JSON
         if (!response.ok) {
-          console.error(`Preview data request failed with status: ${response.status}`);
           
           const contentType = response.headers.get("content-type");
           if (contentType && contentType.indexOf("application/json") !== -1) {
@@ -919,15 +1018,33 @@ export default {
         
         // Store the raw data for each row
         this.previewData = data.map(item => {
-          // Ensure description is available
-          if (item.payload && item.payload.description && !item.description) {
-            item.description = item.payload.description;
-          }
-
+          // For legacy importer, the data structure is different (item.data contains all the actual data)
+          const isLegacyImport = this.importData && this.importData.importerType === 'legacy';
+          const rowData = isLegacyImport ? item.data : (item.payload || {});
+          
+          // Create a consistent structure regardless of importer type
           return {
-            ...item,
-            _rawData: item.payload || {},
-            description: item.description || (item.payload ? item.payload.description : '') || ''
+            rowIndex: item.rowIndex || item.rowNumber,
+            rowNumber: item.rowIndex || item.rowNumber,
+            title: isLegacyImport ? rowData.title : (item.title || (rowData ? rowData.title : '') || 'Kein Titel'),
+            description: isLegacyImport ? rowData.description : (item.description || (rowData ? rowData.description : '') || ''),
+            startDate: isLegacyImport ? rowData.startDate : (item.startDate || (rowData ? rowData.startDate : '')),
+            endDate: isLegacyImport ? rowData.endDate : (item.endDate || (rowData ? rowData.endDate : '')),
+            projectCode: isLegacyImport ? rowData.projectCode : (item.projectCode || (rowData ? rowData.projectCode : '')),
+            status: item.status || 'valid', // Default to valid if not specified
+            message: item.message || '',
+            // Store the payload for each format consistently 
+            payload: {
+              leFundingCategoryName: isLegacyImport 
+                ? (rowData.leFundingCategoryName || (rowData.leCategory ? rowData.leCategory.name : '') || '') 
+                : (rowData.leFundingCategoryName || ''),
+              localWorkgroupName: isLegacyImport
+                ? (rowData.localWorkgroups && rowData.localWorkgroups.length > 0 
+                    ? (typeof rowData.localWorkgroups[0] === 'object' ? rowData.localWorkgroups[0].name : rowData.localWorkgroups[0]) 
+                    : '')
+                : (rowData.localWorkgroupName || '')
+            },
+            _rawData: isLegacyImport ? rowData : (item.payload || {})
           };
         });
 
@@ -935,7 +1052,6 @@ export default {
         this.clearStatusMessage();
         return this.previewData;
       } catch (error) {
-        console.error('Error in loadPreviewData:', error);
         
         // Specific message for timeout errors
         if (error.name === 'AbortError' || error.name === 'TimeoutError') {
@@ -986,18 +1102,22 @@ export default {
       this.importStartedNotificationShown = false;
       
       // Show a notification that the import is starting
-      this.setStatusMessage('Der Import wird gestartet. Bitte haben Sie etwas Geduld...', 'info', 'info');
+      this.setStatusMessage('Der Import wird ausgeführt. Bitte haben Sie etwas Geduld...', 'info', 'info');
 
       try {
+        // Get CSRF token if available
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        
         const response = await fetch(`/api/v1/project-imports/${this.importId}/process`, {
           method: 'POST',
           credentials: 'include',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken || ''
           },
-          body: JSON.stringify({
-            lePeriodId: this.selectedLePeriodId
-          })
+          body: JSON.stringify(
+            this.importData.importerType === 'legacy' ? {} : { lePeriodId: this.selectedLePeriodId }
+          )
         });
 
         const data = await response.json();
@@ -1076,7 +1196,6 @@ export default {
                 : 'Der Import wurde mit Fehlern abgeschlossen.', data.status === 'completed' ? 'success' : 'error', data.status === 'completed' ? 'check_circle' : 'error');
             }
           } else {
-            console.error('Error in polling response:', data);
             
             // Stop polling on error
             clearInterval(this.pollingInterval);
@@ -1086,7 +1205,6 @@ export default {
             this.setStatusMessage('Beim Abrufen des Import-Status ist ein Fehler aufgetreten.', 'error', 'error');
           }
         } catch (error) {
-          console.error('Error polling for import status:', error);
           
           // Stop polling on error
           clearInterval(this.pollingInterval);
@@ -1136,52 +1254,116 @@ export default {
     showRowDetails(row) {
       // Make sure we have a valid row object
       if (!row) {
-        console.error('No row data provided to showRowDetails');
+
         return;
       }
 
+      // Clone the row to avoid modifying the original object
+      const rowClone = { ...row };
+
+      // Ensure payload exists
+      if (!rowClone.payload) {
+        rowClone.payload = {}; 
+      }
+
       // Ensure _rawData exists
-      if (!row._rawData) {
-        row._rawData = row.payload || {};
+      if (!rowClone._rawData) {
+        rowClone._rawData = rowClone.payload || {};
       }
 
       // Ensure description is available in both places for consistency
-      if (row.description && !row._rawData.description) {
-        row._rawData.description = row.description;
-      } else if (row._rawData.description && !row.description) {
-        row.description = row._rawData.description;
-      } else if (row.payload && row.payload.description && !row.description) {
-        row.description = row.payload.description;
-        row._rawData.description = row.payload.description;
+      if (rowClone.description && !rowClone._rawData.description) {
+        rowClone._rawData.description = rowClone.description;
+      } else if (rowClone._rawData.description && !rowClone.description) {
+        rowClone.description = rowClone._rawData.description;
+      } else if (rowClone.payload && rowClone.payload.description && !rowClone.description) {
+        rowClone.description = rowClone.payload.description;
+        rowClone._rawData.description = rowClone.payload.description;
+      }
+      
+      // Handle Legacy importer specific data formatting
+      if (this.importData && this.importData.importerType === 'legacy') {
+        // Ensure status is properly set for legacy importer
+        if (!rowClone.status || rowClone.status === '') {
+          rowClone.status = 'valid';
+        }
+        
+        // Format topics to show only names for legacy importer
+        if (rowClone._rawData && rowClone._rawData.topics && Array.isArray(rowClone._rawData.topics)) {
+          // Store the original array
+          rowClone._rawData._originalTopics = [...rowClone._rawData.topics];
+          
+          // For the display, create an array of just the names
+          rowClone._rawData.topicNames = rowClone._rawData.topics.map(topic => topic.name);
+        }
+        
+        // Format geographische Region to show only names
+        if (rowClone._rawData && rowClone._rawData.geographicRegions && Array.isArray(rowClone._rawData.geographicRegions)) {
+          // Store the original array
+          rowClone._rawData._originalGeographicRegions = [...rowClone._rawData.geographicRegions];
+          
+          // For the display, create an array of just the names
+          rowClone._rawData.geographicRegionNames = rowClone._rawData.geographicRegions.map(region => region.name);
+        }
+        
+        // Format localWorkgroups to show only names
+        if (rowClone._rawData && rowClone._rawData.localWorkgroups && Array.isArray(rowClone._rawData.localWorkgroups)) {
+          // Store the original array
+          rowClone._rawData._originalLocalWorkgroups = [...rowClone._rawData.localWorkgroups];
+          
+          // For the display, create an array of just the names
+          rowClone._rawData.localWorkgroupNames = rowClone._rawData.localWorkgroups.map(workgroup => 
+            typeof workgroup === 'object' && workgroup !== null ? workgroup.name : workgroup
+          );
+        }
+        
+        // Format dates to be more readable
+        if (rowClone._rawData && rowClone._rawData.dates && Array.isArray(rowClone._rawData.dates)) {
+          // Store the original dates
+          rowClone._rawData._originalDates = [...rowClone._rawData.dates];
+          
+          // Extract start and end dates
+          const startDateObj = rowClone._rawData.dates.find(d => d.type === 'startDate');
+          const endDateObj = rowClone._rawData.dates.find(d => d.type === 'endDate');
+          
+          if (startDateObj && startDateObj.date) {
+            rowClone.startDate = startDateObj.date;
+          }
+          
+          if (endDateObj && endDateObj.date) {
+            rowClone.endDate = endDateObj.date;
+          }
+          
+          // Create a formatted dates string
+          rowClone._rawData.formattedDates = rowClone._rawData.dates.map(d => {
+            return `${d.type === 'startDate' ? 'Start: ' : 'Ende: '} ${this.formatDate(d.date)}`;
+          }).join(', ');
+        }
       }
 
       // Ensure LE-Category information is available
       if (this.importData && this.importData.importerType !== 'casestudy') {
-        if (!row.leCategory && row.payload && row.payload.leFundingCategoryName) {
-          row.leCategory = row.payload.leFundingCategoryName;
-        } else if (!row.leCategory && row.payload && row.payload.leFundingCategoryId) {
-          row.leCategory = `Kategorie ID: ${row.payload.leFundingCategoryId}`;
-        } else if (!row.leCategory) {
-          row.leCategory = '-';
+        if (!rowClone.leCategory && rowClone.payload && rowClone.payload.leFundingCategoryName) {
+          rowClone.leCategory = rowClone.payload.leFundingCategoryName;
+        } else if (!rowClone.leCategory && rowClone.payload && rowClone.payload.leFundingCategoryId) {
+          rowClone.leCategory = `Kategorie ID: ${rowClone.payload.leFundingCategoryId}`;
+        } else if (!rowClone.leCategory) {
+          rowClone.leCategory = '-';
         }
       }
 
       // Ensure LocalWorkgroup information is available
-      if (!row.localWorkgroup && row.payload && row.payload.localWorkgroupName) {
-        row.localWorkgroup = row.payload.localWorkgroupName;
-      } else if (!row.localWorkgroup && row.payload && row.payload.localWorkgroupId) {
-        row.localWorkgroup = `Arbeitsgruppe ID: ${row.payload.localWorkgroupId}`;
+      if (!rowClone.localWorkgroup && rowClone.payload && rowClone.payload.localWorkgroupName) {
+        rowClone.localWorkgroup = rowClone.payload.localWorkgroupName;
+      } else if (!rowClone.localWorkgroup && rowClone.payload && rowClone.payload.localWorkgroupId) {
+        rowClone.localWorkgroup = `Arbeitsgruppe ID: ${rowClone.payload.localWorkgroupId}`;
       } else {
-        row.localWorkgroup = '-';
+        rowClone.localWorkgroup = '-';
       }
 
-      this.selectedRow = row;
+      this.selectedRow = rowClone;
       this.showRowDetailsModal = true;
       this.activeTab = 'general';
-      this.showRawData = false;
-    },
-    toggleRawData() {
-      this.showRawData = !this.showRawData;
     },
     getFinancingLabel(id) {
       const labels = {
@@ -1203,7 +1385,6 @@ export default {
 
         // Check if response is OK
         if (!response.ok) {
-          console.error(`Error fetching LE periods: ${response.status} ${response.statusText}`);
           
           // This is a non-critical API, we can handle the error gracefully
           // Set default periods if API fails
@@ -1220,7 +1401,6 @@ export default {
         this.lePeriods = data;
         return data;
       } catch (error) {
-        console.error('Error in fetchLePeriods:', error);
         
         // Set default values if API fails so the component can still work
         this.lePeriods = [
@@ -1235,6 +1415,9 @@ export default {
     },
     getSelectedPeriodName() {
       const period = this.lePeriods.find(p => p.id === this.selectedLePeriodId);
+      if(this.importData.importerType === 'legacy') {
+        return 'LE 14-20 und/oder LE 07-13';
+      }
       return period ? period.name : 'Keine LE Period ausgewählt';
     },
     formatDetailKey(key) {
@@ -1311,6 +1494,36 @@ export default {
     },
     formatDetailValue(value) {
       if (typeof value === 'object' && value !== null) {
+        // Handle arrays of objects with name property (topics, regions, workgroups, etc.)
+        if (Array.isArray(value)) {
+          // Check if array contains objects with name property
+          if (value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+            // For files and images arrays - extract just the names
+            if (
+              (this.activeTab === 'details' || this.activeTab === 'general') && 
+              value[0].name && (value[0].originalName || value[0].extension || value[0].mimeType)
+            ) {
+              return value.map(item => item.name).join(', ');
+            }
+            
+            // For topics, regions, etc. - extract just the names
+            if (value[0].name) {
+              return value.map(item => item.name).join(', ');
+            }
+            
+            // For dates array (used in legacy importer)
+            if (value[0].type && value[0].date) {
+              return value.map(item => {
+                const dateLabel = item.type === 'startDate' ? 'Start: ' : 
+                                  item.type === 'endDate' ? 'Ende: ' : '';
+                return dateLabel + this.formatDate(item.date);
+              }).join(', ');
+            }
+          }
+          return value.join(', ');
+        }
+        
+        // If it's still an object, convert to JSON string as fallback
         return JSON.stringify(value);
       } else if (typeof value === 'string') {
         return value;
@@ -1328,14 +1541,29 @@ export default {
     setLePeriodBasedOnImporterType() {
       if (this.importData && this.importData.importerType) {
         if (this.importData.importerType === 'legacy') {
-          // For Legacy importer, use "LE 14-20" (id: 1)
+          // For Legacy importer, check the preview data or import data
+          // to determine the most appropriate LE period
+          
+          // First, check if we have preview data with LE period information
+          if (this.previewData && this.previewData.length > 0) {
+            // Look for a valid lePeriod in the preview data
+            for (const item of this.previewData) {
+              if (item._rawData && item._rawData.lePeriod) {
+                // If an entry has a specific lePeriod ID, use it
+                this.selectedLePeriodId = item._rawData.lePeriod;
+
+                return;
+              }
+            }
+          }
+          
+          // If no specific period found in preview data, fallback to default for legacy imports
+          // We still use LE 14-20 (ID 1) as a default, but this is just a fallback
           this.selectedLePeriodId = 1;
         } else {
           // For Standard and CaseStudy importers, use "GAP 23-27" (id: 3)
           this.selectedLePeriodId = 3;
         }
-        
-        // Log which LE Period was selected
       }
     },
     getImporterTypeLabel(importerType) {
@@ -1355,7 +1583,6 @@ export default {
       try {
         // After successfully loading import data, try to fetch LE periods
         await this.fetchLePeriods().catch(err => {
-          console.error('Error fetching LE periods:', err);
           // Don't throw here - let the process continue even if LE periods fail
           this.setStatusMessage('LE Perioden konnten nicht geladen werden. Standard-Werte werden verwendet.', 'warning', 'warning');
           return null;
@@ -1366,7 +1593,6 @@ export default {
         
         // Try to load preview data, but don't let it break the flow if it fails
         await this.loadPreviewData().catch(err => {
-          console.error('Error loading preview data:', err);
           return [];
         });
         
@@ -1387,7 +1613,6 @@ export default {
         }
       } catch (err) {
         // Handle any remaining errors
-        console.error('Error in initialization:', err);
         this.setStatusMessage('Beim Laden der Daten ist ein Fehler aufgetreten.', 'error', 'error');
       }
     },
@@ -1402,9 +1627,7 @@ export default {
         const controller = new AbortController();
         const timeoutDuration = this.importData && this.importData.importerType === 'casestudy' ? 90000 : 60000;
         const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
-        
-        console.log(`Setting retry preview data timeout to ${timeoutDuration/1000} seconds for ${this.importData ? this.importData.importerType : 'unknown'} import type`);
-        
+                
         const response = await fetch(`/api/v1/project-imports/${this.importId}/preview`, {
           method: 'GET',
           credentials: 'include',
@@ -1430,7 +1653,6 @@ export default {
         this.clearStatusMessage();
         return this.previewData;
       } catch (error) {
-        console.error('Error in retry load preview data:', error);
         
         if (error.name === 'AbortError' || error.name === 'TimeoutError') {
           // Special message for case study imports
@@ -1467,270 +1689,3 @@ export default {
   }
 };
 </script>
-
-<style scoped>
-/* Styles moved to assets/styles/components/project-import-preview.scss */
-/* Adding validation error styling */
-.validation-error {
-  display: flex;
-  align-items: center;
-  margin-top: 8px;
-  color: #dc3545;
-  font-size: 0.9rem;
-}
-
-.validation-error i {
-  margin-right: 5px;
-  font-size: 18px;
-}
-
-/* LE Period selection styling */
-.import-details-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-/* Make the LE Period card take up the full width */
-.le-period-card {
-  grid-column: 1 / -1;
-}
-
-.import-details-card {
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.import-details-card-header {
-  background-color: #e9ecef;
-  padding: 12px 15px;
-  display: flex;
-  align-items: center;
-}
-
-.import-details-card-header i {
-  margin-right: 8px;
-  color: #495057;
-}
-
-.import-details-card-header h4 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #495057;
-}
-
-.import-details-card-body {
-  padding: 15px;
-}
-
-.le-period-selection .le-period-info {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 15px;
-  background-color: #e7f1ff;
-  padding: 10px;
-  border-radius: 4px;
-}
-
-.le-period-selection .le-period-info .info-icon {
-  color: #0d6efd;
-  margin-right: 10px;
-  font-size: 20px;
-}
-
-.le-period-selection .le-period-info p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: #495057;
-}
-
-.le-period-selection .form-group label {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-.le-period-selection .form-group label i {
-  margin-right: 5px;
-  color: #6c757d;
-}
-
-.le-period-selection .select-wrapper {
-  position: relative;
-}
-
-.le-period-selection .select-wrapper select {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23343a40' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 16px 12px;
-}
-
-.selected-period-info {
-  display: flex;
-  align-items: center;
-  margin-top: 8px;
-  color: #198754;
-  font-size: 0.9rem;
-}
-
-.selected-period-info i {
-  margin-right: 5px;
-  font-size: 18px;
-}
-
-.badge-info {
-  background-color: #17a2b8;
-  color: white;
-}
-
-.import-type-badge {
-  font-size: 0.9rem;
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-weight: 500;
-  display: inline-block;
-}
-
-/* Type-specific styling */
-.import-type-legacy {
-  background-color: #6c757d;
-  color: white;
-}
-
-.import-type-standard {
-  background-color: #007bff;
-  color: white;
-}
-
-.import-type-casestudy {
-  background-color: #28a745;
-  color: white;
-}
-
-/* Add CSS for status message component at the end of the style section */
-.status-message {
-  padding: 10px 15px;
-  border-radius: 4px;
-  margin-top: 15px;
-  margin-bottom: 15px;
-  display: flex;
-  align-items: flex-start;
-  font-size: 0.95rem;
-  flex-direction: column;
-}
-
-.status-message-content {
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-.status-message-actions {
-  margin-top: 10px;
-  display: flex;
-  justify-content: flex-end;
-  width: 100%;
-}
-
-.status-message-actions .button {
-  font-size: 0.85rem;
-  padding: 4px 8px;
-  display: flex;
-  align-items: center;
-}
-
-.status-message-actions .button i {
-  font-size: 16px;
-  margin-right: 4px;
-}
-
-.status-message i {
-  margin-right: 10px;
-  font-size: 20px;
-}
-
-.status-message.error {
-  background-color: #ffebee;
-  color: #d32f2f;
-  border: 1px solid #ffcdd2;
-}
-
-.status-message.success {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #c8e6c9;
-}
-
-.status-message.info {
-  background-color: #e3f2fd;
-  color: #1976d2;
-  border: 1px solid #bbdefb;
-}
-
-.status-message.warning {
-  background-color: #fff8e1;
-  color: #f57f17;
-  border: 1px solid #ffe082;
-}
-
-/* No preview info styling */
-.no-preview-info {
-  display: flex;
-  padding: 20px;
-  background-color: #f5f5f5;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  align-items: flex-start;
-}
-
-.no-preview-info.case-study {
-  background-color: #e8f5e9;
-  border-left: 4px solid #4caf50;
-}
-
-.no-preview-icon {
-  margin-right: 15px;
-  color: #757575;
-}
-
-.no-preview-info.case-study .no-preview-icon {
-  color: #4caf50;
-}
-
-.no-preview-icon i {
-  font-size: 32px;
-}
-
-.no-preview-message h4 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 1.1rem;
-  color: #424242;
-}
-
-.no-preview-message p {
-  margin: 0;
-  color: #616161;
-  line-height: 1.5;
-}
-
-.retry-actions {
-  display: flex;
-  margin-top: 15px;
-  justify-content: flex-start;
-}
-
-.ml-2 {
-  margin-left: 10px;
-}
-</style>

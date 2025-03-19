@@ -286,6 +286,14 @@ class StandardProjectImporter extends AbstractProjectImporter
                 'localWorkgroupId' => isset($data['AG']) && is_numeric($data['AG']) ? (int)$data['AG'] : null
             ];
             
+            if(isset($data['Q8.2']) && $data['Q8.2'] == 1) {
+                $payload['cooperationProjectAt'] = true;
+            }
+    
+            if(isset($data['Q8.3']) && $data['Q8.3'] == 1) {
+                $payload['cooperationProjectEu'] = true;
+            }
+
             // Process keywords and convert them to tags
             if (!empty($payload['keywords'])) {
                 $keywords = explode(',', $payload['keywords']);
@@ -396,12 +404,6 @@ class StandardProjectImporter extends AbstractProjectImporter
                         ];
                     }
                 }
-            }
-            
-            // Process program (Q6)
-            if (!empty($data['Q6'])) {
-                // Ensure fundingMethod is a string, not an array
-                $payload['fundingMethod'] = is_array($data['Q6']) ? implode(', ', $data['Q6']) : $data['Q6'];
             }
             
             // Initialize standard financing structure with expected IDs

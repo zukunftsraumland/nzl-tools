@@ -287,6 +287,19 @@ class ProjectService
             }
             if ($entity) {
                 $project->addTag($entity);
+            } else {
+                // Create new tag if it doesn't exist
+                if (array_key_exists('name', $item)) {
+                    $tag = new Tag();
+                    $tag->setName($item['name']);
+                    $tag->setContext('tag');
+                    $tag->setIsPublic(1);
+                    $tag->setCreatedAt(new \DateTime());
+                    $tag->setUpdatedAt(new \DateTime());
+                    $this->em->persist($tag);
+                    $this->em->flush();
+                    $project->addTag($tag);
+                }
             }
         }
 
