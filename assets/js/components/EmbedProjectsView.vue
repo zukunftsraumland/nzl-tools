@@ -168,7 +168,7 @@
 
       <div
         class="embed-projects-view-content-contacts"
-        v-if="translateField(project, 'contacts', locale)?.length && isBackendView"
+        v-if="translateField(project, 'contacts', locale)?.length && isBackendView && showContacts"
       >
         <h4 class="nzl-title">{{ $t("Kontakt", locale) }}</h4>
         <div
@@ -324,23 +324,23 @@
         <p v-html="instrumentsHTML"></p>
       </template>
 
-      <template v-if="project.projectCosts">
+      <template v-if="project.projectCosts && parseFloat(project.projectCosts) > 0">
         <h3>{{ $t("Projektkosten", locale) }}</h3>
         <p>{{ $helpers.formatCurrency(project.projectCosts) }}</p>
         <table class="project-costs-table">
           <tbody>
-            <tr v-for="financing in project.financing" :key="financing.id">
-              <td v-if="financing.id === 'costsGap'">
+            <tr v-for="financing in project.financing" :key="financing.id" >
+              <td v-if="financing.id === 'costsGap' && financing.value > 0">
                 {{ $t("GAP Strategieplan", locale) }}
               </td>
-              <td v-if="financing.id === 'costsPrivate'">
+              <td v-if="financing.id === 'costsPrivate' && financing.value > 0">
                 {{ $t("Private und Eigenmittel", locale) }}
               </td>
-              <td v-if="financing.id === 'costsExternal'">
+              <td v-if="financing.id === 'costsExternal' && financing.value > 0">
                 {{ $t("Andere Finanzquellen", locale) }}
               </td>
-              <td>{{ financing.value ? financing.value : 0 }}%</td>
-              <td>
+              <td v-if="financing.value > 0">{{ financing.value ? financing.value : 0 }}%</td>
+              <td v-if="financing.value > 0">
                 {{
                   $helpers
                     .calculateFinancingAmount(financing.value, project.projectCosts)
@@ -521,6 +521,10 @@ export default {
     project: {
       type: Object,
       required: true,
+    },
+    showContacts: {
+      type: Boolean,
+      default: true,
     },
   },
 

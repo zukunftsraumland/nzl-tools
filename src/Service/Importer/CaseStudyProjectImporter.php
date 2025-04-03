@@ -20,6 +20,9 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
  */
 class CaseStudyProjectImporter extends StandardProjectImporter
 {
+    /**
+     * Constructor
+     */
     public function __construct(
         EntityManagerInterface $em,
         ProjectService $projectService,
@@ -30,7 +33,9 @@ class CaseStudyProjectImporter extends StandardProjectImporter
     }
 
     /**
-     * {@inheritdoc}
+     * Get the name of this importer
+     *
+     * @return string Importer name
      */
     public function getName(): string
     {
@@ -38,7 +43,9 @@ class CaseStudyProjectImporter extends StandardProjectImporter
     }
 
     /**
-     * {@inheritdoc}
+     * Get the description of this importer
+     *
+     * @return string Importer description
      */
     public function getDescription(): string
     {
@@ -46,7 +53,9 @@ class CaseStudyProjectImporter extends StandardProjectImporter
     }
 
     /**
-     * {@inheritdoc}
+     * Get the type identifier for this importer
+     *
+     * @return string Importer type
      */
     public function getType(): string
     {
@@ -54,22 +63,21 @@ class CaseStudyProjectImporter extends StandardProjectImporter
     }
 
     /**
-     * {@inheritdoc}
+     * Prepare the project payload data from Excel import for Case Study
+     *
+     * Extends the standard project import with additional case study specific fields.
+     * Processes case study fields from columns BV-CI, sets the caseStudy flag to true,
+     * and handles special tag processing for case studies.
+     *
+     * @param array $data Raw data from Excel import
+     * @return array Processed project payload
      */
     protected function prepareProjectPayload(array $data): array
     {
-        // First, call the parent's method, but we'll override the file processing later
         $payload = parent::prepareProjectPayload($data);
-        
-        // Set the caseStudy flag to true
         $payload['caseStudy'] = true;
         
-        // Debug the data array to see what keys are available
-        
         // Map fields according to the Excel header names (Q21, Q22, etc.)
-        // These names should match exactly what's in row 4 of the Excel file
-        
-        // Map and log each field for debugging
         $caseStudyFields = [
             'exemplary' => $data['Q21'] ?? null,
             'initialContext' => $data['Q22'] ?? null,
@@ -87,8 +95,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             'transferable' => $data['Q34'] ?? null,
         ];
         
-        
-        // Assign them to the payload
         foreach ($caseStudyFields as $field => $value) {
             if (!empty($value)) {
                 $payload[$field] = $value;
@@ -113,29 +119,22 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             'CI' => 'transferable',
         ];
         
-        $columnValues = [];
         foreach ($columnMappings as $column => $field) {
             if (isset($data[$column]) && !empty($data[$column])) {
                 $payload[$field] = $data[$column];
-                $columnValues[$column] = $data[$column];
             }
         }
         
-        
-        // Clear any file/image entries that might have been added by the parent's processFileAttachmentsFromExcel
-        // This is necessary because the parent method may have interpreted these columns as file attachments
+        // Clear any data from parent that we need to override
         $payload['files'] = [];
         $payload['images'] = [];
-        
-        // Clear any tags processed by the parent (StandardProjectImporter)
         $payload['tags'] = [];
         
-        // Process tags with our special case study logic
+        // Process tags with case study logic
         if (!empty($data['Q4']) || isset($data['U'])) {
             $keywords = $data['Q4'] ?? $data['U'] ?? '';
             $allKeywords = explode(',', $keywords);
 
-            // Process keywords and convert them to tags
             if (!empty($allKeywords)) {
                 foreach ($allKeywords as $keyword) {
                     // TODO: Check if its actually a keyword and not a text because the data coming from the export is not always clean. 
@@ -148,21 +147,16 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                     }
                 }
             }
-            // $this->processTagsForCaseStudy($keywords, $payload);
         }
         
-        // Process synergy fund tags and synergy goal tags
         $this->processSynergyTags($data, $payload);
-        
-        // Process files from columns CJ onwards (if implementation is needed)
         $this->processCaseStudyFileAttachments($data, $payload);
         
-        // Extract localWorkgroupId from column AG and map to name
+        // Extract localWorkgroupId and map to name
         if (isset($data['AG']) && is_numeric($data['AG'])) {
             $localWorkgroupId = (int)$data['AG'];
             $payload['localWorkgroupId'] = $localWorkgroupId;
             
-            // Get the LocalWorkgroup name from mapping
             $localWorkgroupNameMapping = $this->getLocalWorkgroupNameMapping();
             if (isset($localWorkgroupNameMapping[$localWorkgroupId])) {
                 $payload['localWorkgroupName'] = $localWorkgroupNameMapping[$localWorkgroupId];
@@ -177,7 +171,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             $payload['cooperationProjectEu'] = true;
         }
         
-        // Add LE category name without DB lookup
         if (!empty($data['Q3.7']) || !empty($data['K'])) {
             $payload['leFundingCategoryName'] = $data['Q3.7'] ?? $data['K'] ?? '';
         }
@@ -204,7 +197,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         // Initialize arrays in the payload
         $payload['synergyFundTags'] = [];
         $payload['synergyGoalTags'] = [];
-        
         
         // Process synergyFundTags (columns CL-CP)
         $synergyFundTagMappings = [
@@ -277,12 +269,10 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 }
             }
         }
-        
-        
     }
     
     /**
-     * Overrides the file attachment processing from StandardProjectImporter
+     * Override parent's file attachment processing with empty implementation
      * 
      * Since columns BV-CI are used for case study fields rather than file attachments,
      * we need to override this method to prevent it from processing those columns as files.
@@ -309,12 +299,9 @@ class CaseStudyProjectImporter extends StandardProjectImporter
      */
     private function processCaseStudyFileAttachments(array $data, array &$payload): void
     {
-        
-        // Initialize arrays to track existing file IDs
         $existingImageIds = [];
         $existingFileIds = [];
         
-        // First populate existing IDs from payload if they exist
         if (isset($payload['images']) && is_array($payload['images'])) {
             foreach ($payload['images'] as $image) {
                 if (isset($image['id'])) {
@@ -331,19 +318,49 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             }
         }
         
-        // Process regular file attachment (BO/BP)
+        // Regular file attachment (BO/BP)
         if (!empty($data['BO']) && !empty($data['BP'])) {
             $filename = $data['BO'];
             $url = $data['BP'];
             
+            try {
+                $fileData = $this->downloadAttachmentFromUrl($url, $filename);
+                
+                if ($fileData && !in_array($fileData['id'], $existingFileIds)) {
+                    $payload['files'][] = [
+                        'id' => $fileData['id'],
+                        'name' => $fileData['name'],
+                        'extension' => $fileData['extension'],
+                        'mimeType' => $fileData['mimeType'],
+                        'description' => $fileData['name'] ?? '',
+                    ];
+                }
+            } catch (\Exception $e) {
+                // Silent exception handling
+            }
+        }
+        
+        // Image attachment (BQ/BR)
+        if (!empty($data['BQ']) && !empty($data['BR'])) {
+            $filename = $data['BQ'];
+            $url = $data['BR'];
             
             try {
                 $fileData = $this->downloadAttachmentFromUrl($url, $filename);
                 
                 if ($fileData) {
-                    // Check if this file ID already exists in our payload
-                    if (!in_array($fileData['id'], $existingFileIds)) {
-                        // Add to files array
+                    $isImage = $this->isImageFile($filename);
+                    
+                    if ($isImage && !in_array($fileData['id'], $existingImageIds)) {
+                        $payload['images'][] = [
+                            'id' => $fileData['id'],
+                            'name' => $fileData['name'],
+                            'extension' => $fileData['extension'],
+                            'mimeType' => $fileData['mimeType'],
+                            'copyright' => '',
+                            'description' => $fileData['name'] ?? ''
+                        ];
+                    } else if (!$isImage && !in_array($fileData['id'], $existingFileIds)) {
                         $payload['files'][] = [
                             'id' => $fileData['id'],
                             'name' => $fileData['name'],
@@ -351,60 +368,10 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                             'mimeType' => $fileData['mimeType'],
                             'description' => $fileData['name'] ?? '',
                         ];
-                        
-                        
                     }
                 }
             } catch (\Exception $e) {
-                
-            }
-        }
-        
-        // Process image attachment (BQ/BR)
-        if (!empty($data['BQ']) && !empty($data['BR'])) {
-            $filename = $data['BQ'];
-            $url = $data['BR'];
-            
-            
-            try {
-                $fileData = $this->downloadAttachmentFromUrl($url, $filename);
-                
-                if ($fileData) {
-                    // For images, we need to determine if it's actually an image
-                    $isImage = $this->isImageFile($filename);
-                    
-                    if ($isImage) {
-                        // Check if this image ID already exists in our payload
-                        if (!in_array($fileData['id'], $existingImageIds)) {
-                            // Add to images array
-                            $payload['images'][] = [
-                                'id' => $fileData['id'],
-                                'name' => $fileData['name'],
-                                'extension' => $fileData['extension'],
-                                'mimeType' => $fileData['mimeType'],
-                                'copyright' => '',
-                                'description' => $fileData['name'] ?? ''
-                            ];
-                            
-                            
-                        }
-                    } else {
-                        // If it's not an image but in the image column, we'll treat it as a regular file
-                        if (!in_array($fileData['id'], $existingFileIds)) {
-                            $payload['files'][] = [
-                                'id' => $fileData['id'],
-                                'name' => $fileData['name'],
-                                'extension' => $fileData['extension'],
-                                'mimeType' => $fileData['mimeType'],
-                                'description' => $fileData['name'] ?? '',
-                            ];
-                            
-
-                        }
-                    }
-                }
-            } catch (\Exception $e) {
-                
+                // Silent exception handling
             }
         }
     }
@@ -427,14 +394,11 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 $url = 'https://' . $url;
             }
             
-            // URL encode any spaces or special characters in the URL path
-            // But preserve the basic URL structure
+            // URL encode special characters while preserving structure
             $urlParts = parse_url($url);
             if (isset($urlParts['path'])) {
-                // Only encode the path portion
                 $encodedPath = implode('/', array_map('rawurlencode', explode('/', $urlParts['path'])));
                 
-                // Reconstruct the URL
                 $scheme = isset($urlParts['scheme']) ? $urlParts['scheme'] . '://' : 'https://';
                 $host = $urlParts['host'] ?? '';
                 $port = isset($urlParts['port']) ? ':' . $urlParts['port'] : '';
@@ -444,7 +408,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 $url = $scheme . $host . $port . $encodedPath . $query . $fragment;
             }
             
-            // Sanitize the filename
             $cleanFilename = $this->sanitizeFilename($filename);
             
             // Set up context with timeout and user agent
@@ -461,7 +424,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 ]
             ]);
             
-            // Download the file
+            // Attempt to download with retries
             $fileContents = null;
             $attempts = 0;
             $maxAttempts = 3;
@@ -472,43 +435,30 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 try {
                     $fileContents = @file_get_contents($url, false, $context);
                     if ($fileContents !== false) {
-                        break; // Success, exit the loop
+                        break; 
                     }
                     
-
-                    
-                    // Wait before retrying
                     if ($attempts < $maxAttempts) {
                         sleep(1);
                     }
                 } catch (\Exception $e) {
-                    
-                    
-                    // Wait before retrying
                     if ($attempts < $maxAttempts) {
                         sleep(1);
                     }
                 }
             }
             
-            if ($fileContents === false || $fileContents === null) {
+            if ($fileContents === false || $fileContents === null || empty($fileContents)) {
                 return null;
             }
             
-            // Check if we got an empty response
-            if (empty($fileContents)) {
-                return null;
-            }
-            
-            // Get file information
             $isImage = $this->isImageFile($filename);
             $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
             $mimeType = $this->getMimeTypeFromFilename($filename);
             
-            // Convert to base64 data
+            // Create file entity
             $base64Data = 'data:' . $mimeType . ';base64,' . base64_encode($fileContents);
             
-            // Create a File entity
             $file = new \App\Entity\File();
             $file
                 ->setName($cleanFilename)
@@ -518,7 +468,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 ->setMimeType($mimeType)
                 ->setExtension($extension);
             
-            // Check if a file with the same hash already exists
+            // Reuse existing file if hash matches
             $existingFile = $this->em->getRepository(\App\Entity\File::class)->findOneBy([
                 'hash' => $file->getHash(),
             ]);
@@ -530,7 +480,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 $file = $existingFile;
             }
             
-            // Return the file data in the format expected by the Project entity
             return [
                 'id' => $file->getId(),
                 'name' => $cleanFilename,
@@ -541,7 +490,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 'description' => ''
             ];
         } catch (\Exception $e) {
-            
             return null;
         }
     }
@@ -603,34 +551,24 @@ class CaseStudyProjectImporter extends StandardProjectImporter
     }
 
     /**
-     * {@inheritdoc}
+     * Process an import row from the Excel file
+     * 
+     * Extends the parent's implementation to add case study specific handling,
+     * ensuring the caseStudy flag is properly set to true.
+     *
+     * @param ProjectImport $import The import object
+     * @param int $rowIndex The row index to process
+     * @return array Result with status, payload, and any error messages
      */
     public function processImportItem(ProjectImport $import, int $rowIndex): array
     {
         try {
-            // Call the parent method to get the basic result
             $result = parent::processImportItem($import, $rowIndex);
             
-            // If the basic processing failed, just return the result
             if ($result['status'] === 'error') {
                 return $result;
             }
             
-            // Log the column headers to help debug field mapping
-            $filePath = $import->getFilePath();
-            
-            // Check if the file path is already absolute
-            if (!file_exists($filePath)) {
-                // If not absolute, prepend the upload directory
-                $filePath = $this->uploadDir . '/' . $filePath;
-            }
-            
-            // This will only be done on the first row to avoid repeated logging
-            if ($rowIndex === 1) {
-                $this->logExcelColumnHeaders($filePath);
-            }
-            
-            // Set the caseStudy flag to true in the result
             if (isset($result['payload'])) {
                 $result['payload']['caseStudy'] = true;
             }
@@ -652,43 +590,13 @@ class CaseStudyProjectImporter extends StandardProjectImporter
     }
     
     /**
-     * Log the column headers from the Excel file for debugging purposes
-     *
-     * @param string $filePath The path to the Excel file
-     */
-    private function logExcelColumnHeaders(string $filePath): void
-    {
-        try {
-            // Load the spreadsheet
-            $spreadsheet = IOFactory::load($filePath);
-            $worksheet = $spreadsheet->getActiveSheet();
-            
-            // Get the highest column index
-            $highestColumnIndex = Coordinate::columnIndexFromString($worksheet->getHighestColumn());
-            
-            // Extract headers from row 4 (field names)
-            $headers = [];
-            for ($col = 1; $col <= $highestColumnIndex; $col++) {
-                $columnLetter = Coordinate::stringFromColumnIndex($col);
-                $fieldName = $worksheet->getCellByColumnAndRow($col, 4)->getValue();
-                if (!empty($fieldName)) {
-                    $headers[$columnLetter] = $fieldName;
-                }
-            }
-            
-            
-        } catch (\Exception $e) {
-            
-        }
-    }
-    
-    /**
      * Override the generatePreview method to create a more efficient version for case studies
      * 
      * This optimized version skips expensive operations like file downloading and database lookups
      * during preview generation to prevent timeouts on the live server.
      * 
-     * {@inheritdoc}
+     * @param ProjectImport $import The import object
+     * @return array Preview data with simplified project information
      */
     public function generatePreview(ProjectImport $import): array
     {
@@ -697,20 +605,14 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         try {
             $filePath = $import->getFilePath();
             
-            // Check if the file path is already absolute
             if (!file_exists($filePath)) {
-                // If not absolute, prepend the upload directory
                 $filePath = $this->uploadDir . '/' . $filePath;
             }
             
-            // Load the spreadsheet
             $spreadsheet = IOFactory::load($filePath);
             $worksheet = $spreadsheet->getActiveSheet();
             
-            // Get the header row index
             $headerRowIndex = $this->getHeaderRowCount();
-            
-            // Get the highest column and row
             $highestColumnIndex = Coordinate::columnIndexFromString($worksheet->getHighestColumn());
             $highestRow = $worksheet->getHighestRow();
             
@@ -725,39 +627,31 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 }
             }
             
-            // Process the rows to generate preview
-            $maxPreviewRows = 100; // Limit the number of rows for preview
+            // Process limited number of rows for preview
+            $maxPreviewRows = 100;
             $rowLimit = min($highestRow, $maxPreviewRows + $headerRowIndex);
             
             for ($rowIndex = $headerRowIndex + 1; $rowIndex <= $rowLimit; $rowIndex++) {
-                // Extract data from the row
                 $rowData = [];
                 
                 for ($col = 1; $col <= $highestColumnIndex; $col++) {
                     $columnLetter = Coordinate::stringFromColumnIndex($col);
                     $value = $worksheet->getCellByColumnAndRow($col, $rowIndex)->getValue();
                     
-                    // Map cell data
                     if (isset($headerMapping[$columnLetter])) {
                         $rowData[$headerMapping[$columnLetter]] = $value;
                     }
                     
-                    // Also store data by column letter for direct access
                     $rowData[$columnLetter] = $value;
                 }
                 
-                // Skip empty rows
                 if (empty($rowData)) {
                     continue;
                 }
                 
-                // Prepare basic payload without expensive operations
                 $payload = $this->preparePreviewPayload($rowData);
-                
-                // Add basic case study fields to payload (without database lookups)
                 $payload['caseStudy'] = true;
                 
-                // Map the essential fields needed for preview
                 $previewItem = [
                     'rowNumber' => $rowIndex - $headerRowIndex,
                     'title' => $payload['title'] ?? '',
@@ -765,17 +659,16 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                     'projectCode' => $payload['projectCode'] ?? '',
                     'startDate' => $payload['startDate'] ?? null,
                     'endDate' => $payload['endDate'] ?? null,
-                    'status' => 'valid', // Default to valid for preview
+                    'status' => 'valid',
                     'payload' => $payload
                 ];
                 
-                // Basic validation for preview (minimal)
+                // Basic validation
                 if (empty($previewItem['title'])) {
                     $previewItem['status'] = 'warning';
                     $previewItem['message'] = 'Projekt hat keinen Titel';
                 }
                 
-                // Check if project with the same title already exists
                 if (!empty($previewItem['title'])) {
                     $existingProject = $this->findProjectByTitle($previewItem['title']);
                     if ($existingProject) {
@@ -789,7 +682,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             
             return $results;
         } catch (\Exception $e) {
-            
             return [
                 [
                     'rowNumber' => 1,
@@ -831,10 +723,8 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 if ($startDateValue instanceof \DateTime) {
                     $payload['startDate'] = $startDateValue->format('Y-m-d');
                 } else if (is_numeric($startDateValue)) {
-                    // Excel date
                     $payload['startDate'] = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($startDateValue)->format('Y-m-d');
                 } else {
-                    // Try to parse the date string
                     try {
                         $payload['startDate'] = (new \DateTime($startDateValue))->format('Y-m-d');
                     } catch (\Exception $e) {
@@ -850,10 +740,8 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 if ($endDateValue instanceof \DateTime) {
                     $payload['endDate'] = $endDateValue->format('Y-m-d');
                 } else if (is_numeric($endDateValue)) {
-                    // Excel date
                     $payload['endDate'] = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($endDateValue)->format('Y-m-d');
                 } else {
-                    // Try to parse the date string
                     try {
                         $payload['endDate'] = (new \DateTime($endDateValue))->format('Y-m-d');
                     } catch (\Exception $e) {
@@ -863,8 +751,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             }
         }
         
-        // Include basic case study fields without DB lookups
-        // Map case study specific fields from columns BV-CI to improve preview data
+        // Case study specific fields
         $caseStudyFields = [
             'exemplary' => $data['Q21'] ?? $data['BV'] ?? null,
             'initialContext' => $data['Q22'] ?? $data['BW'] ?? null,
@@ -888,15 +775,13 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             }
         }
         
-        // For preview only, include placeholder tags without DB lookups
+        // Process tags for preview
         if (!empty($data['Q4']) || isset($data['U'])) {
             $keywords = $data['Q4'] ?? $data['U'] ?? '';
             $allKeywords = explode(',', $keywords);
 
-            // Process keywords and convert them to tags
             if (!empty($allKeywords)) {
                 foreach ($allKeywords as $keyword) {
-                    // TODO: Check if its actually a keyword and not a text because the data coming from the export is not always clean. 
                     $keyword = trim($keyword);
                     if (!empty($keyword)) {
                         $payload['tags'][] = [
@@ -908,11 +793,10 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             }
         }
         
-        // For synergy tags, just indicate their presence in preview without DB lookups
+        // Check for synergy tags
         $synergyFundTagsPresent = false;
         $synergyGoalTagsPresent = false;
         
-        // Check for synergy fund tags (columns CL-CP)
         foreach (['CL', 'CM', 'CN', 'CO', 'CP'] as $column) {
             if (isset($data[$column]) && $data[$column] == 1) {
                 $synergyFundTagsPresent = true;
@@ -920,7 +804,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             }
         }
         
-        // Check for synergy goal tags (columns CS-CY)
         foreach (['CS', 'CT', 'CU', 'CV', 'CW', 'CX', 'CY'] as $column) {
             if (isset($data[$column]) && $data[$column] == 1) {
                 $synergyGoalTagsPresent = true;
@@ -928,7 +811,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             }
         }
         
-        // Add placeholder indicators for synergy tags
         if ($synergyFundTagsPresent) {
             $payload['hasSynergyFundTags'] = true;
         }
@@ -937,19 +819,18 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             $payload['hasSynergyGoalTags'] = true;
         }
         
-        // Extract localWorkgroupId from column AG and map to name
+        // Add localWorkgroup info
         if (isset($data['AG']) && is_numeric($data['AG'])) {
             $localWorkgroupId = (int)$data['AG'];
             $payload['localWorkgroupId'] = $localWorkgroupId;
             
-            // Get the LocalWorkgroup name from mapping
             $localWorkgroupNameMapping = $this->getLocalWorkgroupNameMapping();
             if (isset($localWorkgroupNameMapping[$localWorkgroupId])) {
                 $payload['localWorkgroupName'] = $localWorkgroupNameMapping[$localWorkgroupId];
             }
         }
         
-        // Add LE category name without DB lookup
+        // Add LE category name
         if (!empty($data['Q6']) || !empty($data['AF'])) {
             $excelCategoryId = $data['Q6'] ?? $data['AF'] ?? null;
             $leCategoryNameMapping = $this->getLeCategoryNameMapping();

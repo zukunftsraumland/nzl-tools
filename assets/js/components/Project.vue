@@ -576,6 +576,7 @@
         v-if="$env.PROJECTS_ENABLE_PROJECT_COSTS || $env.PROJECTS_ENABLE_FINANCING"
       >
         <div class="project-component-form-section">
+          <!-- Row 1: Project Costs and Toggle Button -->
           <div class="row">
             <div class="col-md-4" v-if="$env.PROJECTS_ENABLE_PROJECT_COSTS">
               <label for="projectCosts">Gesamtprojektkosten (€)</label>
@@ -591,54 +592,80 @@
                 "
               />
             </div>
-            <div class="col-md-8" v-if="$env.PROJECTS_ENABLE_FINANCING">
-              <div class="row" v-for="(financing, index) in project.financing">
-                <div class="col-md-7">
-                  <label v-if="index === 0"> (%)</label>
-                  <div class="select-wrapper">
-                    <select class="form-control" v-model="financing.id">
-                      <option value="costsGap">GAP Strategieplan</option>
-                      <option value="costsPrivate">Private und Eigenmittel</option>
-                      <option value="costsExternal">Andere Finanzquellen</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="col-md-5">
-                  <label v-if="index === 0">Anteil in Prozent (%)</label>
-                  <input
-                    placeholder="Wert"
-                    type="text"
-                    class="form-control"
-                    :value="financing.value"
-                    @change="updateFinancingValue(index, $event.target.value)"
-                  />
-                </div>
-                <!-- <div class="col-md-2">
-                  <label v-if="index === 0">Verwerfen</label>
-                  <a
-                    class="button warning"
-                    @click="
-                      project.financing.splice(project.financing.indexOf(financing), 1)
-                    "
-                  >
-                    <span class="material-icons">cancel</span>
-                  </a>
-                </div> -->
-              </div>
-              <p v-if="this.project.financingError" class="text-danger">
-                Die Summe der Anteile darf 100 % nicht über- / unterschreiten.
-              </p>
-              <!-- <a
-                class="form-control-add"
-                @click="project.financing.push({ id: '', value: 0 })"
-              >
-                <span class="material-icons">add</span> Kostenstelle hinzufügen
-              </a> -->
+            <!-- Toggler Button Column -->
+            <div class="col-md-8 d-flex align-items-end justify-content-start pb-1">
+               <button 
+                 type="button" 
+                 class="button" 
+                 :class="showFinancingDetails ? 'primary' : ''" 
+                 @click="showFinancingDetails = !showFinancingDetails"
+                 v-if="$env.PROJECTS_ENABLE_FINANCING"
+               >
+                 <span class="material-icons me-1">{{ showFinancingDetails ? 'visibility_off' : 'visibility' }}</span>
+                 {{ showFinancingDetails ? 'Finanzierungsquellen ausblenden' : 'Finanzierungsquellen anzeigen' }}
+              </button>
             </div>
           </div>
+
+          <!-- Conditional Financing Section -->
+          <template v-if="showFinancingDetails">
+             <div class="row mt-3"> 
+               <div class="col-md-12" v-if="$env.PROJECTS_ENABLE_FINANCING"> 
+                 <!-- Financing Inputs Loop -->
+                 <div class="financing-items-container">
+                   <div 
+                     v-for="(financing, index) in project.financing" 
+                     :key="financing.id" 
+                     class="financing-item financing-item-compact border rounded" 
+                   >
+                     <!-- Flex container for the entire line -->
+                     <div class="d-flex align-items-center">
+                        <!-- Checkbox to enable this specific financing item -->
+                        <div class="form-check flex me-3 flex-shrink-0"> 
+                          <input 
+                            class="form-check-input" 
+                            type="checkbox" 
+                            :id="'enable-' + financing.id" 
+                            v-model="enableFinancingInput[financing.id]" 
+                            @change="toggleFinancing(financing.id)"
+                          >
+                          <label 
+                            class="form-check-label d-flex align-items-center" 
+                            :for="'enable-' + financing.id"
+                          >
+                            {{ getFinancingLabel(financing.id) }} aktivieren
+                          </label>
+                        </div>
+
+                        <!-- Conditionally render label and input if checkbox is checked -->
+                        <template v-if="enableFinancingInput[financing.id]">
+                          <label :for="'input-' + financing.id" class="me-2 flex-shrink-0">Anteil in Prozent (%)</label>
+                          <input
+                            :id="'input-' + financing.id"
+                            placeholder="Wert"
+                            type="number"  
+                            step="0.01"  
+                            class="form-control form-control-sm flex-grow-1" 
+                            style="max-width: 100px;" 
+                            :value="financing.value"
+                            @change="updateFinancingValue(index, $event.target.value)"
+                            :disabled="!enableFinancingInput[financing.id]" 
+                          />
+                        </template>
+                      </div>
+                   </div>
+                 </div>
+
+                 <p v-if="project.financingError" class="text-danger mt-2">
+                   Die Summe der aktivierten Anteile muss 100 % ergeben. Aktuell: {{ calculateCurrentPercentage() }}%
+                 </p>
+               </div>
+             </div>
+           </template> <!-- End conditional template -->
         </div>
 
         <div class="project-component-form-section">
+          <!-- Diff View Row -->
           <div
             class="row"
             v-if="
@@ -646,6 +673,7 @@
               (selectedInboxItem.internalId || selectedInboxItem.source !== 'regiosuisse')
             "
           >
+            <!-- Diff: Project Costs -->
             <div
               class="col-md-4"
               v-if="$env.PROJECTS_ENABLE_PROJECT_COSTS"
@@ -668,6 +696,7 @@
                 v-model="diff.projectCosts"
               />
             </div>
+            <!-- Diff: Financing -->
             <div
               class="col-md-8"
               v-if="$env.PROJECTS_ENABLE_FINANCING"
@@ -684,24 +713,18 @@
                 >
                 Weitere Projektkosten (%)
               </label>
-              <div class="row" v-for="financing in diff.financing">
-                <div class="col-md-6">
-                  <div class="select-wrapper">
-                    <select class="form-control" v-model="financing.id" disabled>
-                      <option value="costsGap">GAP Strategieplan</option>
-                      <option value="costsPrivate">Private und Eigenmittel</option>
-                      <option value="costsExternal">Andere Finanzquellen</option>
-                    </select>
+              <!-- Display Diff Financing Items (read-only) -->
+              <div class="financing-items-container-diff mt-2">
+                <div 
+                  v-for="financing_diff in diff.financing" 
+                  :key="financing_diff.id" 
+                  class="financing-item-diff mb-2 p-2 border rounded bg-light"
+                  v-if="financing_diff.value && parseFloat(financing_diff.value) > 0"
+                >
+                   <div class="d-flex justify-content-between align-items-center">
+                     <span class="fw-bold me-3">{{ getFinancingLabel(financing_diff.id) }}:</span>
+                     <span>{{ financing_diff.value }}%</span>
                   </div>
-                </div>
-                <div class="col-md-6">
-                  <input
-                    readonly
-                    placeholder="Wert"
-                    type="text"
-                    class="form-control"
-                    v-model="financing.value"
-                  />
                 </div>
               </div>
             </div>
@@ -2293,6 +2316,7 @@
         @clickClose="showPreview = false"
         :project="project"
         :locale="locale"
+        :show-contacts="false"
       >
       </EmbedProjectsView>
     </div>
@@ -2409,6 +2433,13 @@ export default {
         synergyFundTags: [],
         synergyGoalTags: [],
       },
+      // Add state for financing input visibility/enabled status
+      enableFinancingInput: {
+        costsGap: false,
+        costsPrivate: false,
+        costsExternal: false,
+      },
+      showFinancingDetails: false, // State for toggler
       diff: null,
       locale: "de",
       showPreview: false,
@@ -2450,6 +2481,8 @@ export default {
       return this.$store.dispatch("projects/load", id);
     },
     reload() {
+      this.$store.commit("inbox/set", {});
+      this.$store.commit("projects/set", {});
       if (this.$route.name === "inbox_project") {
         this.$store.commit("inbox/set", {});
         this.$store.commit("projects/set", {});
@@ -2458,22 +2491,17 @@ export default {
           if (this.selectedInboxItem.internalId) {
             this.loadProject(this.selectedInboxItem.internalId).then(() => {
               this.project = { ...this.project, ...this.selectedProject };
+              // Initialize checkboxes *after* project is potentially merged
+              this.initializeFinancingCheckboxes(); 
               if (this.selectedInboxItem.status === "deleted") {
                 this.diff = false;
               }
-              // else if (this.selectedInboxItem.source === 'regiosuisse') {
-              //     ['de', 'fr', 'it'].forEach((locale) => {
-              //         this.mergeAll(locale);
-              //     });
-              // }
             });
+          } else {
+             // Initialize even if it's a new project from inbox
+             this.project = { ...this.project, ...this.diff }; // Apply diff data
+             this.initializeFinancingCheckboxes();
           }
-          // else if (this.selectedInboxItem.source === 'regiosuisse') {
-          //     ['de', 'fr', 'it'].forEach((locale) => {
-          //         this.project.isPublic = !!this.diff?.isPublic;
-          //         this.mergeAll(locale);
-          //     });
-          // }
         });
       } else if (this.$route.params.id) {
         this.$store.commit("inbox/set", {});
@@ -2484,6 +2512,8 @@ export default {
           if (this.project.localWorkgroup) {
             this.project.localWorkgroup = this.project.localWorkgroup.id;
           }
+          // Initialize checkboxes after project is loaded
+          this.initializeFinancingCheckboxes();
           if (!this.inbox.length) {
             this.$store.dispatch("inbox/loadAll").then(() => {
               this.warnIfInboxItemExists();
@@ -2495,6 +2525,8 @@ export default {
       } else {
         this.$store.commit("inbox/set", {});
         this.$store.commit("projects/set", {});
+         // Initialize for a completely new project
+        this.initializeFinancingCheckboxes();
       }
     },
     warnIfInboxItemExists() {
@@ -3029,26 +3061,36 @@ export default {
       }
     },
     updateFinancingValue(index, newValue) {
+       // Ensure the index is valid
+       if (index < 0 || index >= this.project.financing.length) {
+         return;
+       }
       // Update the financing array directly
       if (typeof newValue === "string" && newValue.includes(",")) {
         newValue = newValue.replace(",", ".");
       }
-      newValue = parseFloat(newValue);
+      // Allow empty string input, treat as null.
+      newValue = newValue === '' ? null : parseFloat(newValue);
+       // Prevent NaN issues if parseFloat fails
+      if (isNaN(newValue)) {
+         newValue = null;
+      }
+      
       this.project.financing[index].value = newValue;
 
-      // Calculate total percentage
+      // Calculate total percentage - ensure items we sum actually have a numeric value
       const totalPercentage = this.project.financing.reduce(
-        (sum, item) => sum + parseFloat(item.value || 0),
+        (sum, item) => sum + (typeof item.value === 'number' ? item.value : 0),
         0
       );
-      const allFilled = this.project.financing.every((item) => item.value > 0);
+      // Check if all *enabled* inputs are filled
+       const allEnabledAndFilled = this.project.financing.every((item) => {
+         // Only consider enabled inputs for the "all filled" check
+         return !this.enableFinancingInput[item.id] || (typeof item.value === 'number' && item.value >= 0);
+       });
 
-      // Check if total exceeds 100%
-      if (totalPercentage > 100 || (allFilled && totalPercentage < 100)) {
-        this.project.financingError = true;
-      } else {
-        this.project.financingError = false;
-      }
+      // Check validity: Sum shouldn't exceed 100. If all *enabled* fields are filled, sum shouldn't be *less* than 100.
+       this.project.financingError = totalPercentage > 100 || (allEnabledAndFilled && totalPercentage < 100);
     },
     filterNumber(input) {
       return input;
@@ -3056,6 +3098,67 @@ export default {
     setCooperationProjectAt(value) {
       this.project.cooperationProjectAt = value;
     },
+    // Method to handle checkbox changes and reset values
+    toggleFinancing(financingId) {
+      if (!this.enableFinancingInput[financingId]) {
+        // If checkbox was just unchecked, reset the value to null
+        const financingItem = this.project.financing.find(f => f.id === financingId);
+        if (financingItem) {
+          financingItem.value = null;
+          // Trigger validation update if necessary
+           this.updateFinancingValue(this.project.financing.indexOf(financingItem), null);
+        }
+      }
+    },
+
+    // Helper method to initialize checkbox states based on project data
+    initializeFinancingCheckboxes() {
+      let shouldShowDetails = false; // Flag to track if details should be shown
+      if (this.project && this.project.financing) {
+        this.project.financing.forEach(item => {
+          if (this.enableFinancingInput.hasOwnProperty(item.id)) {
+            const isEnabled = item.value !== null;
+            this.enableFinancingInput[item.id] = isEnabled;
+            if (isEnabled) {
+              shouldShowDetails = true; // Show details if any item has a value
+            }
+          }
+        });
+      } else {
+         this.enableFinancingInput = {
+            costsGap: false,
+            costsPrivate: false,
+            costsExternal: false,
+          };
+      }
+      // Ensure this.showFinancingDetails is defined before setting it
+      if (typeof this.showFinancingDetails !== 'undefined') {
+         this.showFinancingDetails = shouldShowDetails; // Set the main toggle state
+      }
+    },
+    
+    calculateCurrentPercentage() {
+      // Calculate total percentage only for enabled items
+      return this.project.financing.reduce(
+        (sum, item) => {
+           // Only add if enabled and the value is a number
+          if(this.enableFinancingInput[item.id] && typeof item.value === 'number'){
+             return sum + item.value;
+          }
+          return sum;
+        },
+        0
+      ).toFixed(2); // Format to 2 decimal places for display
+   },
+
+   getFinancingLabel(financingId) {
+      switch (financingId) {
+         case 'costsGap': return 'GAP Strategieplan';
+         case 'costsPrivate': return 'Private und Eigenmittel';
+         case 'costsExternal': return 'Andere Finanzquellen';
+         default: return financingId;
+      }
+   },
   },
 };
 </script>

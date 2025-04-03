@@ -1,0 +1,11 @@
+.financing-item-compact {
+  margin-bottom: 1rem !important; /* Use !important to override bootstrap if necessary */
+
+  label {
+    margin-bottom: 0;
+  }
+}
+
+.flex {
+    display: flex;
+}
