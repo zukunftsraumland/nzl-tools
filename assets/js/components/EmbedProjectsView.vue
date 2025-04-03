@@ -326,7 +326,7 @@
 
       <template v-if="project.projectCosts && parseFloat(project.projectCosts) > 0">
         <h3>{{ $t("Projektkosten", locale) }}</h3>
-        <p>{{ $helpers.formatCurrency(project.projectCosts) }}</p>
+        <!-- <p>{{ $helpers.formatCurrency(project.projectCosts) }}</p> -->
         <table class="project-costs-table">
           <tbody>
             <tr v-for="financing in project.financing" :key="financing.id" >

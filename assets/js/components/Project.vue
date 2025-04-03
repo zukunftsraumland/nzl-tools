@@ -619,7 +619,7 @@
                      class="financing-item financing-item-compact border rounded" 
                    >
                      <!-- Flex container for the entire line -->
-                     <div class="d-flex align-items-center">
+                     <div class="d-flex">
                         <!-- Checkbox to enable this specific financing item -->
                         <div class="form-check flex me-3 flex-shrink-0"> 
                           <input 
@@ -630,10 +630,10 @@
                             @change="toggleFinancing(financing.id)"
                           >
                           <label 
-                            class="form-check-label d-flex align-items-center" 
+                            class="form-check-label d-flex" 
                             :for="'enable-' + financing.id"
                           >
-                            {{ getFinancingLabel(financing.id) }} aktivieren
+                            {{ getFinancingLabel(financing.id) }}
                           </label>
                         </div>
 
@@ -656,9 +656,12 @@
                    </div>
                  </div>
 
+                 <!-- Remove Error Paragraph -->
+                 <!-- 
                  <p v-if="project.financingError" class="text-danger mt-2">
                    Die Summe der aktivierten Anteile muss 100 % ergeben. Aktuell: {{ calculateCurrentPercentage() }}%
-                 </p>
+                 </p> 
+                 -->
                </div>
              </div>
            </template> <!-- End conditional template -->
@@ -3078,19 +3081,19 @@ export default {
       
       this.project.financing[index].value = newValue;
 
-      // Calculate total percentage - ensure items we sum actually have a numeric value
-      const totalPercentage = this.project.financing.reduce(
-        (sum, item) => sum + (typeof item.value === 'number' ? item.value : 0),
-        0
-      );
-      // Check if all *enabled* inputs are filled
-       const allEnabledAndFilled = this.project.financing.every((item) => {
-         // Only consider enabled inputs for the "all filled" check
-         return !this.enableFinancingInput[item.id] || (typeof item.value === 'number' && item.value >= 0);
-       });
+      // Calculate total percentage - THIS IS NO LONGER USED FOR VALIDATION
+      // const totalPercentage = this.project.financing.reduce(
+      //   (sum, item) => sum + (typeof item.value === 'number' ? item.value : 0),
+      //   0
+      // );
+      // Check if all *enabled* inputs are filled - REMOVED
+      // const allEnabledAndFilled = this.project.financing.every((item) => {
+      //   return !this.enableFinancingInput[item.id] || (typeof item.value === 'number' && item.value >= 0);
+      // });
 
-      // Check validity: Sum shouldn't exceed 100. If all *enabled* fields are filled, sum shouldn't be *less* than 100.
-       this.project.financingError = totalPercentage > 100 || (allEnabledAndFilled && totalPercentage < 100);
+      // REMOVED VALIDATION LOGIC
+      // this.project.financingError = totalPercentage > 100 || (allEnabledAndFilled && totalPercentage < 100);
+      this.project.financingError = false; // Explicitly set to false or remove if property is unused elsewhere
     },
     filterNumber(input) {
       return input;
