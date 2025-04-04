@@ -349,7 +349,7 @@
                 }}
               </td>
             </tr>
-            <tr>
+            <tr v-if="isMultipleFinancing || isOnlyProjectCost">
               <td>Gesamt:</td>
               <td></td>
               <td>{{ $helpers.formatCurrency(project.projectCosts) }}</td>
@@ -609,6 +609,27 @@ export default {
       });
 
       return result.join("");
+    },
+    isMultipleFinancing() {
+      let amount = 0;
+      this.project.financing.forEach((item) => {
+        if (parseFloat(item.value) > 0) {
+          amount++;
+        }
+      });
+      return amount > 1;
+    },
+    isOnlyProjectCost() {
+      let amount = 0;
+      this.project.financing.forEach((item) => {
+        if (parseFloat(item.value) > 0) {
+          amount++;
+        }
+      });
+      if(amount === 0) {
+        return true;
+      }
+      return false;
     },
     localWorkgroupHTML() {
       let result = [];
