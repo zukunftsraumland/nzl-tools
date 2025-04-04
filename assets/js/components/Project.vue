@@ -76,7 +76,7 @@
         :project="project"
         :diff="diff"
         :locale="locale"
-        @mergeFields="mergeFundingStructureFields"
+        @mergeFundingStructureFields="mergeFundingStructureFields"
         @update:project="project = $event"
       />
 
@@ -578,7 +578,7 @@
         <div class="project-component-form-section">
           <!-- Row 1: Project Costs and Toggle Button -->
           <div class="row">
-            <div class="col-md-4" v-if="$env.PROJECTS_ENABLE_PROJECT_COSTS">
+            <div class="col-md-6" v-if="$env.PROJECTS_ENABLE_PROJECT_COSTS">
               <label for="projectCosts">Gesamtprojektkosten (€)</label>
               <input
                 id="projectCosts"
@@ -593,22 +593,13 @@
               />
             </div>
             <!-- Toggler Button Column -->
-            <div class="col-md-8 d-flex align-items-end justify-content-start pb-1">
-               <button 
-                 type="button" 
-                 class="button" 
-                 :class="showFinancingDetails ? 'primary' : ''" 
-                 @click="showFinancingDetails = !showFinancingDetails"
-                 v-if="$env.PROJECTS_ENABLE_FINANCING"
-               >
-                 <span class="material-icons me-1">{{ showFinancingDetails ? 'visibility_off' : 'visibility' }}</span>
-                 {{ showFinancingDetails ? 'Finanzierungsquellen ausblenden' : 'Finanzierungsquellen anzeigen' }}
-              </button>
+            <div class="col-md-6 d-flex align-items-end justify-content-start pb-1">
+               <!-- Removed the toggle button -->
             </div>
           </div>
 
           <!-- Conditional Financing Section -->
-          <template v-if="showFinancingDetails">
+           <!-- Removed v-if="showFinancingDetails" wrapper -->
              <div class="row mt-3"> 
                <div class="col-md-12" v-if="$env.PROJECTS_ENABLE_FINANCING"> 
                  <!-- Financing Inputs Loop -->
@@ -619,34 +610,39 @@
                      class="financing-item financing-item-compact border rounded" 
                    >
                      <!-- Flex container for the entire line -->
-                     <div class="d-flex">
-                        <!-- Checkbox to enable this specific financing item -->
-                        <div class="form-check flex me-3 flex-shrink-0"> 
-                          <input 
-                            class="form-check-input" 
-                            type="checkbox" 
-                            :id="'enable-' + financing.id" 
-                            v-model="enableFinancingInput[financing.id]" 
-                            @change="toggleFinancing(financing.id)"
-                          >
-                          <label 
-                            class="form-check-label d-flex" 
-                            :for="'enable-' + financing.id"
-                          >
-                            {{ getFinancingLabel(financing.id) }}
-                          </label>
-                        </div>
+                     <div class="d-flex align-items-center"> <!-- Added align-items-center -->
+                        <!-- Use the custom toggle switch -->
+                         <div class="">
 
-                        <!-- Conditionally render label and input if checkbox is checked -->
+                           <div class="toggle-container ">
+                             <input 
+                               type="checkbox" 
+                               :id="'enable-' + financing.id" 
+                               v-model="enableFinancingInput[financing.id]" 
+                               @change="toggleFinancing(financing.id)"
+                               class="toggle-input"
+                             />
+                             <label :for="'enable-' + financing.id" class="toggle-label flex-grow-1 col-md-3"></label>
+                           </div>
+                         </div>
+
+                        <!-- Keep the label for the financing type -->
+                        <label 
+                          class="form-check-label me-3 col-md-4" 
+                          :for="'enable-' + financing.id"
+                        >
+                          {{ getFinancingLabel(financing.id) }}
+                        </label>
+
+                        <!-- Conditionally render label and input if toggle is checked -->
                         <template v-if="enableFinancingInput[financing.id]">
-                          <label :for="'input-' + financing.id" class="me-2 flex-shrink-0">Anteil in Prozent (%)</label>
+                          <label :for="'input-' + financing.id" class="col-md-4 me-2 flex-shrink-0">Anteil in Prozent (%)</label>
                           <input
                             :id="'input-' + financing.id"
                             placeholder="Wert"
                             type="number"  
                             step="0.01"  
-                            class="form-control form-control-sm flex-grow-1" 
-                            style="max-width: 100px;" 
+                            class="col-md-4 form-control form-control-sm " 
                             :value="financing.value"
                             @change="updateFinancingValue(index, $event.target.value)"
                             :disabled="!enableFinancingInput[financing.id]" 
@@ -664,7 +660,7 @@
                  -->
                </div>
              </div>
-           </template> <!-- End conditional template -->
+           <!-- Removed closing template tag -->
         </div>
 
         <div class="project-component-form-section">
@@ -2442,7 +2438,6 @@ export default {
         costsPrivate: false,
         costsExternal: false,
       },
-      showFinancingDetails: false, // State for toggler
       diff: null,
       locale: "de",
       showPreview: false,
@@ -3116,15 +3111,11 @@ export default {
 
     // Helper method to initialize checkbox states based on project data
     initializeFinancingCheckboxes() {
-      let shouldShowDetails = false; // Flag to track if details should be shown
       if (this.project && this.project.financing) {
         this.project.financing.forEach(item => {
           if (this.enableFinancingInput.hasOwnProperty(item.id)) {
             const isEnabled = item.value !== null;
             this.enableFinancingInput[item.id] = isEnabled;
-            if (isEnabled) {
-              shouldShowDetails = true; // Show details if any item has a value
-            }
           }
         });
       } else {
@@ -3133,10 +3124,6 @@ export default {
             costsPrivate: false,
             costsExternal: false,
           };
-      }
-      // Ensure this.showFinancingDetails is defined before setting it
-      if (typeof this.showFinancingDetails !== 'undefined') {
-         this.showFinancingDetails = shouldShowDetails; // Set the main toggle state
       }
     },
     

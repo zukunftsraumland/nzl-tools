@@ -9,3 +9,61 @@
 .flex {
     display: flex;
 }
+
+/* Custom Toggle Switch Styles */
+.toggle-container {
+  position: relative;
+  display: inline-block; /* Keep it inline */
+  width: 50px; /* Fixed width */
+  height: 26px; /* Adjusted height to better match form-control-sm */
+  vertical-align: middle; /* Align with adjacent elements */
+  margin-right: 10px; /* Add space between toggle and label */
+}
+
+.toggle-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+/* Style for the 'knob' */
+.toggle-label::before {
+  content: "";
+  position: absolute;
+  height: 22px; /* Slightly smaller knob */
+  width: 22px;  /* Slightly smaller knob */
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+/* Style when checked */
+.toggle-input:checked + .toggle-label {
+  background-color: #5077b2; /* Use theme color */
+}
+
+.toggle-input:checked + .toggle-label::before {
+  transform: translateX(24px); /* Move knob to the right */
+}
+
+/* Style for the financing percentage input */
+.financing-item-compact .form-control-sm {
+    flex-basis: 120px; /* Give it a base width */
+    flex-grow: 0; /* Prevent it from growing */
+    flex-shrink: 0; /* Prevent it from shrinking */
+}
