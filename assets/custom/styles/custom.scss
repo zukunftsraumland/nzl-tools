@@ -1,9 +1,14 @@
 .financing-item-compact {
-  margin-bottom: 1rem !important; /* Use !important to override bootstrap if necessary */
+  min-height: 38px;
 
   label {
     margin-bottom: 0;
   }
+}
+
+.finance-line {
+  height: 38px;
+  margin-bottom: 5px;
 }
 
 .flex {

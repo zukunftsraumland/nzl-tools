@@ -610,10 +610,9 @@
                      class="financing-item financing-item-compact border rounded" 
                    >
                      <!-- Flex container for the entire line -->
-                     <div class="d-flex align-items-center"> <!-- Added align-items-center -->
+                     <div class="d-flex align-items-center finance-line"> <!-- Added align-items-center -->
                         <!-- Use the custom toggle switch -->
-                         <div class="">
-
+                         <div>
                            <div class="toggle-container ">
                              <input 
                                type="checkbox" 
@@ -628,7 +627,7 @@
 
                         <!-- Keep the label for the financing type -->
                         <label 
-                          class="form-check-label me-3 col-md-4" 
+                          class="form-check-label col-md-4" 
                           :for="'enable-' + financing.id"
                         >
                           {{ getFinancingLabel(financing.id) }}
@@ -713,18 +712,21 @@
                 Weitere Projektkosten (%)
               </label>
               <!-- Display Diff Financing Items (read-only) -->
-              <div class="financing-items-container-diff mt-2">
-                <div 
-                  v-for="financing_diff in diff.financing" 
-                  :key="financing_diff.id" 
-                  class="financing-item-diff mb-2 p-2 border rounded bg-light"
-                  v-if="financing_diff.value && parseFloat(financing_diff.value) > 0"
-                >
-                   <div class="d-flex justify-content-between align-items-center">
-                     <span class="fw-bold me-3">{{ getFinancingLabel(financing_diff.id) }}:</span>
-                     <span>{{ financing_diff.value }}%</span>
+              <!-- Add a wrapper v-if to ensure diff.financing is an array -->
+              <div class="financing-items-container-diff mt-2" v-if="Array.isArray(diff.financing)">
+                <template v-for="financing_diff in diff.financing">
+                  <!-- Ensure financing_diff exists and has necessary properties -->
+                  <div
+                    :key="financing_diff.id"
+                    class="financing-item-diff mb-2 p-2 border rounded bg-light"
+                    v-if="financing_diff && financing_diff.id && financing_diff.value && parseFloat(financing_diff.value) > 0"
+                  >
+                    <div class="d-flex justify-content-between align-items-center">
+                      <span class="fw-bold me-3">{{ getFinancingLabel(financing_diff.id) }}:</span>
+                      <span>{{ financing_diff.value }}%</span>
+                    </div>
                   </div>
-                </div>
+                </template>
               </div>
             </div>
           </div>
