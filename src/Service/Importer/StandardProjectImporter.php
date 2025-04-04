@@ -18,9 +18,7 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 /**
  * Standard Project Importer
  * 
- * Handles importing projects from Excel files in the standard format (Q2.1 fields).
- * Processes project data, attachments, contacts, and related entities.
- * Supports preview generation and full import with validation.
+ * This importer handles the standard project import format with Q2.1, etc. fields.
  */
 class StandardProjectImporter extends AbstractProjectImporter
 {
@@ -37,7 +35,7 @@ class StandardProjectImporter extends AbstractProjectImporter
     }
 
     /**
-     * Returns the importer name for UI display
+     * {@inheritdoc}
      */
     public function getName(): string
     {
@@ -45,7 +43,7 @@ class StandardProjectImporter extends AbstractProjectImporter
     }
 
     /**
-     * Returns the importer description for UI display
+     * {@inheritdoc}
      */
     public function getDescription(): string
     {
@@ -53,7 +51,7 @@ class StandardProjectImporter extends AbstractProjectImporter
     }
 
     /**
-     * Returns the importer type identifier
+     * {@inheritdoc}
      */
     public function getType(): string
     {
@@ -61,36 +59,42 @@ class StandardProjectImporter extends AbstractProjectImporter
     }
 
     /**
-     * Returns the number of header rows in the Excel file
+     * {@inheritdoc}
      */
     protected function getHeaderRowCount(): int
     {
+        // Standard import has 4 header rows
         return 4;
     }
 
     /**
-     * Process a single row from the Excel import file
-     * 
-     * @param ProjectImport $import The import object
-     * @param int $rowIndex The row index to process (0-based, excluding headers)
-     * @return array Result with status, payload, and any error messages
+     * {@inheritdoc}
      */
     public function processImportItem(ProjectImport $import, int $rowIndex): array
     {
+        
         try {
+            // Use the correct file path - don't concatenate uploadDir with the full path
             $filePath = $import->getFilePath();
+            
+            // Check if the file path is already absolute
             if (!file_exists($filePath)) {
+                // If not absolute, prepend the upload directory
                 $filePath = $this->uploadDir . '/' . $filePath;
             }
             
+            // Load the spreadsheet
             $spreadsheet = IOFactory::load($filePath);
             $worksheet = $spreadsheet->getActiveSheet();
+            
+            // Get the highest column index
             $highestColumnIndex = Coordinate::columnIndexFromString($worksheet->getHighestColumn());
             
+            // Build header mapping from row 1 (parent headers) and row 4 (field names)
             $headerMapping = [];
             $parentHeaders = [];
             
-            // Map parent headers from row 1
+            // Get parent headers from row 1
             for ($col = 1; $col <= $highestColumnIndex; $col++) {
                 $parentHeader = $worksheet->getCellByColumnAndRow($col, 1)->getValue();
                 if (!empty($parentHeader)) {
@@ -98,16 +102,19 @@ class StandardProjectImporter extends AbstractProjectImporter
                 }
             }
             
-            // Map field names from row 4 with their parent headers
+            // Get field names from row 4
             for ($col = 1; $col <= $highestColumnIndex; $col++) {
                 $fieldName = $worksheet->getCellByColumnAndRow($col, 4)->getValue();
                 if (!empty($fieldName)) {
+                    // Find the parent header for this column
                     $currentParent = null;
                     foreach ($parentHeaders as $parentCol => $parentValue) {
                         if ($parentCol <= $col) {
                             $currentParent = $parentValue;
                         }
                     }
+                    
+                    // Store the mapping
                     $headerMapping[$col] = [
                         'parent' => $currentParent,
                         'field' => $fieldName
@@ -115,20 +122,28 @@ class StandardProjectImporter extends AbstractProjectImporter
                 }
             }
             
-            $actualRowIndex = $rowIndex + $this->getHeaderRowCount();
-            $rowData = [];
             
-            // Extract data from the row using both field names and column letters
+            // Calculate the actual row number in the spreadsheet (add header rows)
+            $actualRowIndex = $rowIndex + 4;
+            
+            // Extract data from the row
+            $rowData = [];
             for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                if (isset($headerMapping[$col])) {
+                    $cellValue = $worksheet->getCellByColumnAndRow($col, $actualRowIndex)->getValue();
+                    $fieldName = $headerMapping[$col]['field'];
+                    $rowData[$fieldName] = $cellValue;
+                }
+                
+                // Also store the column letter as a key for links and videos
+                $colLetter = Coordinate::stringFromColumnIndex($col);
                 $cellValue = $worksheet->getCellByColumnAndRow($col, $actualRowIndex)->getValue();
                 if ($cellValue !== null) {
-                    if (isset($headerMapping[$col])) {
-                        $rowData[$headerMapping[$col]['field']] = $cellValue;
-                    }
-                    $rowData[Coordinate::stringFromColumnIndex($col)] = $cellValue;
+                    $rowData[$colLetter] = $cellValue;
                 }
             }
             
+            // Skip empty rows
             if (empty($rowData)) {
                 return [
                     'rowNumber' => $rowIndex,
@@ -143,25 +158,30 @@ class StandardProjectImporter extends AbstractProjectImporter
                 ];
             }
             
+            // Prepare the project payload
             $payload = $this->prepareProjectPayload($rowData);
             
-            // Add category and workgroup names if IDs are available
+            // Get the LE category and local workgroup name mappings
+            $leCategoryNameMapping = $this->getLeCategoryNameMapping();
+            $localWorkgroupNameMapping = $this->getLocalWorkgroupNameMapping();
+            
+            // Add LE category name if available
             if (isset($payload['leFundingCategoryId']) && is_numeric($payload['leFundingCategoryId'])) {
-                $categoryId = (int)$payload['leFundingCategoryId'];
-                $categoryMapping = $this->getLeCategoryNameMapping();
-                if (isset($categoryMapping[$categoryId])) {
-                    $payload['leFundingCategoryName'] = $categoryMapping[$categoryId];
+                $excelCategoryId = (int)$payload['leFundingCategoryId'];
+                if (isset($leCategoryNameMapping[$excelCategoryId])) {
+                    $payload['leFundingCategoryName'] = $leCategoryNameMapping[$excelCategoryId];
                 }
             }
             
+            // Add local workgroup name if available
             if (isset($payload['localWorkgroupId']) && is_numeric($payload['localWorkgroupId'])) {
-                $workgroupId = (int)$payload['localWorkgroupId'];
-                $workgroupMapping = $this->getLocalWorkgroupNameMapping();
-                if (isset($workgroupMapping[$workgroupId])) {
-                    $payload['localWorkgroupName'] = $workgroupMapping[$workgroupId];
+                $excelWorkgroupId = (int)$payload['localWorkgroupId'];
+                if (isset($localWorkgroupNameMapping[$excelWorkgroupId])) {
+                    $payload['localWorkgroupName'] = $localWorkgroupNameMapping[$excelWorkgroupId];
                 }
             }
             
+            // Create a result data structure
             $result = [
                 'rowNumber' => $rowIndex,
                 'title' => $payload['title'] ?? 'Untitled',
@@ -174,16 +194,24 @@ class StandardProjectImporter extends AbstractProjectImporter
                 'payload' => $payload
             ];
             
+            // Validate required fields
             if (empty($result['title'])) {
                 $result['status'] = 'error';
                 $result['message'] = 'Project title (Q2.1) is required';
-            } elseif ($this->findProjectByTitle($result['title'])) {
-                $result['status'] = 'warning';
-                $result['message'] = 'Projekt mit diesem Namen existiert bereits';
+            }
+            
+            // Check if project with the same title already exists
+            if (!empty($result['title'])) {
+                $existingProject = $this->findProjectByTitle($result['title']);
+                if ($existingProject) {
+                    $result['status'] = 'warning';
+                    $result['message'] = 'Projekt mit diesem Namen existiert bereits';
+                }
             }
             
             return $result;
         } catch (\Exception $e) {
+            
             return [
                 'rowNumber' => $rowIndex,
                 'title' => '',
@@ -199,99 +227,347 @@ class StandardProjectImporter extends AbstractProjectImporter
     }
 
     /**
-     * Prepare project data from Excel row for import
-     * 
-     * Processes raw Excel data into a structured payload for project creation.
-     * Handles basic fields, dates, contacts, files, and related entities.
-     * 
-     * @param array $data Raw data from Excel row
-     * @return array Processed project payload
+     * {@inheritdoc}
      */
     protected function prepareProjectPayload(array $data): array
     {
-        $payload = [
-            'isPublic' => false,
-            'projectCode' => $data['Q2.2'] ?? $data['B'] ?? '',
-            'title' => $data['Q2.1'] ?? $data['A'] ?? '',
-            'keywords' => $data['Q4'] ?? $data['U'] ?? '',
-            'description' => $data['Q11'] ?? $data['AN'] ?? '',
-            'projectCosts' => $data['Q9'] ?? $data['AL'] ?? null,
-            'startDate' => null,
-            'endDate' => null,
-            'cooperationProjectAt' => isset($data['Q8.1']) ? (bool)$data['Q8.1'] : false,
-            'cooperationProjectEu' => isset($data['Q8.2']) ? (bool)$data['Q8.2'] : false,
-            'topics' => [],
-            'tags' => [],
-            'geographicRegions' => [],
-            'countries' => [],
-            'contacts' => [],
-            'files' => [],
-            'images' => []
-        ];
+        
+        try {
+            $payload = [
+                'isPublic' => false,
+                'projectCode' => $data['Q2.2'] ?? '',
+                'title' => $data['Q2.1'] ?? '',
+                'keywords' => $data['Q4'] ?? '',
+                'description' => $data['Q11'] ?? '',
+                'projectCosts' => $data['Q9'] ?? null,
+                'startDate' => !empty($data['Q2.3']) ? (new \DateTime($data['Q2.3']))->format('Y-m-d') : null,
+                'endDate' => !empty($data['Q2.4']) ? (new \DateTime($data['Q2.4']))->format('Y-m-d') : null,
+                'cooperationProjectAt' => isset($data['Q8.1']) ? (bool)$data['Q8.1'] : false,
+                'cooperationProjectEu' => isset($data['Q8.2']) ? (bool)$data['Q8.2'] : false,
+                'topics' => [],
+                'tags' => [],
+                'geographicRegions' => [],
+                'countries' => [],
+                'states' => [],
+                'programs' => [],
+                'instruments' => [],
+                'businessSectors' => [],
+                'financing' => [],
+                'contacts' => [],
+                'links' => [],
+                'videos' => [],
+                'images' => [],
+                'files' => [],
+                'dates' => [],
+                'translations' => [],
+                'fundingMethod' => '',
+                'lat' => null,
+                'lng' => null,
+                'localWorkgroup' => null,
+                'caseStudy' => false,
+                'exemplary' => '',
+                'initialContext' => '',
+                'initialContextGoals' => '',
+                'additionalValue' => '',
+                'additionalValueResult' => '',
+                'innovations' => '',
+                'integrationYoungCitizen' => '',
+                'integrationFemaleCitizen' => '',
+                'integrationMinorities' => '',
+                'learningExperience' => '',
+                'transferable' => '',
+                'transferDetails' => '',
+                'fundingMethodStakeholders' => '',
+                'resultsQuality' => '',
+                'resultsQuantity' => '',
+                // Store the LE-Category ID from column AF
+                'leFundingCategoryId' => isset($data['AF']) && is_numeric($data['AF']) ? (int)$data['AF'] : null,
+                // Store the LocalWorkgroup ID from column AG
+                'localWorkgroupId' => isset($data['AG']) && is_numeric($data['AG']) ? (int)$data['AG'] : null
+            ];
+            
+            if(isset($data['Q8.2']) && $data['Q8.2'] == 1) {
+                $payload['cooperationProjectAt'] = true;
+            }
+    
+            if(isset($data['Q8.3']) && $data['Q8.3'] == 1) {
+                $payload['cooperationProjectEu'] = true;
+            }
 
-        // Process dates
-        foreach ([
-            'startDate' => ['Q2.3', 'C'],
-            'endDate' => ['Q2.4', 'D']
-        ] as $field => $keys) {
-            foreach ($keys as $key) {
-                if (!empty($data[$key])) {
-                    try {
-                        $value = $data[$key];
-                        if ($value instanceof \DateTime) {
-                            $payload[$field] = $value->format('Y-m-d');
-                        } elseif (is_numeric($value)) {
-                            $payload[$field] = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($value)->format('Y-m-d');
-                        } else {
-                            $payload[$field] = (new \DateTime($value))->format('Y-m-d');
-                        }
-                        break;
-                    } catch (\Exception $e) {
-                        continue;
+            // Process keywords and convert them to tags
+            if (!empty($payload['keywords'])) {
+                $keywords = explode(',', $payload['keywords']);
+                foreach ($keywords as $keyword) {
+                    $keyword = trim($keyword);
+                    if (!empty($keyword)) {
+                        $payload['tags'][] = [
+                            'name' => $keyword,
+                            'context' => 'tag'
+                        ];
                     }
                 }
             }
-        }
+            
+            // Process topics (Q3.1 to Q3.16)
+            $topicMapping = [
+                'Q3.1' => 'Klimaschutz',
+                'Q3.2' => 'Klimawandelanpassung',
+                'Q3.3' => 'Nachhaltige Land- und Forstwirtschaft',
+                'Q3.4' => 'Lebensmittelverarbeitung und Kulinarik',
+                'Q3.5' => 'Vermarktung und Vertrieb',
+                'Q3.6' => 'Umwelt und Biodiversität',
+                'Q3.7' => 'Naturschutz',
+                'Q3.8' => 'Ländliche Wirtschaft / KMU',
+                'Q3.9' => 'Tourismus',
+                'Q3.10' => 'Mobilität',
+                'Q3.11' => 'Gemeinwohl, Soziales und Daseinsvorsorge',
+                'Q3.12' => 'Jugend',
+                'Q3.13' => 'Kultur und kulturelles Erbe',
+                'Q3.14' => 'Gleichstellung',
+                'Q3.15' => 'Digitalisierung',
+                'Q3.16' => 'Bildung, Sensibilisierung und Wissenstransfer',
+            ];
 
-        // Process LE funding category
-        if (!empty($data['Q6']) || !empty($data['AF'])) {
-            $excelCategoryId = $data['Q6'] ?? $data['AF'] ?? null;
-            if (is_numeric($excelCategoryId)) {
-                $categoryId = (int)$excelCategoryId;
-                $categoryMapping = $this->getLeCategoryMapping();
-                if (isset($categoryMapping[$categoryId])) {
-                    $payload['leFundingCategoryId'] = $categoryMapping[$categoryId];
+            // Map topics by topic ID to use them when saving the project to associate the topics with the project as relations 
+            $topicMappingByTopicId = [
+                'Q3.1' => 35,
+                'Q3.2' => 36,
+                'Q3.3' => 37,
+                'Q3.4' => 38,
+                'Q3.5' => 39,
+                'Q3.6' => 40,
+                'Q3.7' => 41,
+                'Q3.8' => 42,
+                'Q3.9' => 43,
+                'Q3.10' => 44,
+                'Q3.11' => 45,
+                'Q3.12' => 46,
+                'Q3.13' => 47,
+                'Q3.14' => 48,
+                'Q3.15' => 49,
+                'Q3.16' => 50,
+            ];
+            
+            // Add topic IDs for database relations - this is what will be used by ProjectService
+            $topicEntities = [];
+            foreach ($topicMappingByTopicId as $key => $topicId) {
+                if (isset($data[$key]) && $data[$key]) {
+                    // Include both id and name for better robustness
+                    $topicEntities[] = [
+                        'id' => $topicId,
+                        'name' => $topicMapping[$key]
+                    ];
                 }
             }
-        }
+            $payload['topics'] = $topicEntities;
+            
+            // Process states (Q5.1 to Q5.9)
+            $stateMapping = [
+                'Q5.1' => 'Burgenland',
+                'Q5.2' => 'Kärnten',
+                'Q5.3' => 'Niederösterreich',
+                'Q5.4' => 'Oberösterreich',
+                'Q5.5' => 'Salzburg',
+                'Q5.6' => 'Steiermark',
+                'Q5.7' => 'Tirol',
+                'Q5.8' => 'Vorarlberg',
+                'Q5.9' => 'Wien',
+            ];
 
-        // Process local workgroup
-        if (!empty($data['Q7']) || !empty($data['AG'])) {
-            $excelWorkgroupId = $data['Q7'] ?? $data['AG'] ?? null;
-            if (is_numeric($excelWorkgroupId)) {
-                $workgroupId = (int)$excelWorkgroupId;
-                $workgroupMapping = $this->getLocalWorkgroupMapping();
-                if (isset($workgroupMapping[$workgroupId])) {
-                    $payload['localWorkgroupId'] = $workgroupMapping[$workgroupId];
+            $stateMappingByStateId = [
+                'Q5.1' => '2',
+                'Q5.2' => '3',
+                'Q5.3' => '4',
+                'Q5.4' => '5',
+                'Q5.5' => '6',
+                'Q5.6' => '7',
+                'Q5.7' => '8',
+                'Q5.8' => '1',
+                'Q5.9' => '9',
+            ];
+            
+            // Check if all states are selected (Q5.10)
+            if (isset($data['Q5.10']) && $data['Q5.10']) {
+                foreach ($stateMapping as $key => $stateName) {
+                    $payload['states'][] = [
+                        'id' => $stateMappingByStateId[$key],
+                        'name' => $stateName
+                    ];
+                }
+            } else {
+                // Add selected states
+                foreach ($stateMapping as $key => $stateName) {
+                    if (isset($data[$key]) && $data[$key]) {
+                        $payload['states'][] = [
+                            'id' => $stateMappingByStateId[$key],
+                            'name' => $stateName
+                        ];
+                    }
                 }
             }
-        }
-
-        // Process tags
-        if (!empty($data['Q4']) || !empty($data['U'])) {
-            $keywords = $data['Q4'] ?? $data['U'] ?? '';
-            foreach (array_filter(array_map('trim', explode(',', $keywords))) as $keyword) {
-                $payload['tags'][] = [
-                    'name' => $keyword,
-                    'context' => 'tag'
+            
+            // Initialize standard financing structure with expected IDs
+            $payload['financing'] = [
+                ['id' => 'costsGap', 'value' => 0],     // GAP Strategieplan
+                ['id' => 'costsPrivate', 'value' => 0], // Private und Eigenmittel
+                ['id' => 'costsExternal', 'value' => 0] // Andere Finanzquellen
+            ];
+            
+            // Process financing from specific columns (AK, AL, AM)
+            // Column AK = GAP Strategieplan
+            if (isset($data['AK'])) {
+                $value = $data['AK'];
+                if (is_string($value)) {
+                    $value = str_replace(',', '.', $value);
+                }
+                $value = (float)$value;
+                
+                if ($value > 0) {
+                    $payload['financing'][0]['value'] = $value;
+                }
+            }
+            
+            // Column AL = Private und Eigenmittel
+            if (isset($data['AL'])) {
+                $value = $data['AL'];
+                if (is_string($value)) {
+                    $value = str_replace(',', '.', $value);
+                }
+                $value = (float)$value;
+                
+                if ($value > 0) {
+                    $payload['financing'][1]['value'] = $value;
+                }
+            }
+            
+            // Column AM = Andere Finanzquellen
+            if (isset($data['AM'])) {
+                $value = $data['AM'];
+                if (is_string($value)) {
+                    $value = str_replace(',', '.', $value);
+                }
+                $value = (float)$value;
+                
+                if ($value > 0) {
+                    $payload['financing'][2]['value'] = $value;
+                }
+            }
+            
+            // Ensure the values are valid numbers
+            foreach ($payload['financing'] as $key => $item) {
+                if (!is_numeric($item['value'])) {
+                    $payload['financing'][$key]['value'] = 0;
+                }
+            }
+            
+            // Process contact (Q12)
+            if (!empty($data['Q12'])) {
+                $contact = [
+                    'firstName' => $data['Q12.1'] ?? '',
+                    'lastName' => $data['Q12.2'] ?? '',
+                    'email' => $data['Q12.3'] ?? '',
+                    'phone' => $data['Q12.4'] ?? '',
+                    'organization' => $data['Q12.5'] ?? '',
+                    'position' => $data['Q12.6'] ?? '',
+                    'isPublic' => true
+                ];
+                
+                if (!empty($contact['firstName']) || !empty($contact['lastName']) || !empty($contact['email'])) {
+                    $payload['contacts'][] = $contact;
+                }
+            }
+            
+            // Process contacts from columns AO-AX
+            $this->processContactsFromExcel($data, $payload);
+            
+            // Process links (columns AY to BH)
+            $linkColumns = ['AY', 'AZ', 'BA', 'BB', 'BC', 'BD', 'BE', 'BF', 'BG', 'BH'];
+            
+            // Process links in pairs (label + url)
+            for ($i = 0; $i < count($linkColumns) - 1; $i += 2) {
+                $labelColumn = $linkColumns[$i];
+                $urlColumn = $linkColumns[$i + 1];
+                
+                // Skip if both columns are empty
+                if (empty($data[$labelColumn]) && empty($data[$urlColumn])) {
+                    continue;
+                }
+                
+                $label = !empty($data[$labelColumn]) ? $data[$labelColumn] : '';
+                $url = !empty($data[$urlColumn]) ? $data[$urlColumn] : '';
+                
+                // If we have a URL in the label column and no URL in the URL column,
+                // treat the label as a URL
+                if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
+                    $url = $label;
+                    $label = '';
+                }
+                
+                // Skip if no URL is available
+                if (empty($url)) {
+                    continue;
+                }
+                
+                // Ensure URL has a protocol
+                if (!preg_match('~^(?:f|ht)tps?://~i', $url)) {
+                    $url = 'https://' . $url;
+                }
+                
+                $payload['links'][] = [
+                    'url' => $url,
+                    'label' => $label,
+                    'value' => $url
                 ];
             }
+            
+            // Process videos (columns BI to BN)
+            $videoColumns = ['BI', 'BJ', 'BK', 'BL', 'BM', 'BN'];
+            
+            // Process videos in pairs (label + url)
+            for ($i = 0; $i < count($videoColumns) - 1; $i += 2) {
+                $labelColumn = $videoColumns[$i];
+                $urlColumn = $videoColumns[$i + 1];
+                
+                // Skip if both columns are empty
+                if (empty($data[$labelColumn]) && empty($data[$urlColumn])) {
+                    continue;
+                }
+                
+                $label = !empty($data[$labelColumn]) ? $data[$labelColumn] : '';
+                $url = !empty($data[$urlColumn]) ? $data[$urlColumn] : '';
+                
+                // If we have a URL in the label column and no URL in the URL column,
+                // treat the label as a URL
+                if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
+                    $url = $label;
+                    $label = '';
+                }
+                
+                // Skip if no URL is available
+                if (empty($url)) {
+                    continue;
+                }
+                
+                // Ensure URL has a protocol
+                if (!preg_match('~^(?:f|ht)tps?://~i', $url)) {
+                    $url = 'https://' . $url;
+                }
+                
+                $payload['videos'][] = [
+                    'url' => $url,
+                    'label' => $label,
+                    'value' => $url
+                ];
+            }
+            
+            // Process file attachments from Excel columns BO to CR
+            $this->processFileAttachmentsFromExcel($data, $payload);
+            
+            return $payload;
+        } catch (\Exception $e) {
+            
+            throw $e;
         }
-
-        $this->processContactsFromExcel($data, $payload);
-        $this->processFileAttachmentsFromExcel($data, $payload);
-
-        return $payload;
     }
 
     /**
@@ -313,8 +589,10 @@ class StandardProjectImporter extends AbstractProjectImporter
      */
     private function processContactsFromExcel(array $data, array &$payload): void
     {
+        
         // Process first contact if name exists
         if (!empty($data['AO'])) {
+            // Split name by first space
             $nameParts = explode(' ', trim($data['AO']), 2);
             $firstName = $nameParts[0] ?? '';
             $lastName = $nameParts[1] ?? '';
@@ -332,14 +610,17 @@ class StandardProjectImporter extends AbstractProjectImporter
             ];
             
             $payload['contacts'][] = $contact;
+            
         }
         
         // Process second contact if name exists
         if (!empty($data['AR'])) {
+            // Split name by first space
             $nameParts = explode(' ', trim($data['AR']), 2);
             $firstName = $nameParts[0] ?? '';
             $lastName = $nameParts[1] ?? '';
             
+            // Use data from first contact for address fields if not specified for second contact
             $contact = [
                 'firstName' => $firstName,
                 'lastName' => $lastName,
@@ -353,7 +634,11 @@ class StandardProjectImporter extends AbstractProjectImporter
             ];
             
             $payload['contacts'][] = $contact;
+            
+
         }
+        
+
     }
 
     /**
@@ -365,92 +650,151 @@ class StandardProjectImporter extends AbstractProjectImporter
      */
     private function processFileAttachmentsFromExcel(array $data, array &$payload): void
     {
+        
+        // Column pairs for files (filename, url)
         $filePairs = [
-            ['BO', 'BP'], ['BQ', 'BR'], ['BS', 'BT'], ['BU', 'BV'], ['BW', 'BX'],
-            ['BY', 'BZ'], ['CA', 'CB'], ['CC', 'CD'], ['CE', 'CF'], ['CG', 'CH'],
-            ['CI', 'CJ'], ['CK', 'CL'], ['CM', 'CN'], ['CO', 'CP'], ['CQ', 'CR'],
-            ['CS', 'CT'], ['CU', 'CV'], ['CW', 'CX'], ['CY', 'CZ']
+            ['BO', 'BP'], // First file pair
+            ['BQ', 'BR'], // Second file pair
+            ['BS', 'BT'], // Third file pair
+            ['BU', 'BV'], // Fourth file pair
+            ['BW', 'BX'], // Fifth file pair
+            ['BY', 'BZ'], // Sixth file pair
+            ['CA', 'CB'], // Seventh file pair
+            ['CC', 'CD'], // Eighth file pair
+            ['CE', 'CF'], // Ninth file pair
+            ['CG', 'CH'], // Tenth file pair
+            ['CI', 'CJ'], // Eleventh file pair
+            ['CK', 'CL'], // Twelfth file pair
+            ['CM', 'CN'], // Thirteenth file pair
+            ['CO', 'CP'], // Fourteenth file pair
+            ['CQ', 'CR'], // Fifteenth file pair
+            ['CS', 'CT'], // Sixteenth file pair
+            ['CU', 'CV'], // Seventeenth file pair
+            ['CW', 'CX'], // Eighteenth file pair
+            ['CY', 'CZ'], // Nineteenth file pair
         ];
         
         $columnWithPictureCopyRightText = 'DA';
+
+        $processedCount = 0;
+        $successCount = 0;
+        $errorCount = 0;
+        
+        // Initialize arrays to track existing file IDs
         $existingImageIds = [];
         $existingFileIds = [];
         
-        // Populate existing IDs from payload
+        // First populate existing IDs from payload if they exist
         if (isset($payload['images']) && is_array($payload['images'])) {
-            $existingImageIds = array_column($payload['images'], 'id');
+            foreach ($payload['images'] as $image) {
+                if (isset($image['id'])) {
+                    $existingImageIds[] = $image['id'];
+                }
+            }
         }
         
         if (isset($payload['files']) && is_array($payload['files'])) {
-            $existingFileIds = array_column($payload['files'], 'id');
+            foreach ($payload['files'] as $file) {
+                if (isset($file['id'])) {
+                    $existingFileIds[] = $file['id'];
+                }
+            }
         }
         
         foreach ($filePairs as $pair) {
             $filenameCol = $pair[0];
             $urlCol = $pair[1];
             
+            // Skip if either filename or URL is empty
             if (empty($data[$filenameCol]) || empty($data[$urlCol])) {
                 continue;
             }
             
+            $processedCount++;
             $filename = $data[$filenameCol];
             $url = $data[$urlCol];
             
+            
+            // Try to download the file
             try {
                 $fileData = $this->downloadFileFromUrl($url, $filename);
+                
                 if (!$fileData) {
+
+                    $errorCount++;
                     continue;
                 }
                 
+                // Determine if it's an image or document
                 $isImage = $this->isImageFile($filename);
                 
-                if ($isImage && !in_array($fileData['id'], $existingImageIds)) {
-                    $payload['images'][] = [
-                        'id' => $fileData['id'],
-                        'name' => $fileData['name'],
-                        'extension' => $fileData['extension'],
-                        'mimeType' => $fileData['mimeType'],
-                        'copyright' => $data[$columnWithPictureCopyRightText] ?? '',
-                        'description' => $fileData['name'] ?? ''
-                    ];
-                    $existingImageIds[] = $fileData['id'];
-                } elseif (!$isImage && !in_array($fileData['id'], $existingFileIds)) {
-                    $payload['files'][] = [
-                        'id' => $fileData['id'],
-                        'name' => $fileData['name'],
-                        'extension' => $fileData['extension'],
-                        'mimeType' => $fileData['mimeType'],
-                        'description' => $fileData['name'] ?? '',
-                    ];
-                    $existingFileIds[] = $fileData['id'];
+                if ($isImage) {
+                    // Check if this image ID already exists in our payload
+                    if (!in_array($fileData['id'], $existingImageIds)) {
+                        // Add to images array
+                        $payload['images'][] = [
+                            'id' => $fileData['id'],
+                            'name' => $fileData['name'],
+                            'extension' => $fileData['extension'],
+                            'mimeType' => $fileData['mimeType'],
+                            'copyright' => $data[$columnWithPictureCopyRightText] ?? '',
+                            'description' => $fileData['name'] ?? ''
+                        ];
+                        
+                        // Add to our tracking array to prevent duplicates
+                        $existingImageIds[] = $fileData['id'];
+                    }
+                } else {
+                    // Check if this file ID already exists in our payload
+                    if (!in_array($fileData['id'], $existingFileIds)) {
+                        // Add to files array
+                        $payload['files'][] = [
+                            'id' => $fileData['id'],
+                            'name' => $fileData['name'],
+                            'extension' => $fileData['extension'],
+                            'mimeType' => $fileData['mimeType'],
+                            'description' => $fileData['name'] ?? '',
+                        ];
+                        
+                        // Add to our tracking array to prevent duplicates
+                        $existingFileIds[] = $fileData['id'];
+                    }
                 }
+                
+                $successCount++;
             } catch (\Exception $e) {
-                continue;
+
+                $errorCount++;
             }
         }
+
     }
 
     /**
-     * Generate a preview of the import data
-     * 
-     * @param ProjectImport $import The import object
-     * @return array Array of preview items with validation status
+     * {@inheritdoc}
      */
     public function generatePreview(ProjectImport $import): array
     {
         try {
+            // Use the correct file path - don't concatenate uploadDir with the full path
             $filePath = $import->getFilePath();
+            
+            // Check if the file path is already absolute
             if (!file_exists($filePath)) {
+                // If not absolute, prepend the upload directory
                 $filePath = $this->uploadDir . '/' . $filePath;
             }
             
+            // Load the spreadsheet
             $spreadsheet = IOFactory::load($filePath);
             $worksheet = $spreadsheet->getActiveSheet();
             
+            // Get the header row index and highest row
             $headerRowIndex = $this->getHeaderRowCount();
             $highestRow = $worksheet->getHighestRow();
             $highestColumnIndex = Coordinate::columnIndexFromString($worksheet->getHighestColumn());
             
+            // Initialize arrays to store headers and data
             $headerMapping = [];
             $previewData = [];
             
@@ -468,6 +812,12 @@ class StandardProjectImporter extends AbstractProjectImporter
                 $columnLetter = Coordinate::stringFromColumnIndex($col);
                 $fieldName = $worksheet->getCellByColumnAndRow($col, 4)->getValue();
                 if (!empty($fieldName)) {
+                    $headerMapping[$columnLetter] = $fieldName;
+                }
+                
+                // Also store parent-field mapping
+                if (!empty($fieldName)) {
+                    // Find the parent header for this column
                     $currentParent = null;
                     foreach ($parentHeaders as $parentCol => $parentValue) {
                         if ($parentCol <= $col) {
@@ -482,33 +832,42 @@ class StandardProjectImporter extends AbstractProjectImporter
                 }
             }
             
+            // Get the LE category and local workgroup name mappings
             $leCategoryNameMapping = $this->getLeCategoryNameMapping();
             $localWorkgroupNameMapping = $this->getLocalWorkgroupNameMapping();
             
-            $maxPreviewRows = 100;
+            // Process the rows to generate preview
+            $maxPreviewRows = 100; // Limit the number of rows for preview
             $rowLimit = min($highestRow, $maxPreviewRows + $headerRowIndex);
             
             for ($rowIndex = $headerRowIndex + 1; $rowIndex <= $rowLimit; $rowIndex++) {
+                // Extract data from the row
                 $rowData = [];
                 
+                // Process each column
                 for ($col = 1; $col <= $highestColumnIndex; $col++) {
                     $columnLetter = Coordinate::stringFromColumnIndex($col);
                     $value = $worksheet->getCellByColumnAndRow($col, $rowIndex)->getValue();
                     
+                    // Store by field name if it exists in the mapping
                     if (isset($headerMapping[$columnLetter]) && is_array($headerMapping[$columnLetter])) {
                         $fieldName = $headerMapping[$columnLetter]['field'];
                         $rowData[$fieldName] = $value;
                     }
                     
+                    // Also store by column letter for direct access
                     $rowData[$columnLetter] = $value;
                 }
                 
+                // Skip empty rows
                 if (empty($rowData)) {
                     continue;
                 }
                 
+                // Prepare lightweight payload for preview
                 $payload = $this->preparePreviewPayload($rowData);
                 
+                // Add LE category name if available
                 if (isset($payload['leFundingCategoryId']) && is_numeric($payload['leFundingCategoryId'])) {
                     $excelCategoryId = (int)$payload['leFundingCategoryId'];
                     if (isset($leCategoryNameMapping[$excelCategoryId])) {
@@ -516,6 +875,7 @@ class StandardProjectImporter extends AbstractProjectImporter
                     }
                 }
                 
+                // Add local workgroup name if available
                 if (isset($payload['localWorkgroupId']) && is_numeric($payload['localWorkgroupId'])) {
                     $excelWorkgroupId = (int)$payload['localWorkgroupId'];
                     if (isset($localWorkgroupNameMapping[$excelWorkgroupId])) {
@@ -523,6 +883,7 @@ class StandardProjectImporter extends AbstractProjectImporter
                     }
                 }
                 
+                // Create a preview result item
                 $previewItem = [
                     'rowNumber' => $rowIndex - $headerRowIndex,
                     'title' => $payload['title'] ?? 'Untitled',
@@ -530,17 +891,24 @@ class StandardProjectImporter extends AbstractProjectImporter
                     'projectCode' => $payload['projectCode'] ?? '',
                     'startDate' => $payload['startDate'] ?? null,
                     'endDate' => $payload['endDate'] ?? null,
-                    'status' => 'valid',
+                    'status' => 'valid', // Default to valid
                     'message' => '',
                     'payload' => $payload
                 ];
                 
+                // Validate required fields
                 if (empty($previewItem['title'])) {
                     $previewItem['status'] = 'error';
                     $previewItem['message'] = 'Project title (Q2.1) is required';
-                } elseif ($this->findProjectByTitle($previewItem['title'])) {
-                    $previewItem['status'] = 'warning';
-                    $previewItem['message'] = 'Projekt mit diesem Namen existiert bereits';
+                }
+                
+                // Check if project with the same title already exists
+                if (!empty($previewItem['title'])) {
+                    $existingProject = $this->findProjectByTitle($previewItem['title']);
+                    if ($existingProject) {
+                        $previewItem['status'] = 'warning';
+                        $previewItem['message'] = 'Projekt mit diesem Namen existiert bereits';
+                    }
                 }
                 
                 $previewData[] = $previewItem;
@@ -565,40 +933,51 @@ class StandardProjectImporter extends AbstractProjectImporter
     }
 
     /**
-     * Import projects from the Excel file
-     * 
-     * @param ProjectImport $import The import object
-     * @param User $user The user performing the import
-     * @param LEPeriod|null $lePeriod Optional LE period to associate with imported projects
-     * @return bool True if import was successful, false otherwise
+     * {@inheritdoc}
      */
     public function importProjects(ProjectImport $import, User $user, ?LEPeriod $lePeriod = null): bool
     {
+        
         try {
+            // Get the LE category and local workgroup mappings
             $leCategoryMapping = $this->getLeCategoryMapping();
             $localWorkgroupMapping = $this->getLocalWorkgroupMapping();
             
-            $import->setStatus(ProjectImport::STATUS_PROCESSING)
-                  ->setUpdatedAt(new \DateTime());
+            // Update import status
+            $import->setStatus(ProjectImport::STATUS_PROCESSING);
+            $import->setUpdatedAt(new \DateTime());
             $this->em->persist($import);
             $this->em->flush();
             
+            // Get all import items
             $items = $import->getItems();
             
+            // If no items exist, create them from the Excel file
             if ($items->isEmpty()) {
+
+                
+                // Use the correct file path - don't concatenate uploadDir with the full path
                 $filePath = $import->getFilePath();
+                
+                // Check if the file path is already absolute
                 if (!file_exists($filePath)) {
+                    // If not absolute, prepend the upload directory
                     $filePath = $this->uploadDir . '/' . $filePath;
                 }
                 
+                // Load the spreadsheet
                 $spreadsheet = IOFactory::load($filePath);
                 $worksheet = $spreadsheet->getActiveSheet();
+                
+                // Get the highest row and column indexes
                 $highestRow = $worksheet->getHighestRow();
                 $highestColumnIndex = Coordinate::columnIndexFromString($worksheet->getHighestColumn());
                 
+                // Build header mapping from row 1 (parent headers) and row 4 (field names)
                 $headerMapping = [];
                 $parentHeaders = [];
                 
+                // Get parent headers from row 1
                 for ($col = 1; $col <= $highestColumnIndex; $col++) {
                     $parentHeader = $worksheet->getCellByColumnAndRow($col, 1)->getValue();
                     if (!empty($parentHeader)) {
@@ -606,9 +985,11 @@ class StandardProjectImporter extends AbstractProjectImporter
                     }
                 }
                 
+                // Get field names from row 4
                 for ($col = 1; $col <= $highestColumnIndex; $col++) {
                     $fieldName = $worksheet->getCellByColumnAndRow($col, 4)->getValue();
                     if (!empty($fieldName)) {
+                        // Find the parent header for this column
                         $currentParent = null;
                         foreach ($parentHeaders as $parentCol => $parentValue) {
                             if ($parentCol <= $col) {
@@ -616,6 +997,7 @@ class StandardProjectImporter extends AbstractProjectImporter
                             }
                         }
                         
+                        // Store the mapping
                         $headerMapping[$col] = [
                             'parent' => $currentParent,
                             'field' => $fieldName
@@ -623,9 +1005,11 @@ class StandardProjectImporter extends AbstractProjectImporter
                     }
                 }
                 
+                // Process each row starting from row 5 (after headers)
                 for ($row = 5; $row <= $highestRow; $row++) {
                     $rowData = [];
                     
+                    // Process each column
                     for ($col = 1; $col <= $highestColumnIndex; $col++) {
                         if (isset($headerMapping[$col])) {
                             $cellValue = $worksheet->getCellByColumnAndRow($col, $row)->getValue();
@@ -633,6 +1017,7 @@ class StandardProjectImporter extends AbstractProjectImporter
                             $rowData[$fieldName] = $cellValue;
                         }
                         
+                        // Also store the column letter as a key for links and videos
                         $colLetter = Coordinate::stringFromColumnIndex($col);
                         $cellValue = $worksheet->getCellByColumnAndRow($col, $row)->getValue();
                         if ($cellValue !== null) {
@@ -640,93 +1025,131 @@ class StandardProjectImporter extends AbstractProjectImporter
                         }
                     }
                     
+                    // Skip empty rows
                     if (empty($rowData)) {
                         continue;
                     }
                     
+                    // Prepare the project payload
                     $payload = $this->prepareProjectPayload($rowData);
                     
+                    // Create a new import item
                     $importItem = new ProjectImportItem();
-                    $importItem->setImport($import)
-                              ->setRowNumber($row - 4)
-                              ->setStatus(ProjectImportItem::STATUS_PENDING)
-                              ->setRawData($rowData)
-                              ->setProcessedData([
-                                  'rowNumber' => $row - 4,
-                                  'title' => $payload['title'] ?? 'Untitled',
-                                  'description' => $payload['description'] ?? '',
-                                  'projectCode' => $payload['projectCode'] ?? '',
-                                  'startDate' => $payload['startDate'] ?? null,
-                                  'endDate' => $payload['endDate'] ?? null,
-                                  'status' => 'valid',
-                                  'message' => '',
-                                  'payload' => $payload
-                              ])
-                              ->setCreatedAt(new \DateTime())
-                              ->setUpdatedAt(new \DateTime());
+                    $importItem->setImport($import);
+                    $importItem->setRowNumber($row - 4); // Adjust for header rows
+                    $importItem->setStatus(ProjectImportItem::STATUS_PENDING);
+                    $importItem->setRawData($rowData);
+                    $importItem->setProcessedData([
+                        'rowNumber' => $row - 4,
+                        'title' => $payload['title'] ?? 'Untitled',
+                        'description' => $payload['description'] ?? '',
+                        'projectCode' => $payload['projectCode'] ?? '',
+                        'startDate' => $payload['startDate'] ?? null,
+                        'endDate' => $payload['endDate'] ?? null,
+                        'status' => 'valid',
+                        'message' => '',
+                        'payload' => $payload
+                    ]);
+                    $importItem->setCreatedAt(new \DateTime());
+                    $importItem->setUpdatedAt(new \DateTime());
                     
                     $this->em->persist($importItem);
                 }
                 
                 $this->em->flush();
+                
+                // Refresh the items collection
                 $this->em->refresh($import);
                 $items = $import->getItems();
             }
             
-            $successCount = $errorCount = $processedCount = 0;
+            // Process each item
+            $successCount = 0;
+            $errorCount = 0;
+            $processedCount = 0;
+            $totalItems = $items->count();
             
+            // Set initial processed rows count
             $import->setProcessedRows($processedCount);
             $this->em->persist($import);
             $this->em->flush();
             
             foreach ($items as $item) {
+                // Skip already processed items
                 if ($item->getStatus() !== ProjectImportItem::STATUS_PENDING) {
                     continue;
                 }
                 
-                $item->setStatus(ProjectImportItem::STATUS_PROCESSING)
-                     ->setUpdatedAt(new \DateTime());
+                // Update item status
+                $item->setStatus(ProjectImportItem::STATUS_PROCESSING);
+                $item->setUpdatedAt(new \DateTime());
                 $this->em->persist($item);
                 $this->em->flush();
                 
+                // Get the raw data and processed data
+                $rawData = $item->getRawData();
                 $processedData = $item->getProcessedData();
+                
+                // Skip if no processed data
                 if (!$processedData || !isset($processedData['payload'])) {
-                    $item->setStatus(ProjectImportItem::STATUS_FAILED)
-                         ->setErrorMessage('No processed data available')
-                         ->setUpdatedAt(new \DateTime());
+                    $item->setStatus(ProjectImportItem::STATUS_FAILED);
+                    $item->setErrorMessage('No processed data available');
+                    $item->setUpdatedAt(new \DateTime());
                     $this->em->persist($item);
                     
                     $errorCount++;
                     $processedCount++;
                     
-                    $this->updateImportProgress($import, $processedCount, $successCount, $errorCount);
+                    // Update import progress after each item
+                    $import->setProcessedRows($processedCount);
+                    $import->setSuccessfulRows($successCount);
+                    $import->setErrorRows($errorCount);
+                    $import->setUpdatedAt(new \DateTime());
+                    $this->em->persist($import);
+                    $this->em->flush();
+                    
                     continue;
                 }
                 
+                // Get the payload
                 $result = $processedData;
+                
+                // Skip if status is error
                 if ($result['status'] === 'error') {
-                    $item->setStatus(ProjectImportItem::STATUS_FAILED)
-                         ->setErrorMessage($result['message'])
-                         ->setUpdatedAt(new \DateTime());
+                    $item->setStatus(ProjectImportItem::STATUS_FAILED);
+                    $item->setErrorMessage($result['message']);
+                    $item->setUpdatedAt(new \DateTime());
                     $this->em->persist($item);
                     
                     $errorCount++;
                     $processedCount++;
                     
-                    $this->updateImportProgress($import, $processedCount, $successCount, $errorCount);
+                    // Update import progress after each item
+                    $import->setProcessedRows($processedCount);
+                    $import->setSuccessfulRows($successCount);
+                    $import->setErrorRows($errorCount);
+                    $import->setUpdatedAt(new \DateTime());
+                    $this->em->persist($import);
+                    $this->em->flush();
+                    
                     continue;
                 }
                 
                 try {
+                    // If LE Period is provided, add it to the payload
                     if ($lePeriod) {
                         $result['payload']['lePeriod'] = $lePeriod;
                         
+                        // If LE Category ID is provided in the payload, find and add the LE Category
                         if (isset($result['payload']['leFundingCategoryId']) && is_numeric($result['payload']['leFundingCategoryId'])) {
                             $excelCategoryId = (int)$result['payload']['leFundingCategoryId'];
+                            
+                            // Get the database ID for the LE-Category
                             $dbCategoryId = $leCategoryMapping[$excelCategoryId] ?? null;
                             
                             if ($dbCategoryId) {
                                 $leCategory = $this->em->getRepository(LEFundingCategory::class)->find($dbCategoryId);
+                                
                                 if ($leCategory) {
                                     $result['payload']['leFundingCategory'] = $leCategory;
                                 }
@@ -734,92 +1157,113 @@ class StandardProjectImporter extends AbstractProjectImporter
                         }
                     }
                     
+                    // If LocalWorkgroup ID is provided in the payload, find and add the LocalWorkgroup
                     if (isset($result['payload']['localWorkgroupId']) && is_numeric($result['payload']['localWorkgroupId'])) {
                         $excelWorkgroupId = (int)$result['payload']['localWorkgroupId'];
+                        
+                        // Get the database ID for the LocalWorkgroup
                         $dbWorkgroupId = $localWorkgroupMapping[$excelWorkgroupId] ?? null;
                         
                         if ($dbWorkgroupId) {
                             $localWorkgroup = $this->em->getRepository(LocalWorkgroup::class)->find($dbWorkgroupId);
+                            
                             if ($localWorkgroup) {
                                 $result['payload']['localWorkgroup'] = $localWorkgroup;
                             }
                         }
                     }
                     
+                    // Check if a project with this title already exists
                     $existingProject = $this->findProjectByTitle($result['payload']['title']);
                     
-                    if ($existingProject) {
+                    if ($existingProject) {                       
+                        // Update the project with the new data
                         $this->projectService->updateProject($existingProject, $result['payload']);
                         
-                        $item->setStatus(ProjectImportItem::STATUS_COMPLETED)
-                             ->setProject($existingProject)
-                             ->setUpdatedAt(new \DateTime());
+                        // Update the item status
+                        $item->setStatus(ProjectImportItem::STATUS_COMPLETED);
+                        $item->setProject($existingProject);
+                        $item->setUpdatedAt(new \DateTime());
                         $this->em->persist($item);
                         $this->em->flush();
                         
                         $successCount++;
                         $processedCount++;
                         
-                        $this->updateImportProgress($import, $processedCount, $successCount, $errorCount);
-                    } else {
+                        // Update import progress after each item
+                        $import->setProcessedRows($processedCount);
+                        $import->setSuccessfulRows($successCount);
+                        $import->setErrorRows($errorCount);
+                        $import->setUpdatedAt(new \DateTime());
+                        $this->em->persist($import);
+                        $this->em->flush();
+                    } else {                       
+                        // Set the user as the creator
                         $result['payload']['user'] = $user;
+                        
+                        // Create the project
                         $project = $this->projectService->createProject($result['payload']);
                         
-                        $item->setStatus(ProjectImportItem::STATUS_COMPLETED)
-                             ->setProject($project)
-                             ->setUpdatedAt(new \DateTime());
+                        // Update the item status
+                        $item->setStatus(ProjectImportItem::STATUS_COMPLETED);
+                        $item->setProject($project);
+                        $item->setUpdatedAt(new \DateTime());
                         $this->em->persist($item);
                         $this->em->flush();
                         
                         $successCount++;
                         $processedCount++;
                         
-                        $this->updateImportProgress($import, $processedCount, $successCount, $errorCount);
+                        // Update import progress after each item
+                        $import->setProcessedRows($processedCount);
+                        $import->setSuccessfulRows($successCount);
+                        $import->setErrorRows($errorCount);
+                        $import->setUpdatedAt(new \DateTime());
+                        $this->em->persist($import);
+                        $this->em->flush();
                     }
                 } catch (\Exception $e) {
-                    $item->setStatus(ProjectImportItem::STATUS_FAILED)
-                         ->setErrorMessage($e->getMessage())
-                         ->setUpdatedAt(new \DateTime());
+                    
+                    // Update the item status
+                    $item->setStatus(ProjectImportItem::STATUS_FAILED);
+                    $item->setErrorMessage($e->getMessage());
+                    $item->setUpdatedAt(new \DateTime());
                     $this->em->persist($item);
                     
                     $errorCount++;
                     $processedCount++;
                     
-                    $this->updateImportProgress($import, $processedCount, $successCount, $errorCount);
+                    // Update import progress after each item
+                    $import->setProcessedRows($processedCount);
+                    $import->setSuccessfulRows($successCount);
+                    $import->setErrorRows($errorCount);
+                    $import->setUpdatedAt(new \DateTime());
+                    $this->em->persist($import);
+                    $this->em->flush();
                 }
             }
             
-            $import->setStatus(ProjectImport::STATUS_COMPLETED)
-                  ->setProcessedRows($processedCount)
-                  ->setSuccessfulRows($successCount)
-                  ->setErrorRows($errorCount)
-                  ->setUpdatedAt(new \DateTime());
+            // Update import status
+            $import->setStatus(ProjectImport::STATUS_COMPLETED);
+            $import->setProcessedRows($processedCount);
+            $import->setSuccessfulRows($successCount);
+            $import->setErrorRows($errorCount);
+            $import->setUpdatedAt(new \DateTime());
             $this->em->persist($import);
             $this->em->flush();
             
             return true;
         } catch (\Exception $e) {
-            $import->setStatus(ProjectImport::STATUS_FAILED)
-                  ->setErrorMessage($e->getMessage())
-                  ->setUpdatedAt(new \DateTime());
+            
+            // Update import status
+            $import->setStatus(ProjectImport::STATUS_FAILED);
+            $import->setErrorMessage($e->getMessage());
+            $import->setUpdatedAt(new \DateTime());
             $this->em->persist($import);
             $this->em->flush();
             
             return false;
         }
-    }
-
-    /**
-     * Update import progress
-     */
-    private function updateImportProgress(ProjectImport $import, int $processedCount, int $successCount, int $errorCount): void
-    {
-        $import->setProcessedRows($processedCount)
-               ->setSuccessfulRows($successCount)
-               ->setErrorRows($errorCount)
-               ->setUpdatedAt(new \DateTime());
-        $this->em->persist($import);
-        $this->em->flush();
     }
 
     /**
@@ -872,49 +1316,49 @@ class StandardProjectImporter extends AbstractProjectImporter
 
     /**
      * Get the mapping between Excel LE-Category IDs and database LE-Category IDs
+     * This mapping is specific to Standard project imports.
      * 
      * @return array Mapping from Excel ID to database ID
      */
     private function getLeCategoryMapping(): array
     {
         return [
-            1 => 26,  // 73-01 Investitionen in die landwirtschaftliche Erzeugung
-            2 => 27,  // 73-08 Investitionen in Diversifizierungsaktivitäten...
-            3 => 28,  // 73-10 Orts- und Stadtkernförderung...
-            4 => 29,  // 73-11 Soziale Dienstleistungen
-            5 => 30,  // 73-15 Investitionen zur Erhaltung...
-            6 => 31,  // 75-02 Unterstützung der Gründung...
-            7 => 32,  // 77-02 Soziale Landwirtschaft
-            8 => 33,  // 77-02 Lokale Märkte/Absatzförderung
-            9 => 34,  // 77-02 Erzeugerorganisationen
-            10 => 35, // 77-02 LMQ
-            11 => 36, // 77-02 Cluster
-            12 => 37, // 77-02 Tourismusdienstleistungen
-            13 => 38, // 77-02 Arbeitsabläufe, Ressourcennutzung
-            14 => 39, // 77-02 Bioökonomie
-            15 => 40, // 77-02 Kulinarik
-            16 => 41, // 77-02 Digitalisierung und sonstiges
-            17 => 42, // 77-02 Forstwirtschaft
-            18 => 43, // 77-02 Tourismus Pilotprojekte
-            19 => 44, // 77-02 Naturschutz
-            20 => 45, // 77-02 Naturschutz BL
-            21 => 46, // 77-02 Naturschutz BMK
-            22 => 47, // 77-02- Nationalparke
-            23 => 48, // 77-02 Umweltschutz BML
-            24 => 49, // 77-02 Alpenkonvention
-            25 => 50, // 77-03 Ländliche Innovationssysteme
-            26 => 51, // 77-04 Reaktivierung des Leerstands...
-            27 => 52, // 77-05 LEADER
-            28 => 53, // 77-06 Förderung von Operationellen Gruppen...
-            29 => 54, // 78-02 Wissenstransfer für land- und forstwirtschaftliche Themenfelder...
-            30 => 55, // 78-03 Pädagogik LW, Umw., Ernähr.
-            31 => 56, // 78-03 Dialog mit der Gesellschaft LW, Umw., Ernähr.
-            32 => 57, // 78-03 Waldbezogene Pläne, Natur- und Gesellschaftsthemen
-            33 => 58, // 78-03-4WT Weiterbildung Mgmt in Regionen
-            34 => 59, // 78-03 Naturschutz BL
-            35 => 60, // 78-03 Naturschutz BMK
-            36 => 61, // 78-03 Nationalparke
-            37 => 62  // 78-03 Alpenkonvention
+            // Mapping based on Standard Import specification (Excel ID -> DB ID)
+            1 => 28,  // 73-10 Orts- und Stadtkernförderung...
+            2 => 29,  // 73-11 Soziale Dienstleistungen
+            3 => 30,  // 73-15 Investitionen zur Erhaltung...
+            4 => 31,  // 75-02 Unterstützung der Gründung...
+            5 => 32,  // 77-02 Soziale Landwirtschaft
+            6 => 33,  // 77-02 Lokale Märkte/Absatzförderung
+            7 => 34,  // 77-02 Erzeugerorganisationen
+            8 => 35,  // 77-02 LMQ
+            9 => 36,  // 77-02 Cluster
+            10 => 37, // 77-02 Tourismusdienstleistungen
+            11 => 38, // 77-02 Arbeitsabläufe, Ressourcennutzung
+            12 => 39, // 77-02 Bioökonomie
+            13 => 40, // 77-02 Kulinarik
+            14 => 41, // 77-02 Digitalisierung und sonstiges
+            15 => 42, // 77-02 Forstwirtschaft
+            16 => 43, // 77-02 Tourismus Pilotprojekte
+            17 => 44, // 77-02 Naturschutz
+            18 => 45, // 77-02 Naturschutz BL
+            19 => 46, // 77-02 Naturschutz BMK
+            20 => 47, // 77-02- Nationalparke
+            21 => 48, // 77-02 Umweltschutz BML
+            22 => 49, // 77-02 Alpenkonvention
+            23 => 50, // 77-03 Ländliche Innovationssysteme
+            24 => 51, // 77-04 Reaktivierung des Leerstands...
+            25 => 52, // 77-05 LEADER
+            26 => 53, // 77-06 Förderung von Operationellen Gruppen...
+            27 => 54, // 78-02 Wissenstransfer für land- und forstwirtschaftliche Themenfelder...
+            28 => 55, // 78-03 Pädagogik LW, Umw., Ernähr.
+            29 => 56, // 78-03 Dialog mit der Gesellschaft LW, Umw., Ernähr.
+            30 => 57, // 78-03 Waldbezogene Pläne, Natur- und Gesellschaftsthemen
+            31 => 58, // 78-03-4WT Weiterbildung Mgmt in Regionen
+            32 => 59, // 78-03 Naturschutz BL
+            33 => 60, // 78-03 Naturschutz BMK
+            34 => 61, // 78-03 Nationalparke
+            35 => 62  // 78-03 Alpenkonvention
         ];
     }
 

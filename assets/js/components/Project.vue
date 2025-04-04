@@ -3116,7 +3116,8 @@ export default {
       if (this.project && this.project.financing) {
         this.project.financing.forEach(item => {
           if (this.enableFinancingInput.hasOwnProperty(item.id)) {
-            const isEnabled = item.value !== null;
+            // Check if value is a number and greater than 0 to enable the toggle
+            const isEnabled = typeof item.value === 'number' && item.value > 0;
             this.enableFinancingInput[item.id] = isEnabled;
           }
         });
