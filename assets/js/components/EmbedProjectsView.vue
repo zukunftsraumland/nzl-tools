@@ -351,7 +351,7 @@
             </tr>
             <tr v-if="isMultipleFinancing || isOnlyProjectCost">
               <td>Gesamt:</td>
-              <td></td>
+              <td v-if="!isOnlyProjectCost"></td>
               <td>{{ $helpers.formatCurrency(project.projectCosts) }}</td>
             </tr>
           </tbody>
