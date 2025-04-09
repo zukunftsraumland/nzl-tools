@@ -160,8 +160,11 @@
                 Vorschau der zu importierenden Projekte
               </h3>
               <div class="card-header-actions">
+                <div class="selected-count-info" v-if="previewData.length > 0">
+                  <span class="count">{{ selectedRowCount }} / {{ previewData.length }}</span> Zeilen ausgewählt
+                </div>
                 <button class="button primary" @click="startImport"
-                  :disabled="isProcessing || !importData || importData.status !== 'pending' || !selectedLePeriodId">
+                  :disabled="isProcessing || !importData || importData.status !== 'pending' || selectedRowCount === 0">
                   <i class="material-icons">play_arrow</i>
                   {{ isProcessing ? 'Wird importiert...' : 'Import starten' }}
                 </button>
@@ -201,9 +204,17 @@
               </div>
 
               <div class="table-responsive">
-                <table class="table">
+                <table class="table preview-table">
                   <thead>
                     <tr>
+                      <th>
+                        <input 
+                          type="checkbox" 
+                          :checked="allRowsSelected && previewData.length > 0"
+                          @change="toggleSelectAll"
+                          title="Alle auswählen/abwählen"
+                        />
+                      </th>
                       <th>Zeile</th>
                       <th>Titel</th>
                       <th>Beschreibung</th>
@@ -216,14 +227,23 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(item, index) in filteredPreviewData" :key="index" @click="showRowDetails(item)"
+                    <tr v-for="(item, index) in filteredPreviewData" :key="index"
                       class="clickable-row" :class="{
                         'success': item.status === 'valid',
                         'warning': item.status === 'warning',
-                        'error': item.status === 'error'
+                        'error': item.status === 'error',
+                        'selected': selectedRowNumbers.has(item.rowNumber)
                       }">
-                      <td>{{ item.rowNumber }}</td>
                       <td>
+                        <input 
+                          type="checkbox" 
+                          :checked="selectedRowNumbers.has(item.rowNumber)"
+                          @change="toggleRowSelection(item.rowNumber)"
+                          @click.stop
+                        />
+                      </td>
+                      <td @click="showRowDetails(item)">{{ item.rowNumber }}</td>
+                      <td @click="showRowDetails(item)">
                         <div class="preview-title">
                           <i class="material-icons" v-if="item.status === 'valid'">check_circle</i>
                           <i class="material-icons" v-else-if="item.status === 'warning'">warning</i>
@@ -231,14 +251,14 @@
                           <span>{{ item.title || 'Kein Titel' }}</span>
                         </div>
                       </td>
-                      <td>{{ truncateText(item.description || (item._rawData ? item._rawData.description : ''), 100) }}
+                      <td @click="showRowDetails(item)">{{ truncateText(item.description || (item._rawData ? item._rawData.description : ''), 100) }}
                       </td>
-                      <td>{{ item.projectCode }}</td>
-                      <td>{{ formatDate(item.startDate) }}</td>
-                      <td>{{ formatDate(item.endDate) }}</td>
-                      <td>{{ item.payload?.leFundingCategoryName || item.leCategory || 'N/A' }}</td>
-                      <td>{{ item.payload?.localWorkgroupName || item.localWorkgroup || 'N/A' }}</td>
-                      <td>
+                      <td @click="showRowDetails(item)">{{ item.projectCode }}</td>
+                      <td @click="showRowDetails(item)">{{ formatDate(item.startDate) }}</td>
+                      <td @click="showRowDetails(item)">{{ formatDate(item.endDate) }}</td>
+                      <td @click="showRowDetails(item)">{{ item.payload?.leFundingCategoryName || item.leCategory || 'N/A' }}</td>
+                      <td @click="showRowDetails(item)">{{ item.payload?.localWorkgroupName || item.localWorkgroup || 'N/A' }}</td>
+                      <td @click="showRowDetails(item)">
                         <span :class="{
                           'badge-success': item.status === 'valid',
                           'badge-warning': item.status === 'warning',
@@ -253,6 +273,11 @@
                     </tr>
                   </tbody>
                 </table>
+              </div>
+
+              <div v-if="filteredPreviewData.length === 0 && previewData.length > 0" class="no-filtered-results">
+                 <i class="material-icons">search_off</i>
+                 <p>Keine Projekte entsprechen dem gewählten Filter.</p>
               </div>
             </div>
           </div>
@@ -715,7 +740,8 @@ export default {
       statusMessage: '',
       statusMessageType: '',
       statusMessageIcon: '',
-      statusMessageWithAction: false
+      statusMessageWithAction: false,
+      selectedRowNumbers: new Set()
     };
   },
   created() {
@@ -762,7 +788,7 @@ export default {
       }
 
       // Add LE-Category information to each item
-      return data.map(item => {
+      const enrichedData = data.map(item => {
         const result = { ...item };
 
         // Ensure LE-Category information is available
@@ -787,6 +813,8 @@ export default {
 
         return result;
       });
+
+      return enrichedData;
     },
     hasLinksOrVideos() {
       if (this.selectedRow && this.selectedRow._rawData) {
@@ -794,6 +822,15 @@ export default {
           (this.selectedRow._rawData.videos && this.selectedRow._rawData.videos.length > 0);
       }
       return false;
+    },
+    allRowsSelected() {
+      if (!this.previewData || this.previewData.length === 0) {
+        return false;
+      }
+      return this.previewData.every(item => this.selectedRowNumbers.has(item.rowNumber));
+    },
+    selectedRowCount() {
+      return this.selectedRowNumbers.size;
     }
   },
   watch: {
@@ -1023,7 +1060,7 @@ export default {
           const rowData = isLegacyImport ? item.data : (item.payload || {});
           
           // Create a consistent structure regardless of importer type
-          return {
+          const result = {
             rowIndex: item.rowIndex || item.rowNumber,
             rowNumber: item.rowIndex || item.rowNumber,
             title: isLegacyImport ? rowData.title : (item.title || (rowData ? rowData.title : '') || 'Kein Titel'),
@@ -1046,6 +1083,11 @@ export default {
             },
             _rawData: isLegacyImport ? rowData : (item.payload || {})
           };
+
+          // Initialize selectedRowNumbers with all row numbers from the loaded preview
+          this.selectedRowNumbers.add(result.rowNumber);
+
+          return result;
         });
 
         // Clear status message if successful
@@ -1087,26 +1129,35 @@ export default {
       }
     },
     async startImport() {
-      // We no longer need to check if a LE period is selected as it's done automatically
-      
-      if (!confirm('Sind Sie sicher, dass Sie den Import starten möchten?')) {
+      // Check if any rows are selected
+      if (this.selectedRowNumbers.size === 0) {
+        this.setStatusMessage('Bitte wählen Sie mindestens eine Zeile zum Importieren aus.', 'warning', 'warning');
         return;
       }
 
+      if (!confirm(`Sind Sie sicher, dass Sie die ausgewählten ${this.selectedRowNumbers.size} Zeilen importieren möchten?`)) {
+        return;
+      }
+      
       // Set processing state to show the import is running
       this.isProcessing = true;
       this.$store.commit('loaders/showLoader', 'projectImport');
-      
-      // Reset notification flags
       this.importStartTime = Date.now();
       this.importStartedNotificationShown = false;
+      this.setStatusMessage('Der Import der ausgewählten Zeilen wird ausgeführt...', 'info', 'info');
       
-      // Show a notification that the import is starting
-      this.setStatusMessage('Der Import wird ausgeführt. Bitte haben Sie etwas Geduld...', 'info', 'info');
-
       try {
-        // Get CSRF token if available
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        
+        // Prepare the request body, including the selected row numbers
+        const requestBody = {
+          selectedRows: Array.from(this.selectedRowNumbers)
+        };
+
+        // Add lePeriodId only if it's not a legacy import
+        if (this.importData.importerType !== 'legacy') {
+          requestBody.lePeriodId = this.selectedLePeriodId;
+        }
         
         const response = await fetch(`/api/v1/project-imports/${this.importId}/process`, {
           method: 'POST',
@@ -1115,19 +1166,14 @@ export default {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': csrfToken || ''
           },
-          body: JSON.stringify(
-            this.importData.importerType === 'legacy' ? {} : { lePeriodId: this.selectedLePeriodId }
-          )
+          body: JSON.stringify(requestBody) // Send selected rows
         });
-
+        
         const data = await response.json();
 
         if (response.ok) {
           this.importData = data;
-
-          // Start polling for updates
-          this.startPolling();
-
+          this.startPolling(); // Start polling for progress
           // Only show this notification if the import hasn't completed within 2 seconds
           setTimeout(() => {
             // If we're still processing after 2 seconds, show the "import started" notification
@@ -1138,15 +1184,12 @@ export default {
           }, 2000);
         } else {
           this.isProcessing = false;
-
           this.setStatusMessage(data.error || 'Beim Starten des Imports ist ein Fehler aufgetreten.', 'error', 'error');
         }
       } catch (error) {
         this.isProcessing = false;
-
-        this.setStatusMessage('Beim Starten des Imports ist ein Fehler aufgetreten.', 'error', 'error');
-      } finally {
         this.$store.commit('loaders/hideLoader', 'projectImport');
+        this.setStatusMessage('Beim Starten des Imports ist ein Fehler aufgetreten: ' + error.message, 'error', 'error');
       }
     },
     startPolling() {
@@ -1685,6 +1728,26 @@ export default {
       } finally {
         this.isDataLoading = false;
       }
+    },
+    toggleRowSelection(rowNumber) {
+      if (this.selectedRowNumbers.has(rowNumber)) {
+        this.selectedRowNumbers.delete(rowNumber);
+      } else {
+        this.selectedRowNumbers.add(rowNumber);
+      }
+      // Force reactivity update if needed, although Set operations should be reactive
+      this.$forceUpdate(); 
+    },
+    toggleSelectAll() {
+      if (this.allRowsSelected) {
+        // If all are selected, deselect all
+        this.selectedRowNumbers.clear();
+      } else {
+        // If not all (or none) are selected, select all
+        this.previewData.forEach(item => this.selectedRowNumbers.add(item.rowNumber));
+      }
+      // Force reactivity update
+      this.$forceUpdate();
     }
   }
 };

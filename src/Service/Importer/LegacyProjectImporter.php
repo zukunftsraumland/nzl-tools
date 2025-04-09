@@ -14,8 +14,10 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 /**
  * Legacy Project Importer
  * 
- * This importer will handle the import of legacy projects with a different Excel structure.
- * This is a placeholder for future implementation.
+ * This importer handles the legacy excel format, which is different to the standard format
+ * especially in terms of column names and structure.
+ *
+ * This class supports selectively importing rows based on the selectedRows parameter.
  */
 class LegacyProjectImporter extends AbstractProjectImporter
 {
@@ -1239,7 +1241,7 @@ class LegacyProjectImporter extends AbstractProjectImporter
     /**
      * {@inheritdoc}
      */
-    public function importProjects(ProjectImport $import, User $user, ?LEPeriod $lePeriod = null): bool
+    public function importProjects(ProjectImport $import, User $user, ?LEPeriod $lePeriod = null, ?array $selectedRows = null): bool
     {
         try {
             // Set the import status to processing right at the beginning
@@ -1310,6 +1312,11 @@ class LegacyProjectImporter extends AbstractProjectImporter
             
             // Process each row
             for ($rowIndex = $headerRowIndex + 1; $rowIndex <= $highestRow; $rowIndex++) {
+                // Skip rows not in selectedRows if provided
+                if ($selectedRows !== null && !in_array($rowIndex - $headerRowIndex, $selectedRows)) {
+                    continue;
+                }
+                
                 // Extract data from the row
                 $rowData = [];
                 

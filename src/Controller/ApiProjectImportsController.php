@@ -219,6 +219,13 @@ class ApiProjectImportsController extends AbstractController
                     type: 'integer',
                     nullable: true,
                     description: 'ID of the LE Period to assign to all imported projects (not used for legacy importer)'
+                ),
+                new OA\Property(
+                    property: 'selectedRows',
+                    type: 'array',
+                    nullable: true,
+                    description: 'Array of row numbers to import (if not provided, all rows will be imported)',
+                    items: new OA\Items(type: 'integer')
                 )
             ]
         )
@@ -244,6 +251,9 @@ class ApiProjectImportsController extends AbstractController
         $data = json_decode($request->getContent(), true) ?: [];
         $lePeriodId = $data['lePeriodId'] ?? null;
         
+        // Get the selected rows from the request 
+        $selectedRows = $data['selectedRows'] ?? null;
+        
         // Only use lePeriodId if not a legacy importer
         $lePeriod = null;
         if ($lePeriodId && $import->getImporterType() !== 'legacy') {
@@ -253,8 +263,8 @@ class ApiProjectImportsController extends AbstractController
             }
         }
         
-        // Process the import and create projects
-        $result = $importService->importProjects($import, $this->getUser(), $lePeriod);
+        // Process the import and create projects, passing the selected rows
+        $result = $importService->importProjects($import, $this->getUser(), $lePeriod, $selectedRows);
         
         if (!$result) {
             return new JsonResponse([

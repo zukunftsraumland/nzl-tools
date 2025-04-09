@@ -17,6 +17,9 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
  * 
  * The main difference from the standard importer is that columns BV-CI are used for case study 
  * specific fields rather than file attachments. Files in case study imports begin at column CJ.
+ *
+ * This class inherits the importProjects method from StandardProjectImporter, which supports
+ * selectively importing rows based on the selectedRows parameter.
  */
 class CaseStudyProjectImporter extends StandardProjectImporter
 {

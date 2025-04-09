@@ -17,6 +17,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
+use PhpOffice\PhpSpreadsheet\Writer\IWriter;
 
 /**
  * Manager for handling project imports
@@ -123,44 +124,68 @@ class ProjectImportManager
     {
         
         try {
-            // Generate a unique filename
+            // 1. Prepare the file (check and modify if needed)
+            // This returns the path to the original uploaded file or a new temporary file if modified.
+            $preparedFilePath = $this->prepareExcelFile($file);
+            
+            // Use the extension from the *prepared* file, which might have changed if modified/re-saved.
+            // Default to original guess if pathinfo fails.
+            $extension = pathinfo($preparedFilePath, PATHINFO_EXTENSION) ?: $file->guessExtension() ?: 'xlsx';
+
+            // Generate a unique filename for storage based on the original name
             $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
             $safeFilename = $this->slugger->slug($originalFilename);
-            $newFilename = $safeFilename . '-' . uniqid() . '.' . $file->guessExtension();
+            $newFilename = $safeFilename . '-' . uniqid() . '.' . $extension;
+            $finalStoragePath = $this->uploadDir . '/' . $newFilename;
             
             // Make sure the upload directory exists
             if (!file_exists($this->uploadDir)) {
                 mkdir($this->uploadDir, 0777, true);
             }
             
-            // Move the file to the uploads directory
-            try {
-                $file->move($this->uploadDir, $newFilename);
-            } catch (FileException $e) {
-                throw new \Exception('Failed to upload file: ' . $e->getMessage());
+            // Move the *prepared* file (original or temp modified) to the final uploads directory
+            // We use copy and unlink to handle potential cross-filesystem issues with rename/move.
+            if (!copy($preparedFilePath, $finalStoragePath)) {
+                 // Attempt failed, clean up temp file if it exists
+                 if ($preparedFilePath !== $file->getPathname() && file_exists($preparedFilePath)) {
+                     @unlink($preparedFilePath);
+                 }
+                 throw new \Exception('Failed to copy prepared file to upload directory.');
+            }
+            
+            // Delete the temporary file if it was created and successfully copied
+            if ($preparedFilePath !== $file->getPathname()) {
+                @unlink($preparedFilePath); // Use @ to suppress potential warnings if file is already gone
             }
             
             // Create a new import record
             $import = new ProjectImport();
             $import->setFilename($file->getClientOriginalName());
             $import->setOriginalFilename($file->getClientOriginalName());
-            $import->setFilePath($this->uploadDir . '/' . $newFilename);
+            $import->setFilePath($finalStoragePath);
             $import->setStatus(ProjectImport::STATUS_PENDING);
             $import->setUser($user);
             $import->setImporterType($importerType);
             
-            // Get the appropriate importer
-            $importer = $this->getImporter($importerType);
+            // Re-detect importer type based on the potentially modified file content
+            // Pass the final storage path for detection
+            $detectedImporterType = $this->detectImporterType($import->getFilePath());
+            $import->setImporterType($detectedImporterType);
+            
+            // Get the appropriate importer based on the *detected* type
+            $importer = $this->getImporter($detectedImporterType);
             if (!$importer) {
-                throw new \Exception('Invalid importer type: ' . $importerType);
+                // If detection led to an invalid type, fail gracefully
+                throw new \Exception('Invalid importer type detected: ' . $detectedImporterType);
             }
             
-            // Count the total rows in the file
+            // Count the total rows in the *final* file
             try {
                 $totalRows = $importer->countRows($import->getFilePath());
                 $import->setTotalRows($totalRows);
             } catch (\Exception $e) {
-                throw new \Exception('Failed to count rows in Excel file: ' . $e->getMessage());
+                // It's possible the modified file is now unreadable by the row counter
+                throw new \Exception('Failed to count rows in prepared Excel file: ' . $e->getMessage());
             }
             
             // Save the import
@@ -169,7 +194,11 @@ class ProjectImportManager
             
             return $import;
         } catch (\Exception $e) {
-            throw $e;
+             // Ensure cleanup of temporary file if error occurred at any point before successful copy/unlink
+            if (isset($preparedFilePath) && $preparedFilePath !== $file->getPathname() && file_exists($preparedFilePath)) {
+                @unlink($preparedFilePath);
+            }
+            throw $e; // Re-throw the exception
         }
     }
     
@@ -395,9 +424,10 @@ class ProjectImportManager
      * @param ProjectImport $import The import record
      * @param User $user The user who initiated the import
      * @param LEPeriod|null $lePeriod Optional LE Period to assign to all imported projects
+     * @param array|null $selectedRows Optional array of row numbers to import (if null, all rows will be imported)
      * @return bool True if the import was successful, false otherwise
      */
-    public function importProjects(ProjectImport $import, User $user, ?LEPeriod $lePeriod = null): bool
+    public function importProjects(ProjectImport $import, User $user, ?LEPeriod $lePeriod = null, ?array $selectedRows = null): bool
     {
         // Get the appropriate importer
         $importer = $this->getImporter($import->getImporterType() ?? 'standard');
@@ -406,6 +436,86 @@ class ProjectImportManager
         }
         
         // Delegate to the importer
-        return $importer->importProjects($import, $user, $lePeriod);
+        return $importer->importProjects($import, $user, $lePeriod, $selectedRows);
+    }
+
+    /**
+     * Prepares the uploaded Excel file. Checks for a specific header in A1
+     * and removes columns A-S if found. Saves to a temporary file if modified.
+     * Returns the path to the prepared file (original uploaded path or a new temporary file path).
+     *
+     * @param UploadedFile $file The uploaded Excel file.
+     * @return string Path to the prepared file.
+     * @throws \Exception If file loading, modification, or saving fails.
+     */
+    private function prepareExcelFile(UploadedFile $file): string
+    {
+        $originalFilePath = $file->getPathname();
+        $tempFilePath = null; // Path for the modified file, if created
+
+        try {
+            // Load the spreadsheet from the uploaded file's temporary location
+            $spreadsheet = IOFactory::load($originalFilePath);
+            $worksheet = $spreadsheet->getActiveSheet();
+
+            // Check the value in cell A1
+            $a1Value = $worksheet->getCell('A1')->getValue();
+            $needsModification = ($a1Value === 'Operation System');
+
+            if ($needsModification) {
+                
+                
+                // Define the number of columns to remove (A=1 to S=19 -> 19 columns)
+                $columnsToRemove = 19;
+                // Remove column by index repeatedly. Removing index 1 shifts others left.
+                for ($i = 0; $i < $columnsToRemove; $i++) {
+                    // Important check: ensure the worksheet still has columns to remove
+                    if ($worksheet->getHighestColumn() >= 'A') {
+                         $worksheet->removeColumnByIndex(1); // Remove the first column (index 1)
+                    } else {
+                        // Should not happen if removing A-S, but safety check
+                        
+                        break; 
+                    }
+                }
+                
+
+                // Create a temporary file path with the correct extension
+                $originalExtension = $file->guessExtension() ?: 'xlsx'; // Fallback extension
+                // Ensure tempnam generates a filename in the system's temp dir
+                $tempFilePath = tempnam(sys_get_temp_dir(), 'import_prep_');
+                // Append the correct extension AFTER getting the base temp name
+                 rename($tempFilePath, $tempFilePath .= '.' . $originalExtension);
+
+
+                // Determine the correct writer based on the extension
+                $writerType = match (strtolower($originalExtension)) {
+                    'xlsx' => 'Xlsx',
+                    'xls' => 'Xls',
+                    'ods' => 'Ods',
+                    // Add other supported formats if necessary
+                    default => 'Xlsx', // Default to Xlsx
+                };
+
+                $writer = IOFactory::createWriter($spreadsheet, $writerType);
+                $writer->save($tempFilePath);
+                
+
+                // Return the path to the temporary modified file
+                return $tempFilePath;
+            } else {
+                // No modification needed, return the original path
+                
+                return $originalFilePath;
+            }
+
+        } catch (\PhpOffice\PhpSpreadsheet\Exception | \Exception $e) {
+            // Clean up the temporary file if it was created before the error occurred
+            if ($tempFilePath && file_exists($tempFilePath)) {
+                @unlink($tempFilePath);
+            }
+            // Re-throw a more specific exception for clarity
+            throw new \Exception('Failed during Excel file preparation: ' . $e->getMessage(), 0, $e);
+        }
     }
 } 

@@ -112,9 +112,10 @@ abstract class AbstractProjectImporter
      * @param ProjectImport $import The import record
      * @param User $user The user who initiated the import
      * @param LEPeriod|null $lePeriod Optional LE Period to assign to all imported projects
+     * @param array|null $selectedRows Optional array of row numbers to import (if null, all rows will be imported)
      * @return bool True if the import was successful, false otherwise
      */
-    abstract public function importProjects(ProjectImport $import, User $user, ?LEPeriod $lePeriod = null): bool;
+    abstract public function importProjects(ProjectImport $import, User $user, ?LEPeriod $lePeriod = null, ?array $selectedRows = null): bool;
 
     /**
      * Find a project by title

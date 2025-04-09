@@ -935,7 +935,7 @@ class StandardProjectImporter extends AbstractProjectImporter
     /**
      * {@inheritdoc}
      */
-    public function importProjects(ProjectImport $import, User $user, ?LEPeriod $lePeriod = null): bool
+    public function importProjects(ProjectImport $import, User $user, ?LEPeriod $lePeriod = null, ?array $selectedRows = null): bool
     {
         
         try {
@@ -1077,6 +1077,15 @@ class StandardProjectImporter extends AbstractProjectImporter
             foreach ($items as $item) {
                 // Skip already processed items
                 if ($item->getStatus() !== ProjectImportItem::STATUS_PENDING) {
+                    continue;
+                }
+                
+                // Skip items not in the selectedRows array if it's provided
+                if ($selectedRows !== null && !in_array($item->getRowNumber(), $selectedRows)) {
+                    $item->setStatus(ProjectImportItem::STATUS_SKIPPED);
+                    $item->setUpdatedAt(new \DateTime());
+                    $this->em->persist($item);
+                    $this->em->flush();
                     continue;
                 }
                 
