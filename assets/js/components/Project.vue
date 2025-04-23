@@ -136,7 +136,6 @@
             type: 'tag-select',
             options: states,
             columnsize: 12,
-            selectAllValue: 'Österreichweit',
             tooltip: tooltips.projectRegion,
           },
         ]"
