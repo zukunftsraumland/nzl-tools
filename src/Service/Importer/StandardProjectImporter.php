@@ -382,8 +382,8 @@ class StandardProjectImporter extends AbstractProjectImporter
                 'Q5.5' => '6',
                 'Q5.6' => '7',
                 'Q5.7' => '8',
-                'Q5.8' => '1',
-                'Q5.9' => '9',
+                'Q5.8' => '9',
+                'Q5.9' => '1',
             ];
             
             // Check if all states are selected (Q5.10)
