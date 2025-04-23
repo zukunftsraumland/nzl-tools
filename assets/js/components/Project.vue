@@ -18,6 +18,7 @@
         :clickDismissDiff="clickDismissDiff"
         :clickLocale="clickLocale"
         :mergeAll="mergeAll"
+        @duplicateProject="duplicateProject"
       />
       <FieldWrapper
         :fields="[
@@ -2594,7 +2595,8 @@ export default {
       if (this.project.images.length > 0) {
         let error = false;
         this.project.images.forEach((image) => {
-          if (!image.copyright) {
+          // Ensure copyright contains at least one non-whitespace character
+          if (!image.copyright || !image.copyright.trim()) {
             error = true;
           }
         });
@@ -2623,7 +2625,8 @@ export default {
       if (this.project.files.length > 0) {
         let error = false;
         this.project.files.forEach((file) => {
-          if (!file.copyright) {
+          // Ensure copyright contains at least one non-whitespace character
+          if (!file.copyright || !file.copyright.trim()) {
             error = true;
           }
         });
@@ -3152,6 +3155,48 @@ export default {
          default: return financingId;
       }
    },
+    async duplicateProject() {
+      // Deep copy the project object
+      const newProject = JSON.parse(JSON.stringify(this.project));
+      // Remove fields that should not be duplicated
+      delete newProject.id;
+      delete newProject.createdAt;
+      delete newProject.updatedAt;
+      // Set isPublic to false for the duplicate
+      newProject.isPublic = false;
+      // Add (Duplikat) to the title
+      if (newProject.title && !newProject.title.endsWith(' (Duplikat)')) {
+        newProject.title = newProject.title + ' (Duplikat)';
+      }
+      // Remove any inbox-related fields if present
+      delete newProject.inboxId;
+      delete newProject.status;
+      // Remove workflow fields if present
+      delete newProject.internalId;
+      // Send the new project to the backend (create endpoint)
+      try {
+        const response = await this.$store.dispatch('projects/create', newProject);
+        // Redirect to the edit page for the new project
+        if (response && response.id) {
+          this.$router.push(`/projects/${response.id}/edit`);
+        } else {
+          // Fallback: reload projects list
+          this.$router.push('/projects');
+        }
+      } catch (error) {
+        this.modal = {
+          title: 'Fehler beim Duplizieren',
+          description: 'Das Projekt konnte nicht dupliziert werden. Bitte versuchen Sie es erneut.',
+          actions: [
+            {
+              label: 'OK',
+              class: 'error',
+              onClick: () => { this.modal = null; },
+            },
+          ],
+        };
+      }
+    },
   },
 };
 </script>

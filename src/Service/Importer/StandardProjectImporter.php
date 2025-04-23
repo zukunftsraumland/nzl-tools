@@ -370,8 +370,8 @@ class StandardProjectImporter extends AbstractProjectImporter
                 'Q5.5' => 'Salzburg',
                 'Q5.6' => 'Steiermark',
                 'Q5.7' => 'Tirol',
-                'Q5.8' => 'Vorarlberg',
-                'Q5.9' => 'Wien',
+                'Q5.8' => 'Wien',
+                'Q5.9' => 'Vorarlberg',
             ];
 
             $stateMappingByStateId = [

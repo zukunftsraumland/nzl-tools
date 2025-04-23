@@ -16,18 +16,26 @@
           v-if="project.isPublic"
           >Öffentlich</a
         >
-        <!-- <a class="button" :class="{'primary' : locale === 'de'}" @click="clickLocale('de')">DE</a>
-        <a class="button" :class="{'primary' : locale === 'fr'}" @click="clickLocale('fr')">FR</a>
-        <a class="button" :class="{'primary' : locale === 'it'}" @click="clickLocale('it')">IT</a> -->
-        <a class="button" @click="showPreviewModal()"
-          ><span class="material-icons">visibility</span></a
+        <a
+          class="button info"
+          @click="$emit('duplicateProject')"
+          v-if="project.id"
+          title="Duplizieren"
         >
+          <span class="material-icons">content_copy</span>
+        </a>
         <a
           class="button error"
           @click="clickDeleteProject()"
           v-if="project.id"
           title="Löschen"
           ><span class="material-icons">delete</span></a
+        >
+        <!-- <a class="button" :class="{'primary' : locale === 'de'}" @click="clickLocale('de')">DE</a>
+        <a class="button" :class="{'primary' : locale === 'fr'}" @click="clickLocale('fr')">FR</a>
+        <a class="button" :class="{'primary' : locale === 'it'}" @click="clickLocale('it')">IT</a> -->
+        <a class="button" @click="showPreviewModal()"
+          ><span class="material-icons">visibility</span></a
         >
         <a class="button warning" @click="$router.back()" title="Abbrechen"
           ><span class="material-icons">close</span></a
