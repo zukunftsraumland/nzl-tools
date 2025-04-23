@@ -16,14 +16,14 @@
           v-if="project.isPublic"
           >Öffentlich</a
         >
-        <a
+        <!--<a
           class="button info"
           @click="$emit('duplicateProject')"
           v-if="project.id"
           title="Duplizieren"
         >
           <span class="material-icons">content_copy</span>
-        </a>
+        </a>-->
         <a
           class="button error"
           @click="clickDeleteProject()"
