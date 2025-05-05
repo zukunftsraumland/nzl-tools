@@ -136,6 +136,7 @@
             type: 'tag-select',
             options: states,
             columnsize: 12,
+            enableSelectAll: true, // Enable select all logic
             tooltip: tooltips.projectRegion,
           },
         ]"

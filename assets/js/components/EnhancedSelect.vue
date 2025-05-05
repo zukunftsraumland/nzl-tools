@@ -1,8 +1,8 @@
 <template>
   <div class="enhanced-select" v-click-outside="closeDropdown">
     <div class="enhanced-select-header" @click="toggleDropdown">
-      <div class="enhanced-select-value" :class="{ placeholder: !selectedOption }">
-        {{ selectedOption ? selectedOption.name : placeholder }}
+      <div class="enhanced-select-value" :class="{ placeholder: alwaysShowPlaceholder || !selectedOption }">
+        {{ alwaysShowPlaceholder ? placeholder : (selectedOption ? selectedOption.name : placeholder) }}
       </div>
       <div class="enhanced-select-arrow" :class="{ open: isOpen }"></div>
     </div>
@@ -65,6 +65,10 @@ export default {
       default: true
     },
     disabled: {
+      type: Boolean,
+      default: false
+    },
+    alwaysShowPlaceholder: {
       type: Boolean,
       default: false
     }

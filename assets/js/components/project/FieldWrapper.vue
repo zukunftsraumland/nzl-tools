@@ -77,7 +77,8 @@
                 :model="localProject[field.name]"
                 :options="field.options"
                 :searchType="'select'"
-                :labelSelectAll="field.selectAllValue"
+                :enableSelectAll="field.enableSelectAll || false"
+                :fieldLabel="field.label"
               ></tag-selector>
             </div>
             <div v-if="field.type === 'tag-search-select'">
@@ -191,7 +192,6 @@
                 :model="diff[field.name]"
                 :options="field.options"
                 :searchType="'select'"
-                :labelSelectAll="field.selectAllValue"
               ></tag-selector>
             </div>
             <div v-if="field.type === 'tag-search-select'">

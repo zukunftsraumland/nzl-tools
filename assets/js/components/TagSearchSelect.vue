@@ -205,6 +205,9 @@ export default {
   border: 1px solid #5077b2;
   border-radius: 0.25em;
   box-sizing: border-box;
+  font-size: 14px;
+  padding: 8px 12px;
+  min-height: 38px;
 }
 
 .tag-selector-component-options {

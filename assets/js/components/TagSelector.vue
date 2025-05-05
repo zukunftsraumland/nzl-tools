@@ -34,9 +34,10 @@
         <enhanced-select
           v-if="searchType === 'select'"
           :options="filterOptions(options)"
-          :placeholder="labelSelectAll.length > 0 ? labelSelectAll : 'Bitte wählen'"
+          :placeholder="fieldLabel ? `${fieldLabel} auswählen` : 'Bitte auswählen'"
           @change="selectOption"
           :show-placeholder="true"
+          :alwaysShowPlaceholder="true"
         />
       </template>
     </div>
@@ -84,9 +85,13 @@ export default {
       type: Boolean,
       default: false,
     },
-    labelSelectAll: {
+    enableSelectAll: {
+      type: Boolean,
+      default: false,
+    },
+    fieldLabel: {
       type: String,
-      default: "",
+      default: '',
     },
   },
   data() {
@@ -97,7 +102,7 @@ export default {
   methods: {
     selectOption(option) {
       if (this.readonly) return false;
-      if (option === "selectAll") {
+      if (option && option.__selectAll) {
         this.toggleSelectAll();
         return;
       }
@@ -120,16 +125,27 @@ export default {
     filterOptions(options, term = "") {
       if (!options) return [];
       if (this.searchType === "select") {
-        return options
+        let filtered = options
           .filter((option) => !this.getOptionById(option.id))
           .sort((a, b) => a[this.label].localeCompare(b[this.label]));
+        if (this.enableSelectAll) {
+          const allSelected = this.model.length === this.options.length && this.options.length > 0;
+          filtered = [
+            {
+              __selectAll: true,
+              [this.label]: allSelected ? 'Alle abwählen' : 'Alle auswählen',
+            },
+            ...filtered
+          ];
+        }
+        return filtered;
       }
       return options.filter((option) =>
         option[this.label]?.toLowerCase().includes(term.trim().toLowerCase())
       );
     },
     toggleSelectAll() {
-      if (this.isAllSelected) {
+      if (this.model.length === this.options.length && this.options.length > 0) {
         this.model.splice(0);
       } else {
         this.model.splice(0, this.model.length, ...this.options);
