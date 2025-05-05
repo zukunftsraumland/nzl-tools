@@ -49,18 +49,13 @@
               :type="field.type"
               @input="updateField(field.name, $event)"
             />
-            <select
+            <enhanced-select
               v-if="field.type === 'select'"
               v-model="localProject[field.name]"
-              :value="localProject[field.name]"
-              :id="field.name"
-              @input="updateField(field.name, $event)"
-              class="form-control"
-            >
-              <option v-for="option in field.options" :key="option.id" :value="option.id">
-                {{ option.name }}
-              </option>
-            </select>
+              :options="field.options"
+              :placeholder="field.label ? field.label + ' auswählen' : 'Bitte auswählen'"
+              @change="(val) => updateField(field.name, val)"
+            />
             <div v-if="field.type === 'checkbox'" class="toggle-container">
               <input
                 type="checkbox"
@@ -165,17 +160,13 @@
               :config="field.type === 'ckeditor' ? field.editorConfig : null"
               readonly
             />
-            <select
+            <enhanced-select
               v-if="field.type === 'select'"
               :id="`${field.name}Diff`"
               v-model="diff[field.name]"
-              class="form-control"
-              disabled
-            >
-              <option v-for="option in field.options" :key="option.id" :value="option.id">
-                {{ option.name }}
-              </option>
-            </select>
+              :options="field.options"
+              @change="(val) => updateField(field.name, val)"
+            />
             <div v-if="field.type === 'checkbox'" class="toggle-container">
               <input
                 type="checkbox"
@@ -235,6 +226,7 @@ import TagSelector from "../TagSelector.vue";
 import TagSearchSelect from "../TagSearchSelect.vue";
 import PeriodSelect from "../PeriodSelect.vue";
 import PeriodSelectEnhanced from "../PeriodSelectEnhanced.vue";
+import EnhancedSelect from "../EnhancedSelect.vue";
 
 export default {
   emits: ["update:project", "mergeFields"],
@@ -249,6 +241,7 @@ export default {
     TagSearchSelect,
     PeriodSelect,
     PeriodSelectEnhanced,
+    EnhancedSelect,
   },
   data() {
     return {
@@ -261,30 +254,42 @@ export default {
     project: {
       handler(newProject) {
         this.localProject = { ...newProject };
-        if (this.localProject.localWorkgroup?.id !== undefined) {
-          this.localProject.localWorkgroup = this.localProject.localWorkgroup.id;
-        }
+        // For all select fields, ensure the value is the correct object reference from options
+        this.fields.forEach(field => {
+          if (field.type === 'select' && Array.isArray(field.options)) {
+            const val = this.localProject[field.name];
+            if (val && typeof val === 'object' && val.id !== undefined) {
+              const found = field.options.find(opt => opt.id === val.id);
+              if (found) this.localProject[field.name] = found;
+            } else if (val && typeof val !== 'object') {
+              const found = field.options.find(opt => opt.id === val);
+              if (found) this.localProject[field.name] = found;
+            }
+          }
+        });
       },
       deep: true,
     },
   },
   methods: {
     updateField(fieldName, event) {
-      if (fieldName === "fundingStructure") {
+      // If this is a select field (EnhancedSelect), store the whole object
+      const field = this.fields.find(f => f.name === fieldName);
+      if (field && field.type === 'select') {
+        this.localProject[fieldName] = event;
+      } else if (fieldName === "fundingStructure") {
         this.localProject.lePeriod = event.lePeriod;
         this.localProject.leFundingCategory = event.leFundingCategory;
         this.localProject.leFundingArticle = event.leFundingArticle;
         this.localProject.leFundingMethod = event.leFundingMethod;
       } else {
         let value = event.target ? event.target.value : event;
-
         if (event.target) {
           const isCheckbox = event.target.type === "checkbox";
           value = isCheckbox ? event.target.checked : event.target.value;
         }
         this.localProject[fieldName] = value;
       }
-
       this.$emit("update:project", { ...this.localProject });
     },
     mergeFields(field) {

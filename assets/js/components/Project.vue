@@ -2666,6 +2666,12 @@ export default {
         url = "projects/update";
       }
 
+      // Ensure localWorkgroup is sent as an ID, not an object
+      let payload = { ...this.project };
+      if (payload.localWorkgroup && typeof payload.localWorkgroup === 'object') {
+        payload.localWorkgroup = payload.localWorkgroup.id;
+      }
+
       this.modal = {
         title: "Bearbeitung abschliessen",
         description:
@@ -2678,7 +2684,7 @@ export default {
               this.modal = null;
               return this.$store
                 .dispatch(url, {
-                  ...this.project,
+                  ...payload,
                   inboxId: this.selectedInboxItem.id ? this.selectedInboxItem.id : null,
                   merge: true,
                   addToInbox: false,
@@ -2699,7 +2705,7 @@ export default {
               this.modal = null;
               return this.$store
                 .dispatch(url, {
-                  ...this.project,
+                  ...payload,
                   inboxId: this.selectedInboxItem.id ? this.selectedInboxItem.id : null,
                   merge: false,
                   addToInbox: true,
