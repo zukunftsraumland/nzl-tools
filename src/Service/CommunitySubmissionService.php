@@ -68,10 +68,7 @@ class CommunitySubmissionService
         
         switch ($submission->getType()) {
             case CommunitySubmission::TYPE_PROJECT_CONTACT:
-                // Process project contact email
-                if (isset($data['type']) && $data['type'] === 'project_contact') {
-                    $this->sendProjectContactEmail($data);
-                }
+                $this->sendProjectContactEmail($data);
                 break;
             
             default:
