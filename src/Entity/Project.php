@@ -1233,6 +1233,11 @@ class Project
         return $this->contacts;
     }
 
+    #[Groups(['project'])]
+    public function hasContacts(): bool {
+        return !empty($this->getContacts() ?? []);
+    }
+
     /**
      * Set links
      *
@@ -1888,4 +1893,5 @@ class Project
 
         return $this;
     }
+
 }

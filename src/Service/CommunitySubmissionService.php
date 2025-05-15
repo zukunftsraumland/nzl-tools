@@ -87,8 +87,11 @@ class CommunitySubmissionService
         // Get contact email from project
         $contactEmail = null;
         $contacts = $project->getContacts();
-        if (!empty($contacts) && isset($contacts[0]['email']) && !empty($contacts[0]['email'])) {
-            $contactEmail = $contacts[0]['email'];
+        if (!empty($contacts)) {
+            $lastIndex = count($contacts) - 1;
+            if (isset($contacts[$lastIndex]['email']) && !empty($contacts[$lastIndex]['email'])) {
+                $contactEmail = $contacts[$lastIndex]['email'];
+            }
         }
 
         if (!$contactEmail) {
