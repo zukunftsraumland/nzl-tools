@@ -1234,7 +1234,7 @@ class Project
     }
 
     #[Groups(['project'])]
-    public function hasContacts(): bool {
+    public function getHasContacts(): bool {
         return !empty($this->getContacts() ?? []);
     }
 
