@@ -31,6 +31,7 @@ use App\Service\LogService;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use App\Service\CommunitySubmissionService;
 use App\Entity\CommunitySubmission;
+use App\Entity\Log;
 
 #[Route(path: '/api/v1/projects', name: 'api_projects_')]
 class ApiProjectsController extends AbstractController
@@ -598,7 +599,7 @@ class ApiProjectsController extends AbstractController
     )]
     #[OA\Tag(name: 'Projects')]
     #[Security(name: 'cookieAuth')]
-    public function create(Request $request, EntityManagerInterface $em, NormalizerInterface $normalizer, ProjectService $projectService): JsonResponse
+    public function create(Request $request, EntityManagerInterface $em, NormalizerInterface $normalizer, ProjectService $projectService, LogService $logService): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);
 
@@ -647,6 +648,11 @@ class ApiProjectsController extends AbstractController
 
         $project = $projectService->createProject($payload);
 
+        // Log that this user created the project
+        if ($project && $project->getId()) {
+            $logService->logProjectCreate($project->getId());
+        }
+
         $result = $normalizer->normalize($project, null, [
             'groups' => ['id', 'project'],
         ]);
@@ -665,7 +671,7 @@ class ApiProjectsController extends AbstractController
     )]
     #[OA\Tag(name: 'Projects')]
     #[Security(name: 'cookieAuth')]
-    public function update(Request $request, EntityManagerInterface $em, NormalizerInterface $normalizer, ProjectService $projectService): JsonResponse
+    public function update(Request $request, EntityManagerInterface $em, NormalizerInterface $normalizer, ProjectService $projectService, LogService $logService): JsonResponse
     {
         $project = $em->getRepository(Project::class)
             ->find($request->get('id'));
@@ -716,6 +722,11 @@ class ApiProjectsController extends AbstractController
         }
 
         $project = $projectService->updateProject($project, $payload);
+
+        // Log that this user saved/updated the project
+        if ($project && $project->getId()) {
+            $logService->logProjectSave($project->getId());
+        }
 
         $result = $normalizer->normalize($project, null, [
             'groups' => ['id', 'project'],
@@ -1438,5 +1449,335 @@ class ApiProjectsController extends AbstractController
                 'error' => $e->getMessage()
             ], Response::HTTP_BAD_REQUEST);
         }
+    }
+
+    // =====================================
+    // Project Editor Tracking API Endpoints
+    // =====================================
+
+    #[Route(path: '/editors', name: 'current_editors', methods: ['GET'])]
+    #[IsGranted('ROLE_EDITOR')]
+    #[OA\Response(
+        response: 200,
+        description: 'Returns current editors across all projects',
+        content: new OA\JsonContent(
+            type: 'object',
+            description: 'Map of project_id to editor info',
+            example: [
+                '123' => [
+                    'username' => 'john.doe',
+                    'created_at' => '2024-01-15T10:30:00+00:00'
+                ],
+                '456' => [
+                    'username' => 'jane.smith', 
+                    'created_at' => '2024-01-15T10:25:00+00:00'
+                ]
+            ]
+        )
+    )]
+    #[OA\Tag(name: 'Projects')]
+    #[Security(name: 'cookieAuth')]
+    public function getCurrentEditors(EntityManagerInterface $em, LogService $logService): JsonResponse
+    {
+        // Clean up stale editing sessions first (heartbeats older than 5 minutes)
+        $cleanedCount = $logService->cleanupStaleEditingSessions(5);
+        
+        // Get all current editors from log entries (after cleanup)
+        $currentEditorLogs = $em->getRepository(Log::class)->getCurrentEditors();
+        
+        $editorsMap = [];
+        
+        foreach ($currentEditorLogs as $log) {
+            $projectData = json_decode($log->getValue(), true);
+            $projectId = $projectData['project_id'] ?? null;
+            
+            if ($projectId) {
+                $editorsMap[$projectId] = [
+                    'username' => $log->getUsername(),
+                    'created_at' => $log->getCreatedAt()->format('c')
+                ];
+            }
+        }
+        
+        return $this->json($editorsMap);
+    }
+
+    #[Route(path: '/{id}/editor-info', name: 'editor_info', methods: ['GET'])]
+    #[IsGranted('ROLE_EDITOR')]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'Project ID',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Returns editor information for a specific project',
+        content: new OA\JsonContent(
+            type: 'object',
+            properties: [
+                new OA\Property(
+                    property: 'current_editor',
+                    type: 'object',
+                    nullable: true,
+                    properties: [
+                        new OA\Property(property: 'username', type: 'string', description: 'Username of current editor'),
+                        new OA\Property(property: 'created_at', type: 'string', description: 'ISO datetime of when editing started/last heartbeat')
+                    ]
+                ),
+                new OA\Property(
+                    property: 'last_editor',
+                    type: 'object',
+                    nullable: true,
+                    properties: [
+                        new OA\Property(property: 'username', type: 'string', description: 'Username of last editor'),
+                        new OA\Property(property: 'created_at', type: 'string', description: 'ISO datetime of when project was last saved')
+                    ]
+                ),
+                new OA\Property(
+                    property: 'created_by',
+                    type: 'object', 
+                    nullable: true,
+                    properties: [
+                        new OA\Property(property: 'username', type: 'string', description: 'Username of project creator'),
+                        new OA\Property(property: 'created_at', type: 'string', description: 'ISO datetime of when project was created')
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Tag(name: 'Projects')]
+    #[Security(name: 'cookieAuth')]
+    public function getEditorInfo(int $id, EntityManagerInterface $em, LogService $logService): JsonResponse
+    {
+        // Clean up stale editing sessions first (heartbeats older than 5 minutes)
+        $cleanedCount = $logService->cleanupStaleEditingSessions(5);
+        
+        $logRepo = $em->getRepository(Log::class);
+        
+        // Get current editors (excluding current user to avoid showing self)
+        $currentUser = $this->getUser();
+        $currentUsername = $currentUser ? $currentUser->getUserIdentifier() : null;
+        $currentEditorLogs = $logRepo->getCurrentEditorsForProject($id, $currentUsername);
+        
+        // Get last editor
+        $lastEditorLog = $logRepo->getLastEditorForProject($id);
+        
+        // Get created by
+        $createdByLog = $logRepo->getCreatedByForProject($id);
+        
+        $editorInfo = [
+            'current_editor' => null,
+            'last_editor' => null,
+            'created_by' => null
+        ];
+        
+        // Set current editor (first one if multiple)
+        if (!empty($currentEditorLogs)) {
+            $currentEditorLog = $currentEditorLogs[0];
+            $editorInfo['current_editor'] = [
+                'username' => $currentEditorLog->getUsername(),
+                'created_at' => $currentEditorLog->getCreatedAt()->format('c')
+            ];
+        }
+        
+        // Set last editor
+        if ($lastEditorLog) {
+            $editorInfo['last_editor'] = [
+                'username' => $lastEditorLog->getUsername(),
+                'created_at' => $lastEditorLog->getCreatedAt()->format('c')
+            ];
+        }
+        
+        // Set created by
+        if ($createdByLog) {
+            $editorInfo['created_by'] = [
+                'username' => $createdByLog->getUsername(),
+                'created_at' => $createdByLog->getCreatedAt()->format('c')
+            ];
+        }
+        
+        return $this->json($editorInfo);
+    }
+
+    #[Route(path: '/{id}/editing', name: 'start_editing', methods: ['POST'])]
+    #[IsGranted('ROLE_EDITOR')]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'Project ID',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Successfully started editing session or returns current editor info',
+        content: new OA\JsonContent(
+            type: 'object',
+            anyOf: [
+                new OA\Schema(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'message', type: 'string', example: 'Editing session started')
+                    ]
+                ),
+                new OA\Schema(
+                    properties: [
+                        new OA\Property(property: 'conflict', type: 'boolean', example: true),
+                        new OA\Property(property: 'current_editor', type: 'object', properties: [
+                            new OA\Property(property: 'username', type: 'string'),
+                            new OA\Property(property: 'created_at', type: 'string')
+                        ]),
+                        new OA\Property(property: 'message', type: 'string', example: 'Another user is currently editing this project')
+                    ]
+                )
+            ]
+        )
+    )]
+    #[OA\Tag(name: 'Projects')]
+    #[Security(name: 'cookieAuth')]
+    public function startEditing(int $id, LogService $logService, EntityManagerInterface $em): JsonResponse
+    {
+        // Verify project exists
+        $project = $em->getRepository(Project::class)->find($id);
+        if (!$project) {
+            return $this->json(['error' => 'Project not found'], Response::HTTP_NOT_FOUND);
+        }
+        
+        // Clean up stale editing sessions first (heartbeats older than 5 minutes)
+        $cleanedCount = $logService->cleanupStaleEditingSessions(5);
+        
+        // Check if someone else is already editing (after cleanup)
+        $currentUser = $this->getUser();
+        $currentUsername = $currentUser ? $currentUser->getUserIdentifier() : null;
+        $logRepo = $em->getRepository(Log::class);
+        $currentEditorLogs = $logRepo->getCurrentEditorsForProject($id, $currentUsername);
+        
+        if (!empty($currentEditorLogs)) {
+            // Someone else is editing - return conflict
+            $currentEditorLog = $currentEditorLogs[0];
+            return $this->json([
+                'conflict' => true,
+                'current_editor' => [
+                    'username' => $currentEditorLog->getUsername(),
+                    'created_at' => $currentEditorLog->getCreatedAt()->format('c')
+                ],
+                'message' => 'Another user is currently editing this project'
+            ]);
+        }
+        
+        // No one else is editing - start session
+        $logService->logProjectEditingStart($id);
+        
+        return $this->json([
+            'success' => true,
+            'message' => 'Editing session started'
+        ]);
+    }
+
+    #[Route(path: '/{id}/editing/takeover', name: 'takeover_editing', methods: ['POST'])]
+    #[IsGranted('ROLE_EDITOR')]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'Project ID',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Successfully took over editing session',
+        content: new OA\JsonContent(
+            type: 'object',
+            properties: [
+                new OA\Property(property: 'success', type: 'boolean', example: true),
+                new OA\Property(property: 'message', type: 'string', example: 'Editing session taken over')
+            ]
+        )
+    )]
+    #[OA\Tag(name: 'Projects')]
+    #[Security(name: 'cookieAuth')]
+    public function takeoverEditing(int $id, LogService $logService, EntityManagerInterface $em): JsonResponse
+    {
+        // Verify project exists
+        $project = $em->getRepository(Project::class)->find($id);
+        if (!$project) {
+            return $this->json(['error' => 'Project not found'], Response::HTTP_NOT_FOUND);
+        }
+        
+        // Take over editing from any other users
+        $logService->logProjectEditingTakeover($id);
+        
+        return $this->json([
+            'success' => true,
+            'message' => 'Editing session taken over'
+        ]);
+    }
+
+    #[Route(path: '/{id}/editing', name: 'stop_editing', methods: ['DELETE'])]
+    #[IsGranted('ROLE_EDITOR')]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'Project ID',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Successfully stopped editing session',
+        content: new OA\JsonContent(
+            type: 'object',
+            properties: [
+                new OA\Property(property: 'success', type: 'boolean', example: true),
+                new OA\Property(property: 'message', type: 'string', example: 'Editing session stopped')
+            ]
+        )
+    )]
+    #[OA\Tag(name: 'Projects')]
+    #[Security(name: 'cookieAuth')]
+    public function stopEditing(int $id, LogService $logService): JsonResponse
+    {
+        // Log that user stopped editing
+        $logService->logProjectEditingStop($id);
+        
+        return $this->json([
+            'success' => true,
+            'message' => 'Editing session stopped'
+        ]);
+    }
+
+    #[Route(path: '/{id}/heartbeat', name: 'heartbeat', methods: ['POST'])]
+    #[IsGranted('ROLE_EDITOR')]
+    #[OA\Parameter(
+        name: 'id',
+        description: 'Project ID',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Successfully sent heartbeat',
+        content: new OA\JsonContent(
+            type: 'object',
+            properties: [
+                new OA\Property(property: 'success', type: 'boolean', example: true),
+                new OA\Property(property: 'message', type: 'string', example: 'Heartbeat received')
+            ]
+        )
+    )]
+    #[OA\Tag(name: 'Projects')]
+    #[Security(name: 'cookieAuth')]
+    public function sendHeartbeat(int $id, LogService $logService): JsonResponse
+    {
+        // Log heartbeat to keep editing session alive
+        $logService->logProjectEditingHeartbeat($id);
+        
+        return $this->json([
+            'success' => true,
+            'message' => 'Heartbeat received'
+        ]);
     }
 }

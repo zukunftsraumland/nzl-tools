@@ -364,6 +364,16 @@
       <table class="table">
         <thead>
           <tr>
+            <!-- Bulk selection checkbox column -->
+            <th style="width: 40px;">
+              <input 
+                type="checkbox" 
+                :checked="isAllSelected"
+                :class="{ 'indeterminate': isPartiallySelected }"
+                @change="toggleSelectAll"
+                class="bulk-select-checkbox"
+              />
+            </th>
             <th>ID</th>
             <th>Code</th>
             <th>Titel</th>
@@ -382,16 +392,25 @@
         </thead>
         <tbody v-if="!projects.length && isLoading('projects')">
           <tr>
-            <td colspan="11"><em>Projekte werden geladen...</em></td>
+            <td colspan="16"><em>Projekte werden geladen...</em></td>
           </tr>
         </tbody>
         <tbody v-else>
           <tr
             v-for="project in projects"
             class="clickable"
-            :class="{ warning: !project.isPublic }"
+            :class="{ warning: !project.isPublic, 'selected-row': isProjectSelected(project.id) }"
             @click="clickProject(project)"
           >
+            <!-- Bulk selection checkbox -->
+            <td @click.stop>
+              <input 
+                type="checkbox" 
+                :checked="isProjectSelected(project.id)"
+                @change="toggleProjectSelection(project.id)"
+                class="project-select-checkbox"
+              />
+            </td>
             <td>{{ project.id }}</td>
             <td>{{ project.projectCode || "-" }}</td>
             <td>{{ translateField(project, "title") }}</td>
@@ -477,6 +496,82 @@
         >Mehr Projekte laden</a
       >
     </div>
+
+    <!-- Fixed Position Delete Button -->
+    <div 
+      v-if="hasSelectedProjects" 
+      class="bulk-delete-button"
+      @click="openDeleteModal"
+    >
+      <span class="material-icons">delete</span>
+      Löschen ({{ selectedProjects.length }})
+    </div>
+
+    <!-- Bulk Delete Confirmation Modal -->
+    <div 
+      v-if="showDeleteModal" 
+      class="project-component-overlay"
+      @click="closeDeleteModal"
+    >
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>Projekte löschen</h3>
+          <button @click="closeDeleteModal" class="modal-close">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <p>Sind Sie sicher, dass Sie die folgenden Projekte unwiderruflich löschen möchten?</p>
+          
+          <div class="projects-to-delete">
+            <div 
+              v-for="project in projectsToDelete" 
+              :key="project.id"
+              class="project-item"
+              :class="{ 'deselected': !project.selected }"
+            >
+              <input 
+                type="checkbox" 
+                :checked="project.selected"
+                @change="toggleProjectInModal(project.id)"
+                class="project-checkbox"
+              />
+              <div class="project-info">
+                <strong>{{ project.title }}</strong>
+                <span v-if="project.projectCode" class="project-code">
+                  ({{ project.projectCode }})
+                </span>
+                <small class="project-id">ID: {{ project.id }}</small>
+              </div>
+            </div>
+          </div>
+          
+          <p v-if="getSelectedProjectsCount() > 0" class="deletion-count">
+            <strong>{{ getSelectedProjectsCount() }} Projekt(e) werden gelöscht.</strong>
+          </p>
+          <p v-else class="no-selection">
+            Kein Projekt ausgewählt.
+          </p>
+        </div>
+        
+        <div class="modal-actions">
+          <button 
+            @click="closeDeleteModal" 
+            class="button secondary"
+          >
+            Abbrechen
+          </button>
+          <button 
+            @click="confirmBulkDelete" 
+            class="button error"
+            :disabled="getSelectedProjectsCount() === 0"
+          >
+            {{ getSelectedProjectsCount() > 0 ? `${getSelectedProjectsCount()} Projekt(e) löschen` : 'Löschen' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -485,6 +580,7 @@ import { mapGetters, mapState } from "vuex";
 import moment from "moment";
 import { translateField } from "../utils/filters";
 import EnhancedSelect from "./EnhancedSelect.vue";
+import axios from "axios";
 
 export default {
   components: {
@@ -503,6 +599,9 @@ export default {
       selectedCategory: null,
       selectedArticle: null,
       selectedMethod: null,
+      selectedProjects: [],
+      showDeleteModal: false,
+      projectsToDelete: [],
     };
   },
   computed: {
@@ -540,6 +639,15 @@ export default {
       }
 
       return years;
+    },
+    isAllSelected() {
+      return this.projects.length > 0 && this.selectedProjects.length === this.projects.length;
+    },
+    isPartiallySelected() {
+      return this.selectedProjects.length > 0 && this.selectedProjects.length < this.projects.length;
+    },
+    hasSelectedProjects() {
+      return this.selectedProjects.length > 0;
     },
   },
   methods: {
@@ -584,6 +692,8 @@ export default {
     reloadProjects() {
       this.isLoadedFully = false;
       this.offset = 0;
+      // Clear selections when reloading
+      this.selectedProjects = [];
       return this.$store
         .dispatch("projects/loadFiltered", this.getFilterParams())
         .then((projects) => {
@@ -783,11 +893,121 @@ export default {
         value: method,
       });
     },
+    // =====================================
+    // Bulk Delete Methods
+    // =====================================
+    
+    // Toggle selection of all projects
+    toggleSelectAll() {
+      if (this.isAllSelected) {
+        this.selectedProjects = [];
+      } else {
+        this.selectedProjects = [...this.projects.map(p => p.id)];
+      }
+    },
+    
+    // Toggle selection of individual project
+    toggleProjectSelection(projectId) {
+      const index = this.selectedProjects.indexOf(projectId);
+      if (index > -1) {
+        this.selectedProjects.splice(index, 1);
+      } else {
+        this.selectedProjects.push(projectId);
+      }
+    },
+    
+    // Check if project is selected
+    isProjectSelected(projectId) {
+      return this.selectedProjects.includes(projectId);
+    },
+    
+    // Open delete confirmation modal
+    openDeleteModal() {
+      // Create a copy of selected projects for the modal
+      this.projectsToDelete = this.projects.filter(project => 
+        this.selectedProjects.includes(project.id)
+      ).map(project => ({
+        id: project.id,
+        title: project.title,
+        projectCode: project.projectCode,
+        selected: true
+      }));
+      this.showDeleteModal = true;
+    },
+    
+    // Close delete modal and reset
+    closeDeleteModal() {
+      this.showDeleteModal = false;
+      this.projectsToDelete = [];
+    },
+    
+    // Toggle project selection in delete modal
+    toggleProjectInModal(projectId) {
+      const index = this.projectsToDelete.findIndex(p => p.id === projectId);
+      if (index !== -1) {
+        // Create a new object to trigger reactivity in Vue 3
+        this.projectsToDelete[index] = {
+          ...this.projectsToDelete[index],
+          selected: !this.projectsToDelete[index].selected
+        };
+      }
+    },
+    
+    // Confirm bulk delete
+    async confirmBulkDelete() {
+      const projectIdsToDelete = this.projectsToDelete
+        .filter(p => p.selected)
+        .map(p => p.id);
+      
+      if (projectIdsToDelete.length === 0) {
+        this.closeDeleteModal();
+        return;
+      }
+      
+      try {
+        // Delete projects one by one (assuming no bulk delete endpoint exists)
+        for (const projectId of projectIdsToDelete) {
+          await this.$store.dispatch('projects/delete', projectId);
+        }
+        
+        // Remove deleted projects from local state
+        this.projects = this.projects.filter(project => 
+          !projectIdsToDelete.includes(project.id)
+        );
+        
+        // Clear selection
+        this.selectedProjects = [];
+        this.closeDeleteModal();
+        
+        // Show success message or reload if needed
+        // this.reloadProjects(); // Uncomment if you want to reload from server
+        
+      } catch (error) {
+        console.error('Error deleting projects:', error);
+        // Handle error - could show error modal here
+      }
+    },
+    
+    // Get selected projects count for modal
+    getSelectedProjectsCount() {
+      return this.projectsToDelete.filter(p => p.selected).length;
+    },
   },
   created() {
     this.loadLeStructure();
     this.loadFilter();
     this.reloadProjects();
+  },
+  watch: {
+    // Handle indeterminate state for select-all checkbox
+    isPartiallySelected(newVal) {
+      this.$nextTick(() => {
+        const checkbox = this.$el.querySelector('.bulk-select-checkbox');
+        if (checkbox) {
+          checkbox.indeterminate = newVal;
+        }
+      });
+    },
   },
 };
 </script>
@@ -877,5 +1097,263 @@ label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
+}
+
+/* =====================================
+ * Bulk Delete Functionality Styles
+ * ===================================== */
+
+/* Checkbox Styling */
+.bulk-select-checkbox,
+.project-select-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #5077b2;
+}
+
+/* Indeterminate state for select all checkbox */
+.bulk-select-checkbox.indeterminate {
+  opacity: 0.6;
+}
+
+/* Selected row highlighting */
+.selected-row {
+  background-color: rgba(80, 119, 178, 0.1) !important;
+}
+
+.selected-row:hover {
+  background-color: rgba(80, 119, 178, 0.2) !important;
+}
+
+/* Fixed Position Delete Button */
+.bulk-delete-button {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background-color: #dc3545;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 16px;
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+  z-index: 1000;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  user-select: none;
+}
+
+.bulk-delete-button:hover {
+  background-color: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
+}
+
+.bulk-delete-button:active {
+  transform: translateY(0);
+}
+
+.bulk-delete-button .material-icons {
+  font-size: 20px;
+}
+
+/* Modal Overlay (reusing existing Project.vue modal styles) */
+.project-component-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* Modal Content */
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* Modal Header */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #666;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.modal-close .material-icons {
+  font-size: 24px;
+}
+
+/* Modal Body */
+.modal-body {
+  padding: 24px;
+}
+
+.modal-body p {
+  margin-bottom: 20px;
+  color: #555;
+  line-height: 1.5;
+}
+
+/* Projects to Delete List */
+.projects-to-delete {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin: 20px 0;
+}
+
+.project-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.2s ease;
+  background-color: #fff;
+}
+
+.project-item:last-child {
+  border-bottom: none;
+}
+
+.project-item:hover {
+  background-color: #f8f9fa;
+}
+
+.project-item.deselected {
+  opacity: 0.5;
+  background-color: #f9f9f9;
+}
+
+.project-item .project-checkbox {
+  margin-right: 12px;
+  width: 16px;
+  height: 16px;
+  accent-color: #5077B2;
+}
+
+.project-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.project-info strong {
+  color: #333;
+  font-size: 14px;
+}
+
+.project-code {
+  color: #666;
+  font-size: 13px;
+}
+
+.project-id {
+  color: #999;
+  font-size: 12px;
+}
+
+/* Count Information */
+.deletion-count {
+  color: #5077B2;
+  font-weight: 500;
+  margin-top: 16px;
+  margin-bottom: 0;
+}
+
+.no-selection {
+  color: #6c757d;
+  font-style: italic;
+  margin-top: 16px;
+  margin-bottom: 0;
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #eee;
+  background-color: #fafafa;
+}
+
+.modal-actions .button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.modal-actions .button.secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.modal-actions .button.secondary:hover {
+  background-color: #5a6268;
+}
+
+.modal-actions .button.error {
+  background-color: #5077B2;
+  color: white;
+}
+
+.modal-actions .button.error:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.modal-actions .button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal-actions .button:disabled:hover {
+  background-color: #5077B2;
+  transform: none;
 }
 </style>

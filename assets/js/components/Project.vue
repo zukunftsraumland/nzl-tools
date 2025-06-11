@@ -20,6 +20,8 @@
         :mergeAll="mergeAll"
         @duplicateProject="duplicateProject"
       />
+      
+
       <FieldWrapper
         :fields="[
           {
@@ -238,7 +240,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
         :fields="[
           {
             name: 'exemplary',
@@ -259,7 +260,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy || project.initialContext"
         :fields="[
           {
             name: 'initialContext',
@@ -280,7 +280,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy || project.initialContextGoals"
         :fields="[
           {
             name: 'initialContextGoals',
@@ -301,7 +300,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy || project.fundingMethod"
         :fields="[
           {
             name: 'fundingMethod',
@@ -322,7 +320,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy || project.fundingMethodStakeholders"
         :fields="[
           {
             name: 'fundingMethodStakeholders',
@@ -343,7 +340,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
         :fields="[
           {
             name: 'resultsQuantity',
@@ -364,7 +360,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
         :fields="[
           {
             name: 'resultsQuality',
@@ -385,7 +380,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
         :fields="[
           {
             name: 'additionalValue',
@@ -406,7 +400,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
         :fields="[
           {
             name: 'additionalValueResult',
@@ -427,7 +420,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
         :fields="[
           {
             name: 'innovations',
@@ -448,7 +440,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
         :fields="[
           {
             name: 'integrationYoungCitizen',
@@ -469,7 +460,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
         :fields="[
           {
             name: 'integrationFemaleCitizen',
@@ -490,7 +480,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
         :fields="[
           {
             name: 'integrationMinorities',
@@ -511,7 +500,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy || project.learningExperience"
         :fields="[
           {
             name: 'learningExperience',
@@ -532,7 +520,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
         :fields="[
           {
             name: 'transferable',
@@ -553,7 +540,6 @@
       />
 
       <FieldWrapper
-        v-if="project.caseStudy"
         :fields="[
           {
             name: 'transferDetails',
@@ -735,7 +721,6 @@
       </div>
 
       <FieldWrapper
-        v-if="project.caseStudy"
         :fields="[
           {
             name: 'synergyFundTags',
@@ -2296,10 +2281,18 @@
           <template v-if="project.id">
             <p>
               <strong>Erstellt:</strong> {{ formatDate(project.createdAt) }}
+              <template v-if="editorInfo.created_by">
+                von {{ editorInfo.created_by.username }}
+              </template>
+              ({{ formatTime(project.createdAt) }})
               <template v-if="project.updatedAt">
                 <br />
                 <strong>Aktualisiert:</strong>
                 {{ formatDate(project.updatedAt) }}
+                <template v-if="editorInfo.last_editor">
+                  von {{ editorInfo.last_editor.username }}
+                </template>
+                ({{ formatTime(project.updatedAt) }})
               </template>
             </p>
           </template>
@@ -2326,6 +2319,14 @@
     <transition name="fade">
       <Modal v-if="modal" :config="modal"></Modal>
     </transition>
+
+    <!-- Fixed Position Current Editor Indicator -->
+    <div 
+      v-if="editorInfo.current_editor && editorInfo.current_editor.username !== currentUsername" 
+      class="current-editor-indicator"
+    >
+      {{ editorInfo.current_editor.username }} betrachtet dieses Projekt gerade
+    </div>
   </div>
 </template>
 
@@ -2346,6 +2347,7 @@ import TagSearchSelect from "./TagSearchSelect.vue";
 import localWorkgroups from "../api/modules/local-workgroups";
 import tags from "../api/modules/tags";
 import PeriodSelectEnhanced from "./PeriodSelectEnhanced.vue";
+import axios from "axios";
 
 export default {
   components: {
@@ -2387,6 +2389,9 @@ export default {
       localWorkgroupById: "localWorkgroups/getById",
       getTagById: "tags/getById",
     }),
+    currentUsername() {
+      return this.$store.state.auth?.user?.username || null;
+    },
   },
   data() {
     return {
@@ -2466,6 +2471,13 @@ export default {
       },
       modal: null,
       tooltips: tooltips,
+      editorInfo: {
+        current_editor: null,
+        last_editor: null,
+        created_by: null
+      },
+      heartbeatInterval: null,
+      editorInfoPollInterval: null,
     };
   },
   created() {
@@ -2473,6 +2485,22 @@ export default {
   },
   mounted() {
     document.querySelector(".backend-component-content").scrollTop = 0;
+    
+    window.addEventListener('beforeunload', this.handleBeforeUnload);
+  },
+  beforeUnmount() {
+    this.stopEditingSession();
+    window.removeEventListener('beforeunload', this.handleBeforeUnload);
+  },
+  watch: {
+    'project.id'(newId, oldId) {
+      if (oldId && oldId !== newId) {
+        this.stopEditingSession();
+      }
+      if (newId && newId !== oldId) {
+        this.startEditingSession();
+      }
+    }
   },
   methods: {
     loadInboxItem(id) {
@@ -2492,15 +2520,16 @@ export default {
           if (this.selectedInboxItem.internalId) {
             this.loadProject(this.selectedInboxItem.internalId).then(() => {
               this.project = { ...this.project, ...this.selectedProject };
-              // Initialize checkboxes *after* project is potentially merged
-              this.initializeFinancingCheckboxes(); 
+              this.initializeFinancingCheckboxes();
+              if (this.project?.id) {
+                this.startEditingSession();
+              }
               if (this.selectedInboxItem.status === "deleted") {
                 this.diff = false;
               }
             });
           } else {
-             // Initialize even if it's a new project from inbox
-             this.project = { ...this.project, ...this.diff }; // Apply diff data
+             this.project = { ...this.project, ...this.diff };
              this.initializeFinancingCheckboxes();
           }
         });
@@ -2515,6 +2544,10 @@ export default {
           }
           // Initialize checkboxes after project is loaded
           this.initializeFinancingCheckboxes();
+          // Start editing session and load editor info after project is loaded
+          if (this.project?.id) {
+            this.startEditingSession();
+          }
           if (!this.inbox.length) {
             this.$store.dispatch("inbox/loadAll").then(() => {
               this.warnIfInboxItemExists();
@@ -3069,6 +3102,11 @@ export default {
         return moment(date).format("DD.MM.YYYY");
       }
     },
+    formatTime(date) {
+      if (date && moment(date)) {
+        return moment(date).format("HH:mm") + " Uhr";
+      }
+    },
     updateFinancingValue(index, newValue) {
        // Ensure the index is valid
        if (index < 0 || index >= this.project.financing.length) {
@@ -3203,6 +3241,191 @@ export default {
         };
       }
     },
+
+    // =====================================
+    // Editor Tracking Methods
+    // =====================================
+
+    async startEditingSession() {
+      if (!this.project?.id) return;
+      
+      try {
+        const response = await axios.post(`/api/v1/projects/${this.project.id}/editing`);
+        
+        if (response.data.conflict) {
+          // Someone else is editing - show takeover prompt
+          this.showTakeoverModal(response.data.current_editor);
+        } else if (response.data.success) {
+          // Successfully started editing
+          this.startHeartbeat();
+          this.startEditorInfoPolling();
+        }
+      } catch (error) {
+        console.error('Failed to start editing session:', error);
+      }
+    },
+
+    async stopEditingSession() {
+      if (!this.project?.id) return;
+      
+      try {
+        await axios.delete(`/api/v1/projects/${this.project.id}/editing`);
+      } catch (error) {
+        console.error('Failed to stop editing session:', error);
+      }
+      
+      this.stopHeartbeat();
+      this.stopEditorInfoPolling();
+    },
+
+    startHeartbeat() {
+      if (this.heartbeatInterval) return;
+      
+      // Send heartbeat every 15 seconds
+      this.heartbeatInterval = setInterval(async () => {
+        if (!this.project?.id) return;
+        
+        try {
+          await axios.post(`/api/v1/projects/${this.project.id}/heartbeat`);
+        } catch (error) {
+          console.error('Heartbeat failed:', error);
+        }
+      }, 15000);
+    },
+
+    stopHeartbeat() {
+      if (this.heartbeatInterval) {
+        clearInterval(this.heartbeatInterval);
+        this.heartbeatInterval = null;
+      }
+    },
+
+    async loadEditorInfo() {
+      if (!this.project?.id) return;
+      
+      try {
+        const response = await axios.get(`/api/v1/projects/${this.project.id}/editor-info`);
+        this.editorInfo = response.data || {
+          current_editor: null,
+          last_editor: null,
+          created_by: null
+        };
+      } catch (error) {
+        console.error('Failed to load editor info:', error);
+      }
+    },
+
+    startEditorInfoPolling() {
+      // Load editor info immediately
+      this.loadEditorInfo();
+      
+      // Poll every 10 seconds
+      this.editorInfoPollInterval = setInterval(() => {
+        this.loadEditorInfo();
+      }, 10000);
+    },
+
+    stopEditorInfoPolling() {
+      if (this.editorInfoPollInterval) {
+        clearInterval(this.editorInfoPollInterval);
+        this.editorInfoPollInterval = null;
+      }
+    },
+
+    handleBeforeUnload() {
+      // Stop editing session when user closes/navigates away
+      this.stopEditingSession();
+    },
+
+    showTakeoverModal(currentEditor) {
+      this.modal = {
+        title: 'Projekt wird bereits bearbeitet',
+        description: `Das Projekt wird gerade von ${currentEditor.username} bearbeitet. Möchten Sie die Bearbeitung übernehmen? Der andere Benutzer wird dann nicht mehr als aktueller Editor angezeigt.`,
+        actions: [
+          {
+            label: 'Abbrechen',
+            class: 'secondary',
+            onClick: () => {
+              this.modal = null;
+              // Navigate back to projects list
+              this.$router.push('/projects');
+            },
+          },
+          {
+            label: 'Bearbeitung übernehmen',
+            class: 'warning',
+            onClick: () => {
+              this.modal = null;
+              this.takeoverEditing();
+            },
+          },
+        ],
+      };
+    },
+
+    async takeoverEditing() {
+      if (!this.project?.id) return;
+      
+      try {
+        await axios.post(`/api/v1/projects/${this.project.id}/editing/takeover`);
+        // Successfully took over - start heartbeat and polling
+        this.startHeartbeat();
+        this.startEditorInfoPolling();
+      } catch (error) {
+        console.error('Failed to take over editing session:', error);
+        this.modal = {
+          title: 'Fehler',
+          description: 'Die Bearbeitung konnte nicht übernommen werden. Bitte versuchen Sie es erneut.',
+          actions: [
+            {
+              label: 'OK',
+              class: 'error',
+              onClick: () => {
+                this.modal = null;
+              },
+            },
+          ],
+        };
+      }
+    },
   },
 };
 </script>
+
+<style scoped>
+
+
+/* Fixed Position Current Editor Indicator */
+.current-editor-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #6c757d;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  border: 1px solid #5a6268;
+  max-width: 300px;
+  text-align: center;
+}
+
+/* Animation for current editor indicator */
+.current-editor-indicator {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
