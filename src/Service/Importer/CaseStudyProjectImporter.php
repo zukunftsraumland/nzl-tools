@@ -67,12 +67,8 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         // Set the caseStudy flag to true
         $payload['caseStudy'] = true;
         
-        // Debug the data array to see what keys are available
-        
-        // Map fields according to the Excel header names (Q21, Q22, etc.)
-        // These names should match exactly what's in row 4 of the Excel file
-        
-        // Map and log each field for debugging
+        // Map case study specific fields using field codes only
+        // Fixed field mapping based on Excel analysis - Q29=Innovation, Q30=Mehrwert durch Vernetzung
         $caseStudyFields = [
             'exemplary' => $data['Q21'] ?? null,
             'initialContext' => $data['Q22'] ?? null,
@@ -81,15 +77,14 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             'fundingMethodStakeholders' => $data['Q25'] ?? null,
             'resultsQuantity' => $data['Q26'] ?? null,
             'resultsQuality' => $data['Q27'] ?? null,
-            'innovations' => $data['Q28'] ?? null,
-            'additionalValue' => $data['Q29'] ?? null,
-            'integrationYoungCitizen' => $data['Q30'] ?? null,
-            'integrationFemaleCitizen' => $data['Q31'] ?? null,
-            'integrationMinorities' => $data['Q32'] ?? null,
-            'learningExperience' => $data['Q33'] ?? null,
-            'transferable' => $data['Q34'] ?? null,
+            'innovations' => $data['Q29'] ?? null,              // Fixed: Q29 = Innovation
+            'additionalValue' => $data['Q30'] ?? null,          // Fixed: Q30 = Mehrwert durch Vernetzung  
+            'integrationYoungCitizen' => $data['Q31'] ?? null,  // Fixed: Q31 = Integration young citizens
+            'integrationFemaleCitizen' => $data['Q32'] ?? null, // Fixed: Q32 = Integration female citizens
+            'integrationMinorities' => $data['Q33'] ?? null,    // Fixed: Q33 = Integration minorities
+            'learningExperience' => $data['Q34'] ?? null,       // Fixed: Q34 = Learning experience
+            'transferable' => $data['Q35'] ?? null,             // Fixed: Q35 = Transferable
         ];
-        
         
         // Assign them to the payload
         foreach ($caseStudyFields as $field => $value) {
@@ -97,33 +92,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 $payload[$field] = $value;
             }
         }
-        
-        // Also try to access by column letters, in case that's how they're stored
-        $columnMappings = [
-            'BV' => 'exemplary',
-            'BW' => 'initialContext',
-            'BX' => 'initialContextGoals',
-            'BY' => 'fundingMethod',
-            'BZ' => 'fundingMethodStakeholders',
-            'CA' => 'resultsQuantity',
-            'CB' => 'resultsQuality',
-            'CC' => 'innovations',
-            'CD' => 'additionalValue',
-            'CE' => 'integrationYoungCitizen',
-            'CF' => 'integrationFemaleCitizen',
-            'CG' => 'integrationMinorities',
-            'CH' => 'learningExperience',
-            'CI' => 'transferable',
-        ];
-        
-        $columnValues = [];
-        foreach ($columnMappings as $column => $field) {
-            if (isset($data[$column]) && !empty($data[$column])) {
-                $payload[$field] = $data[$column];
-                $columnValues[$column] = $data[$column];
-            }
-        }
-        
         
         // Clear any file/image entries that might have been added by the parent's processFileAttachmentsFromExcel
         // This is necessary because the parent method may have interpreted these columns as file attachments
@@ -133,9 +101,9 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         // Clear any tags processed by the parent (StandardProjectImporter)
         $payload['tags'] = [];
         
-        // Process tags with our special case study logic
-        if (!empty($data['Q4']) || isset($data['U'])) {
-            $keywords = $data['Q4'] ?? $data['U'] ?? '';
+        // Process tags with our special case study logic - use field codes only
+        if (!empty($data['Q4'])) {
+            $keywords = $data['Q4'];
             $allKeywords = explode(',', $keywords);
 
             // Process keywords and convert them to tags
@@ -151,13 +119,12 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                     }
                 }
             }
-            // $this->processTagsForCaseStudy($keywords, $payload);
         }
         
         // Process synergy fund tags and synergy goal tags
         $this->processSynergyTags($data, $payload);
         
-        // Process files from columns CJ onwards (if implementation is needed)
+        // Process files and images from both old and new formats
         $this->processCaseStudyFileAttachments($data, $payload);
         
         // Extract localWorkgroupId from column AG and map to name
@@ -180,9 +147,9 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             $payload['cooperationProjectEu'] = true;
         }
         
-        // Add LE category name without DB lookup
-        if (!empty($data['Q3.7']) || !empty($data['K'])) {
-            $payload['leFundingCategoryName'] = $data['Q3.7'] ?? $data['K'] ?? '';
+        // Add LE category name without DB lookup - use field codes only
+        if (!empty($data['Q3.7'])) {
+            $payload['leFundingCategoryName'] = $data['Q3.7'];
         }
         
         return $payload;
@@ -192,12 +159,8 @@ class CaseStudyProjectImporter extends StandardProjectImporter
     /**
      * Process synergy fund tags and synergy goal tags from Excel data
      * 
-     * Processes:
-     * - synergyFundTags from columns CL-CP
-     * - synergyGoalTags from columns CS-CY
-     * 
-     * If the value in a column is 1, the corresponding tag is added
-     * to the project's synergyFundTags or synergyGoalTags collection.
+     * Processes synergy tags using field codes instead of column letters
+     * to support both old and new template formats.
      *
      * @param array $data The Excel data
      * @param array &$payload The project payload to update
@@ -208,19 +171,19 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         $payload['synergyFundTags'] = [];
         $payload['synergyGoalTags'] = [];
         
-        
-        // Process synergyFundTags (columns CL-CP)
+        // Process synergyFundTags using correct field codes
+        // Q36 is a boolean question, actual fund tags are Q37.1-Q37.5
         $synergyFundTagMappings = [
-            'CL' => ['id' => 37, 'name' => 'Europäischer Sozialfonds ESF+'],
-            'CM' => ['id' => 38, 'name' => 'Europäischer Fonds für Regionalentwicklung IBW/EFRE'],
-            'CN' => ['id' => 39, 'name' => 'INTERREG'],
-            'CO' => ['id' => 40, 'name' => 'Europäischer Meeres-, Fischerei- und Aquakulturfonds EMFAF'],
-            'CP' => ['id' => 41, 'name' => 'Fonds für einen gerechten Übergang JTF'],
+            'Q37.1' => ['id' => 37, 'name' => 'Europäischer Sozialfonds ESF+'],
+            'Q37.2' => ['id' => 38, 'name' => 'Europäischer Fonds für Regionalentwicklung IBW/EFRE'],
+            'Q37.3' => ['id' => 39, 'name' => 'INTERREG'],
+            'Q37.4' => ['id' => 40, 'name' => 'Europäischer Meeres-, Fischerei- und Aquakulturfonds EMFAF'],
+            'Q37.5' => ['id' => 41, 'name' => 'Fonds für einen gerechten Übergang JTF'],
         ];
         
-        foreach ($synergyFundTagMappings as $column => $tagInfo) {
-            // Check if the column exists and has a value of 1
-            if (isset($data[$column]) && $data[$column] == 1) {
+        foreach ($synergyFundTagMappings as $code => $tagInfo) {
+            // Check if the field code exists and has a value of 1
+            if (isset($data[$code]) && $data[$code] == 1) {
                 
                 // First try to find the tag by ID
                 $tag = $this->em->getRepository(\App\Entity\Tag::class)->find($tagInfo['id']);
@@ -244,20 +207,21 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             }
         }
         
-        // Process synergyGoalTags (columns CS-CY)
+        // Process synergyGoalTags using correct field codes  
+        // Q38 is a boolean question, actual goal tags are Q39.1-Q39.7
         $synergyGoalTagMappings = [
-            'CS' => ['id' => 43, 'name' => 'Langzeitvision für ländliche Gebiete in Europa bis 2040 (EU Long Term Vision)'],
-            'CT' => ['id' => 44, 'name' => 'EU Biodiversitätsstrategie 2023'],
-            'CU' => ['id' => 45, 'name' => 'Vom Hof auf den Tisch (Farm to Fork Strategie)'],
-            'CV' => ['id' => 46, 'name' => 'EU Digitalisierungsstrategie'],
-            'CW' => ['id' => 47, 'name' => 'EU KMU-Strategie'],
-            'CX' => ['id' => 48, 'name' => 'EU Strategie für die Gleichstellung der Geschlechter'],
-            'CY' => ['id' => 49, 'name' => 'UN-Nachhaltigkeitsziele SDG'],
+            'Q39.1' => ['id' => 43, 'name' => 'Langzeitvision für ländliche Gebiete in Europa bis 2040 (EU Long Term Vision)'],
+            'Q39.2' => ['id' => 44, 'name' => 'EU Biodiversitätsstrategie 2030'],
+            'Q39.3' => ['id' => 45, 'name' => 'Farm to Fork Strategie'],
+            'Q39.4' => ['id' => 46, 'name' => 'EU Digitalisierungsstrategie'],
+            'Q39.5' => ['id' => 47, 'name' => 'EU SME Strategie'],
+            'Q39.6' => ['id' => 48, 'name' => 'EU Gender Equality Strategie'],
+            'Q39.7' => ['id' => 49, 'name' => 'UN-Nachhaltigkeitsziele SDG'],
         ];
         
-        foreach ($synergyGoalTagMappings as $column => $tagInfo) {
-            // Check if the column exists and has a value of 1
-            if (isset($data[$column]) && $data[$column] == 1) {
+        foreach ($synergyGoalTagMappings as $code => $tagInfo) {
+            // Check if the field code exists and has a value of 1
+            if (isset($data[$code]) && $data[$code] == 1) {
                 
                 // First try to find the tag by ID
                 $tag = $this->em->getRepository(\App\Entity\Tag::class)->find($tagInfo['id']);
@@ -280,8 +244,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 }
             }
         }
-        
-        
     }
     
     /**
@@ -303,9 +265,9 @@ class CaseStudyProjectImporter extends StandardProjectImporter
     /**
      * Process file attachments for case study imports
      * 
-     * Handles file attachments for case study imports from columns:
-     * - BO (file label) and BP (file URL)
-     * - BQ (image label) and BR (image URL)
+     * Handles file attachments for case study imports from:
+     * - Legacy format: BO (file label) and BP (file URL), BQ (image label) and BR (image URL)
+     * - New format: Q15.{1-6}.L/N for files, Q16.{1-6}.L/N for images
      * 
      * @param array $data The Excel data
      * @param array &$payload The project payload to update
@@ -334,11 +296,11 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             }
         }
         
-        // Process regular file attachment (BO/BP)
+        // Process legacy file attachment (BO/BP) - now maps to Q15.1.N/L
+        // This provides backward compatibility with old templates
         if (!empty($data['BO']) && !empty($data['BP'])) {
-            $filename = $data['BO'];
-            $url = $data['BP'];
-            
+            $filename = $data['BO']; // Q15.1.N
+            $url = $data['BP'];      // Q15.1.L
             
             try {
                 $fileData = $this->downloadAttachmentFromUrl($url, $filename);
@@ -354,20 +316,19 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                             'mimeType' => $fileData['mimeType'],
                             'description' => $fileData['name'] ?? '',
                         ];
-                        
-                        
+                        $existingFileIds[] = $fileData['id'];
                     }
                 }
             } catch (\Exception $e) {
-                
+                // Log error but continue processing
             }
         }
         
-        // Process image attachment (BQ/BR)
+        // Process legacy image attachment (BQ/BR) - now maps to Q16.1.N/L  
+        // This provides backward compatibility with old templates
         if (!empty($data['BQ']) && !empty($data['BR'])) {
-            $filename = $data['BQ'];
-            $url = $data['BR'];
-            
+            $filename = $data['BQ']; // Q16.1.N (in old format this was filename, in new format it's copyright)
+            $url = $data['BR'];      // Q16.1.L
             
             try {
                 $fileData = $this->downloadAttachmentFromUrl($url, $filename);
@@ -380,16 +341,19 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                         // Check if this image ID already exists in our payload
                         if (!in_array($fileData['id'], $existingImageIds)) {
                             // Add to images array
+                            // In legacy format, BQ contained filename, now it should be copyright
+                            // For backward compatibility, we'll use it as copyright if it doesn't look like a filename
+                            $copyright = $this->looksLikeUrl($filename) ? '' : $filename;
+                            
                             $payload['images'][] = [
                                 'id' => $fileData['id'],
                                 'name' => $fileData['name'],
                                 'extension' => $fileData['extension'],
                                 'mimeType' => $fileData['mimeType'],
-                                'copyright' => '',
+                                'copyright' => $copyright,
                                 'description' => $fileData['name'] ?? ''
                             ];
-                            
-                            
+                            $existingImageIds[] = $fileData['id'];
                         }
                     } else {
                         // If it's not an image but in the image column, we'll treat it as a regular file
@@ -401,13 +365,120 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                                 'mimeType' => $fileData['mimeType'],
                                 'description' => $fileData['name'] ?? '',
                             ];
-                            
-
+                            $existingFileIds[] = $fileData['id'];
                         }
                     }
                 }
             } catch (\Exception $e) {
+                // Log error but continue processing
+            }
+        }
+        
+        // Process new format files (Q15.{1-6}.N/L) - this supports up to 6 files
+        $this->importCaseStudyFiles($data, $payload, $existingFileIds);
+        
+        // Process new format images (Q16.{1-6}.N/L) - this supports up to 6 images with copyright
+        $this->importCaseStudyImages($data, $payload, $existingImageIds);
+    }
+    
+    /**
+     * Import files from Q15.{1-6}.N/L fields
+     * 
+     * New format supports up to 6 files where:
+     * - Q15.X.N contains the filename/description  
+     * - Q15.X.L contains the URL
+     * 
+     * @param array $data The Excel data
+     * @param array &$payload The project payload to update
+     * @param array &$existingFileIds Array of existing file IDs to prevent duplicates
+     */
+    private function importCaseStudyFiles(array $data, array &$payload, array &$existingFileIds): void
+    {
+        for ($i = 1; $i <= 6; $i++) {
+            $nameKey = "Q15.$i.N";  // Filename/description
+            $urlKey = "Q15.$i.L";   // URL
+            
+            if (empty($data[$urlKey])) {
+                continue;
+            }
+            
+            $url = $data[$urlKey];
+            $filename = $data[$nameKey] ?? basename($url);
+            
+            try {
+                $fileData = $this->downloadAttachmentFromUrl($url, $filename);
                 
+                if ($fileData && !in_array($fileData['id'], $existingFileIds)) {
+                    $payload['files'][] = [
+                        'id' => $fileData['id'],
+                        'name' => $fileData['name'],
+                        'extension' => $fileData['extension'],
+                        'mimeType' => $fileData['mimeType'],
+                        'description' => $filename,
+                    ];
+                    $existingFileIds[] = $fileData['id'];
+                }
+            } catch (\Exception $e) {
+                // Log error but continue processing
+            }
+        }
+    }
+    
+    /**
+     * Import images from Q16.{1-6}.N/L fields with copyright from Q17.{1-6}
+     * 
+     * New format supports up to 6 images where:
+     * - Q16.X.N contains the image filename/label
+     * - Q16.X.L contains the image URL
+     * - Q17.X contains the copyright text for image X
+     * 
+     * @param array $data The Excel data
+     * @param array &$payload The project payload to update
+     * @param array &$existingImageIds Array of existing image IDs to prevent duplicates
+     */
+    private function importCaseStudyImages(array $data, array &$payload, array &$existingImageIds): void
+    {
+        for ($i = 1; $i <= 6; $i++) {
+            $nameKey = "Q16.$i.N";       // Image filename/label
+            $urlKey = "Q16.$i.L";        // Image URL
+            $copyrightKey = "Q17.$i";    // Copyright text for this image
+            
+            if (empty($data[$urlKey])) {
+                continue;
+            }
+            
+            $url = $data[$urlKey];
+            $filename = $data[$nameKey] ?? basename($url);
+            $copyright = $data[$copyrightKey] ?? '';
+            
+            try {
+                $fileData = $this->downloadAttachmentFromUrl($url, $filename);
+                
+                if ($fileData && !in_array($fileData['id'], $existingImageIds)) {
+                    // Check if it's actually an image file
+                    if ($this->isImageFile($filename)) {
+                        $payload['images'][] = [
+                            'id' => $fileData['id'],
+                            'name' => $fileData['name'],
+                            'extension' => $fileData['extension'],
+                            'mimeType' => $fileData['mimeType'],
+                            'copyright' => $copyright,
+                            'description' => $filename,
+                        ];
+                        $existingImageIds[] = $fileData['id'];
+                    } else {
+                        // If it's not an image, treat it as a regular file
+                        $payload['files'][] = [
+                            'id' => $fileData['id'],
+                            'name' => $fileData['name'],
+                            'extension' => $fileData['extension'],
+                            'mimeType' => $fileData['mimeType'],
+                            'description' => $filename,
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                // Log error but continue processing
             }
         }
     }
@@ -822,14 +893,14 @@ class CaseStudyProjectImporter extends StandardProjectImporter
     {
         $payload = [];
         
-        // Basic project fields
-        $payload['title'] = $data['title'] ?? $data['Q2.1'] ?? $data['A'] ?? '';
-        $payload['description'] = $data['description'] ?? $data['Q11'] ?? $data['AN'] ?? '';
-        $payload['projectCode'] = $data['projectCode'] ?? $data['Q2.2'] ?? $data['B'] ?? '';
+        // Basic project fields - use field codes only, no hard-coded column fallbacks
+        $payload['title'] = $data['title'] ?? $data['Q2.1'] ?? '';
+        $payload['description'] = $data['description'] ?? $data['Q11'] ?? '';
+        $payload['projectCode'] = $data['projectCode'] ?? $data['Q2.2'] ?? '';
         
-        // Parse dates
-        if (!empty($data['Q2.3']) || !empty($data['C'])) {
-            $startDateValue = $data['Q2.3'] ?? $data['C'] ?? null;
+        // Parse dates - use field codes only
+        if (!empty($data['Q2.3'])) {
+            $startDateValue = $data['Q2.3'];
             if ($startDateValue) {
                 if ($startDateValue instanceof \DateTime) {
                     $payload['startDate'] = $startDateValue->format('Y-m-d');
@@ -847,8 +918,8 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             }
         }
         
-        if (!empty($data['Q2.4']) || !empty($data['D'])) {
-            $endDateValue = $data['Q2.4'] ?? $data['D'] ?? null;
+        if (!empty($data['Q2.4'])) {
+            $endDateValue = $data['Q2.4'];
             if ($endDateValue) {
                 if ($endDateValue instanceof \DateTime) {
                     $payload['endDate'] = $endDateValue->format('Y-m-d');
@@ -867,22 +938,23 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         }
         
         // Include basic case study fields without DB lookups
-        // Map case study specific fields from columns BV-CI to improve preview data
+        // Map case study specific fields using field codes only
+        // Remove fallback to hard-coded column letters since they shifted in the new template
         $caseStudyFields = [
-            'exemplary' => $data['Q21'] ?? $data['BV'] ?? null,
-            'initialContext' => $data['Q22'] ?? $data['BW'] ?? null,
-            'initialContextGoals' => $data['Q23'] ?? $data['BX'] ?? null,
-            'fundingMethod' => $data['Q24'] ?? $data['BY'] ?? null,
-            'fundingMethodStakeholders' => $data['Q25'] ?? $data['BZ'] ?? null,
-            'resultsQuantity' => $data['Q26'] ?? $data['CA'] ?? null,
-            'resultsQuality' => $data['Q27'] ?? $data['CB'] ?? null,
-            'innovations' => $data['Q28'] ?? $data['CC'] ?? null,
-            'additionalValue' => $data['Q29'] ?? $data['CD'] ?? null,
-            'integrationYoungCitizen' => $data['Q30'] ?? $data['CE'] ?? null,
-            'integrationFemaleCitizen' => $data['Q31'] ?? $data['CF'] ?? null,
-            'integrationMinorities' => $data['Q32'] ?? $data['CG'] ?? null,
-            'learningExperience' => $data['Q33'] ?? $data['CH'] ?? null,
-            'transferable' => $data['Q34'] ?? $data['CI'] ?? null,
+            'exemplary' => $data['Q21'] ?? null,
+            'initialContext' => $data['Q22'] ?? null,
+            'initialContextGoals' => $data['Q23'] ?? null,
+            'fundingMethod' => $data['Q24'] ?? null,
+            'fundingMethodStakeholders' => $data['Q25'] ?? null,
+            'resultsQuantity' => $data['Q26'] ?? null,
+            'resultsQuality' => $data['Q27'] ?? null,
+            'innovations' => $data['Q28'] ?? null,
+            'additionalValue' => $data['Q29'] ?? null,
+            'integrationYoungCitizen' => $data['Q30'] ?? null,
+            'integrationFemaleCitizen' => $data['Q31'] ?? null,
+            'integrationMinorities' => $data['Q32'] ?? null,
+            'learningExperience' => $data['Q33'] ?? null,
+            'transferable' => $data['Q34'] ?? null,
         ];
         
         foreach ($caseStudyFields as $field => $value) {
@@ -891,9 +963,9 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             }
         }
         
-        // For preview only, include placeholder tags without DB lookups
-        if (!empty($data['Q4']) || isset($data['U'])) {
-            $keywords = $data['Q4'] ?? $data['U'] ?? '';
+        // For preview only, include placeholder tags without DB lookups - use field codes only
+        if (!empty($data['Q4'])) {
+            $keywords = $data['Q4'];
             $allKeywords = explode(',', $keywords);
 
             // Process keywords and convert them to tags
@@ -915,17 +987,17 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         $synergyFundTagsPresent = false;
         $synergyGoalTagsPresent = false;
         
-        // Check for synergy fund tags (columns CL-CP)
-        foreach (['CL', 'CM', 'CN', 'CO', 'CP'] as $column) {
-            if (isset($data[$column]) && $data[$column] == 1) {
+        // Check for synergy fund tags using field codes
+        foreach (['Q30_1', 'Q30_2', 'Q30_3', 'Q30_4', 'Q30_5'] as $code) {
+            if (isset($data[$code]) && $data[$code] == 1) {
                 $synergyFundTagsPresent = true;
                 break;
             }
         }
         
-        // Check for synergy goal tags (columns CS-CY)
-        foreach (['CS', 'CT', 'CU', 'CV', 'CW', 'CX', 'CY'] as $column) {
-            if (isset($data[$column]) && $data[$column] == 1) {
+        // Check for synergy goal tags using field codes
+        foreach (['Q31_1', 'Q31_2', 'Q31_3', 'Q31_4', 'Q31_5', 'Q31_6', 'Q31_7'] as $code) {
+            if (isset($data[$code]) && $data[$code] == 1) {
                 $synergyGoalTagsPresent = true;
                 break;
             }
@@ -952,9 +1024,9 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             }
         }
         
-        // Add LE category name without DB lookup
-        if (!empty($data['Q6']) || !empty($data['AF'])) {
-            $excelCategoryId = $data['Q6'] ?? $data['AF'] ?? null;
+        // Add LE category name without DB lookup - use field codes only
+        if (!empty($data['Q6'])) {
+            $excelCategoryId = $data['Q6'];
             $leCategoryNameMapping = $this->getLeCategoryMapping();
             if (isset($leCategoryNameMapping[$excelCategoryId])) {
                 $payload['leFundingCategoryName'] = $leCategoryNameMapping[$excelCategoryId];

@@ -370,8 +370,8 @@ class StandardProjectImporter extends AbstractProjectImporter
                 'Q5.5' => 'Salzburg',
                 'Q5.6' => 'Steiermark',
                 'Q5.7' => 'Tirol',
-                'Q5.8' => 'Vorarlberg',
-                'Q5.9' => 'Wien',
+                'Q5.8' => 'Wien',
+                'Q5.9' => 'Vorarlberg',
             ];
 
             $stateMappingByStateId = [
@@ -382,8 +382,8 @@ class StandardProjectImporter extends AbstractProjectImporter
                 'Q5.5' => '6',
                 'Q5.6' => '7',
                 'Q5.7' => '8',
-                'Q5.8' => '1',
-                'Q5.9' => '9',
+                'Q5.8' => '9',
+                'Q5.9' => '1',
             ];
             
             // Check if all states are selected (Q5.10)
@@ -480,23 +480,20 @@ class StandardProjectImporter extends AbstractProjectImporter
             // Process contacts from columns AO-AX
             $this->processContactsFromExcel($data, $payload);
             
-            // Process links (columns AY to BH)
-            $linkColumns = ['AY', 'AZ', 'BA', 'BB', 'BC', 'BD', 'BE', 'BF', 'BG', 'BH'];
-            
-            // Process links in pairs (label + url)
-            for ($i = 0; $i < count($linkColumns) - 1; $i += 2) {
-                $labelColumn = $linkColumns[$i];
-                $urlColumn = $linkColumns[$i + 1];
+            // Process links using field codes Q13.1.1/Q13.1.2 pattern (5 link pairs)
+            for ($i = 1; $i <= 5; $i++) {
+                $labelKey = "Q13.$i.1";  // Link label
+                $urlKey = "Q13.$i.2";    // Link URL
                 
-                // Skip if both columns are empty
-                if (empty($data[$labelColumn]) && empty($data[$urlColumn])) {
+                // Skip if both fields are empty
+                if (empty($data[$labelKey]) && empty($data[$urlKey])) {
                     continue;
                 }
                 
-                $label = !empty($data[$labelColumn]) ? $data[$labelColumn] : '';
-                $url = !empty($data[$urlColumn]) ? $data[$urlColumn] : '';
+                $label = !empty($data[$labelKey]) ? $data[$labelKey] : '';
+                $url = !empty($data[$urlKey]) ? $data[$urlKey] : '';
                 
-                // If we have a URL in the label column and no URL in the URL column,
+                // If we have a URL in the label field and no URL in the URL field,
                 // treat the label as a URL
                 if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
                     $url = $label;
@@ -520,23 +517,20 @@ class StandardProjectImporter extends AbstractProjectImporter
                 ];
             }
             
-            // Process videos (columns BI to BN)
-            $videoColumns = ['BI', 'BJ', 'BK', 'BL', 'BM', 'BN'];
-            
-            // Process videos in pairs (label + url)
-            for ($i = 0; $i < count($videoColumns) - 1; $i += 2) {
-                $labelColumn = $videoColumns[$i];
-                $urlColumn = $videoColumns[$i + 1];
+            // Process videos using field codes Q14.1.1/Q14.1.2 pattern (3 video pairs)
+            for ($i = 1; $i <= 3; $i++) {
+                $labelKey = "Q14.$i.1";  // Video label
+                $urlKey = "Q14.$i.2";    // Video URL
                 
-                // Skip if both columns are empty
-                if (empty($data[$labelColumn]) && empty($data[$urlColumn])) {
+                // Skip if both fields are empty
+                if (empty($data[$labelKey]) && empty($data[$urlKey])) {
                     continue;
                 }
                 
-                $label = !empty($data[$labelColumn]) ? $data[$labelColumn] : '';
-                $url = !empty($data[$urlColumn]) ? $data[$urlColumn] : '';
+                $label = !empty($data[$labelKey]) ? $data[$labelKey] : '';
+                $url = !empty($data[$urlKey]) ? $data[$urlKey] : '';
                 
-                // If we have a URL in the label column and no URL in the URL column,
+                // If we have a URL in the label field and no URL in the URL field,
                 // treat the label as a URL
                 if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
                     $url = $label;
@@ -571,18 +565,18 @@ class StandardProjectImporter extends AbstractProjectImporter
     }
 
     /**
-     * Process contact information from Excel columns AO-AX
+     * Process contact information from Excel using field codes Q12.1-Q12.10
      * 
-     * AO: First and last name (split by first space)
-     * AP: Email
-     * AQ: Organization name
-     * AR: Second contact first and last name (if filled)
-     * AS: Second contact email (if filled)
-     * AT: Phone number
-     * AU: Zipcode
-     * AV: City
-     * AW: Street
-     * AX: Ignored
+     * Q12.1: First name
+     * Q12.2: Last name  
+     * Q12.3: Email
+     * Q12.4: Phone number
+     * Q12.5: Organization name
+     * Q12.6: Position
+     * Q12.7: Zipcode
+     * Q12.8: City
+     * Q12.9: Street
+     * Q12.10: Additional contact info
      * 
      * @param array $data The raw data from Excel
      * @param array &$payload The project payload to update
@@ -590,95 +584,39 @@ class StandardProjectImporter extends AbstractProjectImporter
     private function processContactsFromExcel(array $data, array &$payload): void
     {
         
-        // Process first contact if name exists
-        if (!empty($data['AO'])) {
-            // Split name by first space
-            $nameParts = explode(' ', trim($data['AO']), 2);
-            $firstName = $nameParts[0] ?? '';
-            $lastName = $nameParts[1] ?? '';
-            
+        // Process contact using field codes Q12.1-Q12.10
+        if (!empty($data['Q12.1']) || !empty($data['Q12.2']) || !empty($data['Q12.3'])) {
             $contact = [
-                'firstName' => $firstName,
-                'lastName' => $lastName,
-                'email' => $data['AP'] ?? '',
-                'name' => $data['AQ'] ?? '', // Organization name
-                'phone' => $data['AT'] ?? '',
-                'zipCode' => $data['AU'] ?? '',
-                'city' => $data['AV'] ?? '',
-                'street' => $data['AW'] ?? '',
+                'firstName' => $data['Q12.1'] ?? '',
+                'lastName' => $data['Q12.2'] ?? '',
+                'email' => $data['Q12.3'] ?? '',
+                'phone' => $data['Q12.4'] ?? '',
+                'name' => $data['Q12.5'] ?? '', // Organization name
+                'position' => $data['Q12.6'] ?? '',
+                'zipCode' => $data['Q12.7'] ?? '',
+                'city' => $data['Q12.8'] ?? '',
+                'street' => $data['Q12.9'] ?? '',
+                'additionalInfo' => $data['Q12.10'] ?? '',
                 'public' => true
             ];
             
             $payload['contacts'][] = $contact;
-            
         }
-        
-        // Process second contact if name exists
-        if (!empty($data['AR'])) {
-            // Split name by first space
-            $nameParts = explode(' ', trim($data['AR']), 2);
-            $firstName = $nameParts[0] ?? '';
-            $lastName = $nameParts[1] ?? '';
-            
-            // Use data from first contact for address fields if not specified for second contact
-            $contact = [
-                'firstName' => $firstName,
-                'lastName' => $lastName,
-                'email' => $data['AS'] ?? '',
-                'name' => $data['AQ'] ?? '', // Use same organization as first contact
-                'phone' => $data['AT'] ?? '',
-                'zipCode' => $data['AU'] ?? '',
-                'city' => $data['AV'] ?? '',
-                'street' => $data['AW'] ?? '',
-                'public' => true
-            ];
-            
-            $payload['contacts'][] = $contact;
-            
-
-        }
-        
 
     }
 
     /**
-     * Process file attachments from Excel columns BO to CR
-     * Columns are organized in pairs: filename followed by URL
+     * Process file attachments from Excel using field codes
+     * 
+     * Handles files from Q15.1.N/L through Q15.15.N/L (15 file pairs)
+     * and images from Q16.1.N/L through Q16.4.N/L (4 image pairs)
+     * with individual copyright fields Q17.1 through Q17.4
      * 
      * @param array $data The Excel data
      * @param array &$payload The project payload to update
      */
     private function processFileAttachmentsFromExcel(array $data, array &$payload): void
     {
-        
-        // Column pairs for files (filename, url)
-        $filePairs = [
-            ['BO', 'BP'], // First file pair
-            ['BQ', 'BR'], // Second file pair
-            ['BS', 'BT'], // Third file pair
-            ['BU', 'BV'], // Fourth file pair
-            ['BW', 'BX'], // Fifth file pair
-            ['BY', 'BZ'], // Sixth file pair
-            ['CA', 'CB'], // Seventh file pair
-            ['CC', 'CD'], // Eighth file pair
-            ['CE', 'CF'], // Ninth file pair
-            ['CG', 'CH'], // Tenth file pair
-            ['CI', 'CJ'], // Eleventh file pair
-            ['CK', 'CL'], // Twelfth file pair
-            ['CM', 'CN'], // Thirteenth file pair
-            ['CO', 'CP'], // Fourteenth file pair
-            ['CQ', 'CR'], // Fifteenth file pair
-            ['CS', 'CT'], // Sixteenth file pair
-            ['CU', 'CV'], // Seventeenth file pair
-            ['CW', 'CX'], // Eighteenth file pair
-            ['CY', 'CZ'], // Nineteenth file pair
-        ];
-        
-        $columnWithPictureCopyRightText = 'DA';
-
-        $processedCount = 0;
-        $successCount = 0;
-        $errorCount = 0;
         
         // Initialize arrays to track existing file IDs
         $existingImageIds = [];
@@ -701,73 +639,114 @@ class StandardProjectImporter extends AbstractProjectImporter
             }
         }
         
-        foreach ($filePairs as $pair) {
-            $filenameCol = $pair[0];
-            $urlCol = $pair[1];
+        // Process files from Q15.1.N/L through Q15.15.N/L (15 file pairs)
+        $this->processStandardFiles($data, $payload, $existingFileIds);
+        
+        // Process images from Q16.1.N/L through Q16.4.N/L with individual copyright fields Q17.1-Q17.4
+        $this->processStandardImages($data, $payload, $existingImageIds);
+
+    }
+
+    /**
+     * Process files from Q15.{1-15}.N/L fields
+     * 
+     * Standard format supports up to 15 files where:
+     * - Q15.X.N contains the filename/description  
+     * - Q15.X.L contains the URL
+     * 
+     * @param array $data The Excel data
+     * @param array &$payload The project payload to update
+     * @param array &$existingFileIds Array of existing file IDs to prevent duplicates
+     */
+    private function processStandardFiles(array $data, array &$payload, array &$existingFileIds): void
+    {
+        for ($i = 1; $i <= 15; $i++) {
+            $nameKey = "Q15.$i.N";  // Filename/description
+            $urlKey = "Q15.$i.L";   // URL
             
-            // Skip if either filename or URL is empty
-            if (empty($data[$filenameCol]) || empty($data[$urlCol])) {
+            if (empty($data[$urlKey])) {
                 continue;
             }
             
-            $processedCount++;
-            $filename = $data[$filenameCol];
-            $url = $data[$urlCol];
+            $url = $data[$urlKey];
+            $filename = $data[$nameKey] ?? basename($url);
             
-            
-            // Try to download the file
             try {
                 $fileData = $this->downloadFileFromUrl($url, $filename);
                 
-                if (!$fileData) {
-
-                    $errorCount++;
-                    continue;
+                if ($fileData && !in_array($fileData['id'], $existingFileIds)) {
+                    $payload['files'][] = [
+                        'id' => $fileData['id'],
+                        'name' => $fileData['name'],
+                        'extension' => $fileData['extension'],
+                        'mimeType' => $fileData['mimeType'],
+                        'description' => $filename,
+                    ];
+                    $existingFileIds[] = $fileData['id'];
                 }
+            } catch (\Exception $e) {
+                // Log error but continue processing
+            }
+        }
+    }
+    
+    /**
+     * Process images from Q16.{1-4}.N/L fields with copyright from Q17.{1-4}
+     * 
+     * Standard format supports up to 4 images where:
+     * - Q16.X.N contains the image filename/label
+     * - Q16.X.L contains the image URL
+     * - Q17.X contains the copyright text for image X
+     * 
+     * @param array $data The Excel data
+     * @param array &$payload The project payload to update
+     * @param array &$existingImageIds Array of existing image IDs to prevent duplicates
+     */
+    private function processStandardImages(array $data, array &$payload, array &$existingImageIds): void
+    {
+        for ($i = 1; $i <= 4; $i++) {
+            $nameKey = "Q16.$i.N";       // Image filename/label
+            $urlKey = "Q16.$i.L";        // Image URL
+            $copyrightKey = "Q17.$i";    // Copyright text for this image
+            
+            if (empty($data[$urlKey])) {
+                continue;
+            }
+            
+            $url = $data[$urlKey];
+            $filename = $data[$nameKey] ?? basename($url);
+            $copyright = $data[$copyrightKey] ?? '';
+            
+            try {
+                $fileData = $this->downloadFileFromUrl($url, $filename);
                 
-                // Determine if it's an image or document
-                $isImage = $this->isImageFile($filename);
-                
-                if ($isImage) {
-                    // Check if this image ID already exists in our payload
-                    if (!in_array($fileData['id'], $existingImageIds)) {
-                        // Add to images array
+                if ($fileData && !in_array($fileData['id'], $existingImageIds)) {
+                    // Check if it's actually an image file
+                    if ($this->isImageFile($filename)) {
                         $payload['images'][] = [
                             'id' => $fileData['id'],
                             'name' => $fileData['name'],
                             'extension' => $fileData['extension'],
                             'mimeType' => $fileData['mimeType'],
-                            'copyright' => $data[$columnWithPictureCopyRightText] ?? '',
-                            'description' => $fileData['name'] ?? ''
+                            'copyright' => $copyright,
+                            'description' => $filename,
                         ];
-                        
-                        // Add to our tracking array to prevent duplicates
                         $existingImageIds[] = $fileData['id'];
-                    }
-                } else {
-                    // Check if this file ID already exists in our payload
-                    if (!in_array($fileData['id'], $existingFileIds)) {
-                        // Add to files array
+                    } else {
+                        // If it's not an image, treat it as a regular file
                         $payload['files'][] = [
                             'id' => $fileData['id'],
                             'name' => $fileData['name'],
                             'extension' => $fileData['extension'],
                             'mimeType' => $fileData['mimeType'],
-                            'description' => $fileData['name'] ?? '',
+                            'description' => $filename,
                         ];
-                        
-                        // Add to our tracking array to prevent duplicates
-                        $existingFileIds[] = $fileData['id'];
                     }
                 }
-                
-                $successCount++;
             } catch (\Exception $e) {
-
-                $errorCount++;
+                // Log error but continue processing
             }
         }
-
     }
 
     /**
@@ -1961,8 +1940,8 @@ class StandardProjectImporter extends AbstractProjectImporter
             'Q5.5' => 'Salzburg',
             'Q5.6' => 'Steiermark',
             'Q5.7' => 'Tirol',
-            'Q5.8' => 'Vorarlberg',
-            'Q5.9' => 'Wien',
+            'Q5.8' => 'Wien',
+            'Q5.9' => 'Vorarlberg',
         ];
 
         $stateMappingByStateId = [
@@ -1973,8 +1952,8 @@ class StandardProjectImporter extends AbstractProjectImporter
             'Q5.5' => '6',
             'Q5.6' => '7',
             'Q5.7' => '8',
-            'Q5.8' => '1',
-            'Q5.9' => '9',
+            'Q5.8' => '9',
+            'Q5.9' => '1',
         ];
         
         // Check if all states are selected (Q5.10)
@@ -2062,23 +2041,20 @@ class StandardProjectImporter extends AbstractProjectImporter
             }
         }
         
-        // Process links (columns AY to BH) - simplified to include only essential info
-        $linkColumns = ['AY', 'AZ', 'BA', 'BB', 'BC', 'BD', 'BE', 'BF', 'BG', 'BH'];
-        
-        // Process links in pairs (label + url)
-        for ($i = 0; $i < count($linkColumns) - 1; $i += 2) {
-            $labelColumn = $linkColumns[$i];
-            $urlColumn = $linkColumns[$i + 1];
+        // Process links using field codes Q13.1.1/Q13.1.2 pattern (5 link pairs) - simplified for preview
+        for ($i = 1; $i <= 5; $i++) {
+            $labelKey = "Q13.$i.1";  // Link label
+            $urlKey = "Q13.$i.2";    // Link URL
             
-            // Skip if both columns are empty
-            if (empty($data[$labelColumn]) && empty($data[$urlColumn])) {
+            // Skip if both fields are empty
+            if (empty($data[$labelKey]) && empty($data[$urlKey])) {
                 continue;
             }
             
-            $label = !empty($data[$labelColumn]) ? $data[$labelColumn] : '';
-            $url = !empty($data[$urlColumn]) ? $data[$urlColumn] : '';
+            $label = !empty($data[$labelKey]) ? $data[$labelKey] : '';
+            $url = !empty($data[$urlKey]) ? $data[$urlKey] : '';
             
-            // If we have a URL in the label column and no URL in the URL column,
+            // If we have a URL in the label field and no URL in the URL field,
             // treat the label as a URL
             if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
                 $url = $label;
@@ -2102,23 +2078,20 @@ class StandardProjectImporter extends AbstractProjectImporter
             ];
         }
         
-        // Process videos (columns BI to BN) - simplified to include only essential info
-        $videoColumns = ['BI', 'BJ', 'BK', 'BL', 'BM', 'BN'];
-        
-        // Process videos in pairs (label + url)
-        for ($i = 0; $i < count($videoColumns) - 1; $i += 2) {
-            $labelColumn = $videoColumns[$i];
-            $urlColumn = $videoColumns[$i + 1];
+        // Process videos using field codes Q14.1.1/Q14.1.2 pattern (3 video pairs) - simplified for preview
+        for ($i = 1; $i <= 3; $i++) {
+            $labelKey = "Q14.$i.1";  // Video label
+            $urlKey = "Q14.$i.2";    // Video URL
             
-            // Skip if both columns are empty
-            if (empty($data[$labelColumn]) && empty($data[$urlColumn])) {
+            // Skip if both fields are empty
+            if (empty($data[$labelKey]) && empty($data[$urlKey])) {
                 continue;
             }
             
-            $label = !empty($data[$labelColumn]) ? $data[$labelColumn] : '';
-            $url = !empty($data[$urlColumn]) ? $data[$urlColumn] : '';
+            $label = !empty($data[$labelKey]) ? $data[$labelKey] : '';
+            $url = !empty($data[$urlKey]) ? $data[$urlKey] : '';
             
-            // If we have a URL in the label column and no URL in the URL column,
+            // If we have a URL in the label field and no URL in the URL field,
             // treat the label as a URL
             if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
                 $url = $label;
@@ -2142,49 +2115,75 @@ class StandardProjectImporter extends AbstractProjectImporter
             ];
         }
         
-        // For files and images, we'll just indicate their presence without downloading them
-        // Check if file attachments are present (columns BO to CR)
-        $filePairs = [
-            ['BO', 'BP'], ['BQ', 'BR'], ['BS', 'BT'], ['BU', 'BV'], ['BW', 'BX'], 
-            ['BY', 'BZ'], ['CA', 'CB'], ['CC', 'CD'], ['CE', 'CF'], ['CG', 'CH'], 
-            ['CI', 'CJ'], ['CK', 'CL'], ['CM', 'CN'], ['CO', 'CP'], ['CQ', 'CR'],
-            ['CS', 'CT'], ['CU', 'CV'], ['CW', 'CX'], ['CY', 'CZ']
-        ];
-        
-        foreach ($filePairs as $index => $pair) {
-            $filenameCol = $pair[0];
-            $urlCol = $pair[1];
+        // For files and images, indicate their presence using field codes without downloading them
+        // Check for files Q15.1.N/L through Q15.15.N/L (15 file pairs)
+        for ($i = 1; $i <= 15; $i++) {
+            $nameKey = "Q15.$i.N";  // Filename/description
+            $urlKey = "Q15.$i.L";   // URL
             
             // Skip if either filename or URL is empty
-            if (empty($data[$filenameCol]) || empty($data[$urlCol])) {
+            if (empty($data[$nameKey]) && empty($data[$urlKey])) {
                 continue;
             }
             
-            $filename = $data[$filenameCol];
-            $url = $data[$urlCol];
+            $filename = $data[$nameKey] ?? 'file';
+            $url = $data[$urlKey] ?? '';
             
-            // Determine if it's an image or document (simplified)
-            $isImage = $this->isImageFile($filename);
-            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-            $mimeType = $this->getMimeTypeFromFilename($filename);
-            
-            // Create a placeholder entry for preview without actually downloading
-            $fileEntry = [
-                'id' => "preview_file_" . ($index + 1),
-                'name' => $filename,
-                'originalName' => $filename,
-                'extension' => $extension,
-                'mimeType' => $mimeType,
-                'description' => $filename,
-                'size' => 0, // Unknown size for preview
-                'preview_only' => true // Mark as preview only
-            ];
-            
-            if ($isImage) {
-                $fileEntry['copyright'] = $data['DA'] ?? '';
-                $payload['images'][] = $fileEntry;
-            } else {
+            if (!empty($url)) {
+                // Determine file type (simplified)
+                $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                $mimeType = $this->getMimeTypeFromFilename($filename);
+                
+                // Create a placeholder entry for preview without actually downloading
+                $fileEntry = [
+                    'id' => "preview_file_$i",
+                    'name' => $filename,
+                    'originalName' => $filename,
+                    'extension' => $extension,
+                    'mimeType' => $mimeType,
+                    'description' => $filename,
+                    'size' => 0, // Unknown size for preview
+                    'preview_only' => true // Mark as preview only
+                ];
+                
                 $payload['files'][] = $fileEntry;
+            }
+        }
+        
+        // Check for images Q16.1.N/L through Q16.4.N/L (4 image pairs) with individual copyright
+        for ($i = 1; $i <= 4; $i++) {
+            $nameKey = "Q16.$i.N";       // Image filename/label
+            $urlKey = "Q16.$i.L";        // Image URL
+            $copyrightKey = "Q17.$i";    // Copyright text for this image
+            
+            // Skip if either filename or URL is empty
+            if (empty($data[$nameKey]) && empty($data[$urlKey])) {
+                continue;
+            }
+            
+            $filename = $data[$nameKey] ?? 'image';
+            $url = $data[$urlKey] ?? '';
+            $copyright = $data[$copyrightKey] ?? '';
+            
+            if (!empty($url)) {
+                // Determine file type (simplified)
+                $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                $mimeType = $this->getMimeTypeFromFilename($filename);
+                
+                // Create a placeholder entry for preview without actually downloading
+                $imageEntry = [
+                    'id' => "preview_image_$i",
+                    'name' => $filename,
+                    'originalName' => $filename,
+                    'extension' => $extension,
+                    'mimeType' => $mimeType,
+                    'copyright' => $copyright,
+                    'description' => $filename,
+                    'size' => 0, // Unknown size for preview
+                    'preview_only' => true // Mark as preview only
+                ];
+                
+                $payload['images'][] = $imageEntry;
             }
         }
         

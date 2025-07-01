@@ -21,6 +21,7 @@ abstract class AbstractProjectImporter
     protected EntityManagerInterface $em;
     protected SluggerInterface $slugger;
     protected string $uploadDir;
+    protected ?array $headerMappings = null;
 
     public function __construct(
         EntityManagerInterface $em,
@@ -211,5 +212,52 @@ abstract class AbstractProjectImporter
         ];
         
         return $mimeTypes[$extension] ?? 'application/octet-stream';
+    }
+
+    /**
+     * Get header mappings from field codes to column indices
+     * 
+     * @param string $filePath The path to the Excel file
+     * @return array Mapping from field code to column index
+     */
+    protected function getHeaderMappings(string $filePath): array
+    {
+        if ($this->headerMappings !== null) {
+            return $this->headerMappings;
+        }
+
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
+            $worksheet = $spreadsheet->getActiveSheet();
+            
+            $headerRowIndex = $this->getHeaderRowCount();
+            $highestColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($worksheet->getHighestColumn());
+            
+            $this->headerMappings = [];
+            
+            for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                $fieldCode = $worksheet->getCellByColumnAndRow($col, $headerRowIndex)->getValue();
+                if (!empty($fieldCode)) {
+                    $this->headerMappings[$fieldCode] = $col;
+                }
+            }
+            
+            return $this->headerMappings;
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Get column index by field code
+     * 
+     * @param string $code The field code
+     * @param string $filePath The path to the Excel file
+     * @return int|null The column index or null if not found
+     */
+    protected function columnByCode(string $code, string $filePath): ?int
+    {
+        $mappings = $this->getHeaderMappings($filePath);
+        return $mappings[$code] ?? null;
     }
 } 

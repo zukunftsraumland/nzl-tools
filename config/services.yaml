@@ -51,3 +51,16 @@ services:
     App\Service\ProjectImportManager:
         bind:
             $uploadDir: '%project_import_upload_dir%'
+
+    # Configure project importers with upload directory
+    App\Service\Importer\CaseStudyProjectImporter:
+        bind:
+            $uploadDir: '%project_import_upload_dir%'
+    
+    App\Service\Importer\StandardProjectImporter:
+        bind:
+            $uploadDir: '%project_import_upload_dir%'
+            
+    App\Service\Importer\LegacyProjectImporter:
+        bind:
+            $uploadDir: '%project_import_upload_dir%'
