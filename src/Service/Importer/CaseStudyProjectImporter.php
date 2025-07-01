@@ -101,10 +101,9 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         // Clear any tags processed by the parent (StandardProjectImporter)
         $payload['tags'] = [];
         
-        // Process tags with our special case study logic - use field codes only
-        if (!empty($data['Q4'])) {
-            $keywords = $data['Q4'];
-            $allKeywords = explode(',', $keywords);
+        // Process tags with our special case study logic - use already processed keywords from parent
+        if (!empty($payload['keywords'])) {
+            $allKeywords = explode(',', $payload['keywords']);
 
             // Process keywords and convert them to tags
             if (!empty($allKeywords)) {
@@ -964,8 +963,8 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         }
         
         // For preview only, include placeholder tags without DB lookups - use field codes only
-        if (!empty($data['Q4'])) {
-            $keywords = $data['Q4'];
+        $keywords = $data['Q4'] ?? '';
+        if (!empty($keywords)) {
             $allKeywords = explode(',', $keywords);
 
             // Process keywords and convert them to tags
