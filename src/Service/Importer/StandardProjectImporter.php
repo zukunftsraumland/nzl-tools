@@ -480,79 +480,11 @@ class StandardProjectImporter extends AbstractProjectImporter
             // Process contacts from columns AO-AX
             $this->processContactsFromExcel($data, $payload);
             
-            // Process links using field codes Q13.1.1/Q13.1.2 pattern (5 link pairs)
-            for ($i = 1; $i <= 5; $i++) {
-                $labelKey = "Q13.$i.1";  // Link label
-                $urlKey = "Q13.$i.2";    // Link URL
-                
-                // Skip if both fields are empty
-                if (empty($data[$labelKey]) && empty($data[$urlKey])) {
-                    continue;
-                }
-                
-                $label = !empty($data[$labelKey]) ? $data[$labelKey] : '';
-                $url = !empty($data[$urlKey]) ? $data[$urlKey] : '';
-                
-                // If we have a URL in the label field and no URL in the URL field,
-                // treat the label as a URL
-                if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
-                    $url = $label;
-                    $label = '';
-                }
-                
-                // Skip if no URL is available
-                if (empty($url)) {
-                    continue;
-                }
-                
-                // Ensure URL has a protocol
-                if (!preg_match('~^(?:f|ht)tps?://~i', $url)) {
-                    $url = 'https://' . $url;
-                }
-                
-                $payload['links'][] = [
-                    'url' => $url,
-                    'label' => $label,
-                    'value' => $url
-                ];
-            }
+            // Process links using fixed column mappings for standard projects (format2)
+            $this->processStandardLinks($data, $payload);
             
-            // Process videos using field codes Q14.1.1/Q14.1.2 pattern (3 video pairs)
-            for ($i = 1; $i <= 3; $i++) {
-                $labelKey = "Q14.$i.1";  // Video label
-                $urlKey = "Q14.$i.2";    // Video URL
-                
-                // Skip if both fields are empty
-                if (empty($data[$labelKey]) && empty($data[$urlKey])) {
-                    continue;
-                }
-                
-                $label = !empty($data[$labelKey]) ? $data[$labelKey] : '';
-                $url = !empty($data[$urlKey]) ? $data[$urlKey] : '';
-                
-                // If we have a URL in the label field and no URL in the URL field,
-                // treat the label as a URL
-                if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
-                    $url = $label;
-                    $label = '';
-                }
-                
-                // Skip if no URL is available
-                if (empty($url)) {
-                    continue;
-                }
-                
-                // Ensure URL has a protocol
-                if (!preg_match('~^(?:f|ht)tps?://~i', $url)) {
-                    $url = 'https://' . $url;
-                }
-                
-                $payload['videos'][] = [
-                    'url' => $url,
-                    'label' => $label,
-                    'value' => $url
-                ];
-            }
+            // Process videos using fixed column mappings for standard projects (format2)
+            $this->processStandardVideos($data, $payload);
             
             // Process file attachments from Excel columns BO to CR
             $this->processFileAttachmentsFromExcel($data, $payload);
@@ -603,6 +535,120 @@ class StandardProjectImporter extends AbstractProjectImporter
             $payload['contacts'][] = $contact;
         }
 
+    }
+
+    /**
+     * Process links using fixed column mappings for standard projects
+     * 
+     * Uses fixed column mappings instead of dynamic detection to ensure consistent behavior.
+     * Standard projects use format2 columns: AY/AZ, BA/BB, BC/BD, BE/BF, BG/BH
+     *
+     * @param array $data The Excel data
+     * @param array &$payload The project payload to update
+     */
+    private function processStandardLinks(array $data, array &$payload): void
+    {
+        // Initialize links array
+        $payload['links'] = [];
+        
+        // Fixed column mappings for Standard Projects (format2)
+        $labelColumns = ['AY', 'BA', 'BC', 'BE', 'BG'];
+        $urlColumns = ['AZ', 'BB', 'BD', 'BF', 'BH'];
+        
+        // Process each link pair
+        $maxPairs = min(count($labelColumns), count($urlColumns));
+        for ($i = 0; $i < $maxPairs; $i++) {
+            $labelCol = $labelColumns[$i];
+            $urlCol = $urlColumns[$i];
+            
+            $labelValue = $data[$labelCol] ?? '';
+            $urlValue = $data[$urlCol] ?? '';
+            
+            if (!empty($labelValue) || !empty($urlValue)) {
+                $label = !empty($labelValue) ? trim($labelValue) : '';
+                $url = !empty($urlValue) ? trim($urlValue) : '';
+                
+                // If we have a URL in the label field and no URL in the URL field,
+                // treat the label as a URL
+                if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
+                    $url = $label;
+                    $label = '';
+                }
+                
+                // Skip if no URL is available
+                if (empty($url)) {
+                    continue;
+                }
+                
+                // Ensure URL has a protocol
+                if (!preg_match('~^(?:f|ht)tps?://~i', $url)) {
+                    $url = 'https://' . $url;
+                }
+                
+                $payload['links'][] = [
+                    'url' => $url,
+                    'label' => $label,
+                    'value' => $url
+                ];
+            }
+        }
+    }
+
+    /**
+     * Process videos using fixed column mappings for standard projects
+     * 
+     * Uses fixed column mappings instead of dynamic detection to ensure consistent behavior.
+     * Standard projects use format2 columns: BI/BJ, BK/BL, BM/BN
+     *
+     * @param array $data The Excel data
+     * @param array &$payload The project payload to update
+     */
+    private function processStandardVideos(array $data, array &$payload): void
+    {
+        // Initialize videos array
+        $payload['videos'] = [];
+        
+        // Fixed column mappings for Standard Projects (format2)
+        $labelColumns = ['BI', 'BK', 'BM'];
+        $urlColumns = ['BJ', 'BL', 'BN'];
+        
+        // Process each video pair
+        $maxPairs = min(count($labelColumns), count($urlColumns));
+        for ($i = 0; $i < $maxPairs; $i++) {
+            $labelCol = $labelColumns[$i];
+            $urlCol = $urlColumns[$i];
+            
+            $labelValue = $data[$labelCol] ?? '';
+            $urlValue = $data[$urlCol] ?? '';
+            
+            if (!empty($labelValue) || !empty($urlValue)) {
+                $label = !empty($labelValue) ? trim($labelValue) : '';
+                $url = !empty($urlValue) ? trim($urlValue) : '';
+                
+                // If we have a URL in the label field and no URL in the URL field,
+                // treat the label as a URL
+                if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
+                    $url = $label;
+                    $label = '';
+                }
+                
+                // Skip if no URL is available
+                if (empty($url)) {
+                    continue;
+                }
+                
+                // Ensure URL has a protocol
+                if (!preg_match('~^(?:f|ht)tps?://~i', $url)) {
+                    $url = 'https://' . $url;
+                }
+                
+                $payload['videos'][] = [
+                    'url' => $url,
+                    'label' => $label,
+                    'value' => $url
+                ];
+            }
+        }
     }
 
     /**
@@ -1078,10 +1124,11 @@ class StandardProjectImporter extends AbstractProjectImporter
                 $rawData = $item->getRawData();
                 $processedData = $item->getProcessedData();
                 
-                // Skip if no processed data
-                if (!$processedData || !isset($processedData['payload'])) {
+                // CRITICAL FIX: Re-process the raw data using the proper payload method
+                // instead of using the stored preview data which may be incomplete
+                if (!$rawData) {
                     $item->setStatus(ProjectImportItem::STATUS_FAILED);
-                    $item->setErrorMessage('No processed data available');
+                    $item->setErrorMessage('No raw data available');
                     $item->setUpdatedAt(new \DateTime());
                     $this->em->persist($item);
                     
@@ -1099,8 +1146,41 @@ class StandardProjectImporter extends AbstractProjectImporter
                     continue;
                 }
                 
-                // Get the payload
-                $result = $processedData;
+                // Re-process the raw data using the full payload method for actual import
+                try {
+                    $fullPayload = $this->prepareProjectPayload($rawData);
+                    
+                    // Create the result structure
+                    $result = [
+                        'rowNumber' => $item->getRowNumber(),
+                        'title' => $fullPayload['title'] ?? 'Untitled',
+                        'description' => $fullPayload['description'] ?? '',
+                        'projectCode' => $fullPayload['projectCode'] ?? '',
+                        'startDate' => $fullPayload['startDate'] ?? null,
+                        'endDate' => $fullPayload['endDate'] ?? null,
+                        'status' => 'valid',
+                        'message' => '',
+                        'payload' => $fullPayload
+                    ];
+                } catch (\Exception $e) {
+                    $item->setStatus(ProjectImportItem::STATUS_FAILED);
+                    $item->setErrorMessage('Error re-processing data: ' . $e->getMessage());
+                    $item->setUpdatedAt(new \DateTime());
+                    $this->em->persist($item);
+                    
+                    $errorCount++;
+                    $processedCount++;
+                    
+                    // Update import progress after each item
+                    $import->setProcessedRows($processedCount);
+                    $import->setSuccessfulRows($successCount);
+                    $import->setErrorRows($errorCount);
+                    $import->setUpdatedAt(new \DateTime());
+                    $this->em->persist($import);
+                    $this->em->flush();
+                    
+                    continue;
+                }
                 
                 // Skip if status is error
                 if ($result['status'] === 'error') {
@@ -1122,7 +1202,7 @@ class StandardProjectImporter extends AbstractProjectImporter
                     
                     continue;
                 }
-                
+
                 try {
                     // If LE Period is provided, add it to the payload
                     if ($lePeriod) {
@@ -1308,7 +1388,7 @@ class StandardProjectImporter extends AbstractProjectImporter
      * 
      * @return array Mapping from Excel ID to database ID
      */
-    private function getLeCategoryMapping(): array
+    protected function getLeCategoryMapping(): array
     {
         return [
             // Mapping based on Standard Import specification (Excel ID -> DB ID)
@@ -1357,7 +1437,7 @@ class StandardProjectImporter extends AbstractProjectImporter
      * 
      * @return array Mapping from Excel ID to database ID
      */
-    private function getLocalWorkgroupMapping(): array
+    protected function getLocalWorkgroupMapping(): array
     {
         return [
             1 => 1,   // BGL01 Nordburgenland plus -> LAG nordburgenland plus
@@ -2041,79 +2121,11 @@ class StandardProjectImporter extends AbstractProjectImporter
             }
         }
         
-        // Process links using field codes Q13.1.1/Q13.1.2 pattern (5 link pairs) - simplified for preview
-        for ($i = 1; $i <= 5; $i++) {
-            $labelKey = "Q13.$i.1";  // Link label
-            $urlKey = "Q13.$i.2";    // Link URL
-            
-            // Skip if both fields are empty
-            if (empty($data[$labelKey]) && empty($data[$urlKey])) {
-                continue;
-            }
-            
-            $label = !empty($data[$labelKey]) ? $data[$labelKey] : '';
-            $url = !empty($data[$urlKey]) ? $data[$urlKey] : '';
-            
-            // If we have a URL in the label field and no URL in the URL field,
-            // treat the label as a URL
-            if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
-                $url = $label;
-                $label = '';
-            }
-            
-            // Skip if no URL is available
-            if (empty($url)) {
-                continue;
-            }
-            
-            // Ensure URL has a protocol (simplified)
-            if (!preg_match('~^(?:f|ht)tps?://~i', $url)) {
-                $url = 'https://' . $url;
-            }
-            
-            $payload['links'][] = [
-                'url' => $url,
-                'label' => $label,
-                'value' => $url
-            ];
-        }
+        // Process links for preview using fixed column mappings (AY/AZ, BA/BB, etc.)
+        $this->processStandardLinks($data, $payload);
         
-        // Process videos using field codes Q14.1.1/Q14.1.2 pattern (3 video pairs) - simplified for preview
-        for ($i = 1; $i <= 3; $i++) {
-            $labelKey = "Q14.$i.1";  // Video label
-            $urlKey = "Q14.$i.2";    // Video URL
-            
-            // Skip if both fields are empty
-            if (empty($data[$labelKey]) && empty($data[$urlKey])) {
-                continue;
-            }
-            
-            $label = !empty($data[$labelKey]) ? $data[$labelKey] : '';
-            $url = !empty($data[$urlKey]) ? $data[$urlKey] : '';
-            
-            // If we have a URL in the label field and no URL in the URL field,
-            // treat the label as a URL
-            if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
-                $url = $label;
-                $label = '';
-            }
-            
-            // Skip if no URL is available
-            if (empty($url)) {
-                continue;
-            }
-            
-            // Ensure URL has a protocol (simplified)
-            if (!preg_match('~^(?:f|ht)tps?://~i', $url)) {
-                $url = 'https://' . $url;
-            }
-            
-            $payload['videos'][] = [
-                'url' => $url,
-                'label' => $label,
-                'value' => $url
-            ];
-        }
+        // Process videos for preview using fixed column mappings (BI/BJ, BK/BL, etc.)
+        $this->processStandardVideos($data, $payload);
         
         // For files and images, indicate their presence using field codes without downloading them
         // Check for files Q15.1.N/L through Q15.15.N/L (15 file pairs)

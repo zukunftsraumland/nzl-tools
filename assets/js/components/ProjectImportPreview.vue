@@ -1685,12 +1685,41 @@ export default {
         
         const data = await response.json();
         
+        // Store the raw data for each row - using the same logic as loadPreviewData()
         this.previewData = data.map(item => {
-          return {
-            ...item,
-            _rawData: item.payload || {},
-            description: item.description || (item.payload ? item.payload.description : '') || ''
+          // For legacy importer, the data structure is different (item.data contains all the actual data)
+          const isLegacyImport = this.importData && this.importData.importerType === 'legacy';
+          const rowData = isLegacyImport ? item.data : (item.payload || {});
+          
+          // Create a consistent structure regardless of importer type
+          const result = {
+            rowIndex: item.rowIndex || item.rowNumber,
+            rowNumber: item.rowIndex || item.rowNumber,
+            title: isLegacyImport ? rowData.title : (item.title || (rowData ? rowData.title : '') || 'Kein Titel'),
+            description: isLegacyImport ? rowData.description : (item.description || (rowData ? rowData.description : '') || ''),
+            startDate: isLegacyImport ? rowData.startDate : (item.startDate || (rowData ? rowData.startDate : '')),
+            endDate: isLegacyImport ? rowData.endDate : (item.endDate || (rowData ? rowData.endDate : '')),
+            projectCode: isLegacyImport ? rowData.projectCode : (item.projectCode || (rowData ? rowData.projectCode : '')),
+            status: item.status || 'valid', // Default to valid if not specified
+            message: item.message || '',
+            // Store the payload for each format consistently 
+            payload: {
+              leFundingCategoryName: isLegacyImport 
+                ? (rowData.leFundingCategoryName || (rowData.leCategory ? rowData.leCategory.name : '') || '') 
+                : (rowData.leFundingCategoryName || ''),
+              localWorkgroupName: isLegacyImport
+                ? (rowData.localWorkgroups && rowData.localWorkgroups.length > 0 
+                    ? (typeof rowData.localWorkgroups[0] === 'object' ? rowData.localWorkgroups[0].name : rowData.localWorkgroups[0]) 
+                    : '')
+                : (rowData.localWorkgroupName || '')
+            },
+            _rawData: isLegacyImport ? rowData : (item.payload || {})
           };
+
+          // Initialize selectedRowNumbers with all row numbers from the loaded preview
+          this.selectedRowNumbers.add(result.rowNumber);
+
+          return result;
         });
         
         this.clearStatusMessage();

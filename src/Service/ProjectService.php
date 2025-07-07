@@ -292,12 +292,12 @@ class ProjectService
                 if (array_key_exists('name', $item)) {
                     $tag = new Tag();
                     $tag->setName($item['name']);
-                    $tag->setContext('tag');
+                    $tag->setContext($item['context'] ?? 'tag');
                     $tag->setIsPublic(1);
                     $tag->setCreatedAt(new \DateTime());
                     $tag->setUpdatedAt(new \DateTime());
                     $this->em->persist($tag);
-                    $this->em->flush();
+                    // Remove individual flush - let the overall transaction handle it
                     $project->addTag($tag);
                 }
             }

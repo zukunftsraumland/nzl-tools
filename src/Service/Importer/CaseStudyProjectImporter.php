@@ -3,6 +3,11 @@
 namespace App\Service\Importer;
 
 use App\Entity\ProjectImport;
+use App\Entity\ProjectImportItem;
+use App\Entity\User;
+use App\Entity\LEPeriod;
+use App\Entity\LEFundingCategory;
+use App\Entity\LocalWorkgroup;
 use App\Service\ProjectService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\String\Slugger\SluggerInterface;
@@ -68,14 +73,14 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         $payload['caseStudy'] = true;
         
         // Map case study specific fields using field codes only
-        // Fixed field mapping based on Excel analysis - Q29=Innovation, Q30=Mehrwert durch Vernetzung
+        // Fixed field mapping based on Excel analysis - Q28=Results Quantity, Q29=Innovation, Q30=Mehrwert durch Vernetzung
         $caseStudyFields = [
             'exemplary' => $data['Q21'] ?? null,
             'initialContext' => $data['Q22'] ?? null,
             'initialContextGoals' => $data['Q23'] ?? null,
             'fundingMethod' => $data['Q24'] ?? null,
             'fundingMethodStakeholders' => $data['Q25'] ?? null,
-            'resultsQuantity' => $data['Q26'] ?? null,
+            'resultsQuantity' => $data['Q28'] ?? null,          // Fixed: Q28 = Results Quantity
             'resultsQuality' => $data['Q27'] ?? null,
             'innovations' => $data['Q29'] ?? null,              // Fixed: Q29 = Innovation
             'additionalValue' => $data['Q30'] ?? null,          // Fixed: Q30 = Mehrwert durch Vernetzung  
@@ -101,9 +106,10 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         // Clear any tags processed by the parent (StandardProjectImporter)
         $payload['tags'] = [];
         
-        // Process tags with our special case study logic - use already processed keywords from parent
-        if (!empty($payload['keywords'])) {
-            $allKeywords = explode(',', $payload['keywords']);
+        // Process keywords directly from Q4 field (same as preview method for consistency)
+        $keywords = $data['Q4'] ?? '';
+        if (!empty($keywords)) {
+            $allKeywords = explode(',', $keywords);
 
             // Process keywords and convert them to tags
             if (!empty($allKeywords)) {
@@ -126,9 +132,9 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         // Process files and images from both old and new formats
         $this->processCaseStudyFileAttachments($data, $payload);
         
-        // Extract localWorkgroupId from column AG and map to name
-        if (isset($data['AG']) && is_numeric($data['AG'])) {
-            $localWorkgroupId = (int)$data['AG'];
+        // Extract localWorkgroupId from Q7 field (LAG) and map to name - use field codes only
+        if (isset($data['Q7']) && is_numeric($data['Q7'])) {
+            $localWorkgroupId = (int)$data['Q7'];
             $payload['localWorkgroupId'] = $localWorkgroupId;
             
             // Get the LocalWorkgroup name from mapping
@@ -146,10 +152,26 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             $payload['cooperationProjectEu'] = true;
         }
         
-        // Add LE category name without DB lookup - use field codes only
-        if (!empty($data['Q3.7'])) {
-            $payload['leFundingCategoryName'] = $data['Q3.7'];
+        // Add LE category ID and name - use field codes only
+        if (!empty($data['Q6']) && is_numeric($data['Q6'])) {
+            $excelCategoryId = (int)$data['Q6'];
+            $payload['leFundingCategoryId'] = $excelCategoryId;
+            
+            // Get the category name from mapping
+            $leCategoryNameMapping = $this->getLeCategoryNameMapping();
+            if (isset($leCategoryNameMapping[$excelCategoryId])) {
+                $payload['leFundingCategoryName'] = $leCategoryNameMapping[$excelCategoryId];
+            }
         }
+        
+        // Override financing processing to use Q10.x fields instead of columns AK, AL, AM
+        $this->processCaseStudyFinancing($data, $payload);
+        
+        // Process links using Q13.1.1/Q13.1.2 fields for case studies
+        $this->processCaseStudyLinks($data, $payload);
+        
+        // Process videos using Q14.1.1/Q14.1.2 fields for case studies
+        $this->processCaseStudyVideos($data, $payload);
         
         return $payload;
     }
@@ -246,6 +268,284 @@ class CaseStudyProjectImporter extends StandardProjectImporter
     }
     
     /**
+     * Process financing data using Q10.x fields instead of column letters
+     * 
+     * This method overrides the column-based financing approach from StandardProjectImporter
+     * to use Q-based field codes for case studies.
+     *
+     * @param array $data The Excel data
+     * @param array &$payload The project payload to update
+     */
+    private function processCaseStudyFinancing(array $data, array &$payload): void
+    {
+        // Initialize standard financing structure with expected IDs
+        $payload['financing'] = [
+            ['id' => 'costsGap', 'value' => 0],     // GAP Strategieplan
+            ['id' => 'costsPrivate', 'value' => 0], // Private und Eigenmittel
+            ['id' => 'costsExternal', 'value' => 0] // Andere Finanzquellen
+        ];
+        
+        // Process financing from Q10.x fields (percentages)
+        // Q10.1 = GAP Strategieplan percentage
+        if (isset($data['Q10.1'])) {
+            $value = $data['Q10.1'];
+            if (is_string($value)) {
+                $value = str_replace(',', '.', $value);
+            }
+            $value = (float)$value;
+            
+            if ($value >= 0 && $value <= 100) {
+                $payload['financing'][0]['value'] = $value;
+            }
+        }
+        
+        // Q10.2 = Private und Eigenmittel percentage
+        if (isset($data['Q10.2'])) {
+            $value = $data['Q10.2'];
+            if (is_string($value)) {
+                $value = str_replace(',', '.', $value);
+            }
+            $value = (float)$value;
+            
+            if ($value >= 0 && $value <= 100) {
+                $payload['financing'][1]['value'] = $value;
+            }
+        }
+        
+        // Q10.3 = Andere Finanzquellen percentage
+        if (isset($data['Q10.3'])) {
+            $value = $data['Q10.3'];
+            if (is_string($value)) {
+                $value = str_replace(',', '.', $value);
+            }
+            $value = (float)$value;
+            
+            if ($value >= 0 && $value <= 100) {
+                $payload['financing'][2]['value'] = $value;
+            }
+        }
+        
+        // Ensure the values are valid numbers
+        foreach ($payload['financing'] as $key => $item) {
+            if (!is_numeric($item['value'])) {
+                $payload['financing'][$key]['value'] = 0;
+            }
+        }
+    }
+    
+    /**
+     * Process links using fixed column mappings for case studies
+     * 
+     * Uses fixed column mappings instead of dynamic detection to ensure consistent behavior.
+     * Case study projects use format1 columns: BT/BU, BV/BW, BX/BY, BZ/CA, CB/CC
+     *
+     * @param array $data The Excel data
+     * @param array &$payload The project payload to update
+     */
+    private function processCaseStudyLinks(array $data, array &$payload): void
+    {
+        // Initialize links array
+        $payload['links'] = [];
+        
+        // Define both possible formats
+        $formats = [
+            'format1' => [
+                'labels' => ['BT', 'BV', 'BX', 'BZ', 'CB'],
+                'urls' => ['BU', 'BW', 'BY', 'CA', 'CC']
+            ],
+            'format2' => [
+                'labels' => ['AY', 'BA', 'BC', 'BE', 'BG'],
+                'urls' => ['AZ', 'BB', 'BD', 'BF', 'BH']
+            ]
+        ];
+        
+        // Detect which format has actual data
+        $selectedFormat = null;
+        foreach ($formats as $formatName => $format) {
+            for ($i = 0; $i < count($format['labels']); $i++) {
+                $labelCol = $format['labels'][$i];
+                $urlCol = $format['urls'][$i];
+                
+                $labelValue = $data[$labelCol] ?? '';
+                $urlValue = $data[$urlCol] ?? '';
+                
+                if (!empty($labelValue) || !empty($urlValue)) {
+                    $label = !empty($labelValue) ? trim($labelValue) : '';
+                    $url = !empty($urlValue) ? trim($urlValue) : '';
+                    
+                    // Check if we have a valid URL
+                    if (!empty($url) && $this->looksLikeUrl($url)) {
+                        $selectedFormat = $format;
+                        break 2; // Break out of both loops
+                    }
+                }
+            }
+        }
+        
+        // Use the detected format to process links
+        if ($selectedFormat) {
+            $maxPairs = min(count($selectedFormat['labels']), count($selectedFormat['urls']));
+            for ($i = 0; $i < $maxPairs; $i++) {
+                $labelCol = $selectedFormat['labels'][$i];
+                $urlCol = $selectedFormat['urls'][$i];
+                
+                $labelValue = $data[$labelCol] ?? '';
+                $urlValue = $data[$urlCol] ?? '';
+                
+                if (!empty($labelValue) || !empty($urlValue)) {
+                    $label = !empty($labelValue) ? trim($labelValue) : '';
+                    $url = !empty($urlValue) ? trim($urlValue) : '';
+                    
+                    // If we have a URL in the label field and no URL in the URL field,
+                    // treat the label as a URL
+                    if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
+                        $url = $label;
+                        $label = '';
+                    }
+                    
+                    // Skip if no URL is available
+                    if (empty($url)) {
+                        continue;
+                    }
+                    
+                    // Ensure URL has a protocol
+                    if (!preg_match('~^(?:f|ht)tps?://~i', $url)) {
+                        $url = 'https://' . $url;
+                    }
+                    
+                    $payload['links'][] = [
+                        'url' => $url,
+                        'label' => $label,
+                        'value' => $url
+                    ];
+                }
+            }
+        }
+    }
+    
+
+    
+    /**
+     * Process videos using fixed column mappings for case studies
+     * 
+     * Uses fixed column mappings instead of dynamic detection to ensure consistent behavior.
+     * Case study projects use format1 columns: CD/CE, CF/CG, CH/CI
+     *
+     * @param array $data The Excel data
+     * @param array &$payload The project payload to update
+     */
+    private function processCaseStudyVideos(array $data, array &$payload): void
+    {
+        // Initialize videos array
+        $payload['videos'] = [];
+        
+        // Define both possible formats
+        $formats = [
+            'format1' => [
+                'labels' => ['CD', 'CF', 'CH'],
+                'urls' => ['CE', 'CG', 'CI']
+            ],
+            'format2' => [
+                'labels' => ['BI', 'BK', 'BM'],
+                'urls' => ['BJ', 'BL', 'BN']
+            ]
+        ];
+        
+        // Detect which format has actual data
+        $selectedFormat = null;
+        foreach ($formats as $formatName => $format) {
+            for ($i = 0; $i < count($format['labels']); $i++) {
+                $labelCol = $format['labels'][$i];
+                $urlCol = $format['urls'][$i];
+                
+                $labelValue = $data[$labelCol] ?? '';
+                $urlValue = $data[$urlCol] ?? '';
+                
+                if (!empty($labelValue) || !empty($urlValue)) {
+                    $label = !empty($labelValue) ? trim($labelValue) : '';
+                    $url = !empty($urlValue) ? trim($urlValue) : '';
+                    
+                    // Check if we have a valid URL
+                    if (!empty($url) && $this->looksLikeUrl($url)) {
+                        $selectedFormat = $format;
+                        break 2; // Break out of both loops
+                    }
+                }
+            }
+        }
+        
+        // Use the detected format to process videos
+        if ($selectedFormat) {
+            $maxPairs = min(count($selectedFormat['labels']), count($selectedFormat['urls']));
+            for ($i = 0; $i < $maxPairs; $i++) {
+                $labelCol = $selectedFormat['labels'][$i];
+                $urlCol = $selectedFormat['urls'][$i];
+                
+                $labelValue = $data[$labelCol] ?? '';
+                $urlValue = $data[$urlCol] ?? '';
+                
+                if (!empty($labelValue) || !empty($urlValue)) {
+                    $label = !empty($labelValue) ? trim($labelValue) : '';
+                    $url = !empty($urlValue) ? trim($urlValue) : '';
+                    
+                    // If we have a URL in the label field and no URL in the URL field,
+                    // treat the label as a URL
+                    if (!empty($label) && empty($url) && $this->looksLikeUrl($label)) {
+                        $url = $label;
+                        $label = '';
+                    }
+                    
+                    // Skip if no URL is available
+                    if (empty($url)) {
+                        continue;
+                    }
+                    
+                    // Ensure URL has a protocol
+                    if (!preg_match('~^(?:f|ht)tps?://~i', $url)) {
+                        $url = 'https://' . $url;
+                    }
+                    
+                    $payload['videos'][] = [
+                        'url' => $url,
+                        'label' => $label,
+                        'value' => $url
+                    ];
+                }
+            }
+        }
+    }
+    
+    /**
+     * Process links for preview using fixed column mappings for case studies
+     * 
+     * Uses the same hardcoded format1 columns as the import process to ensure
+     * consistency between preview and actual import results.
+     *
+     * @param array $data The Excel data
+     * @param array &$payload The project payload to update
+     */
+    private function processCaseStudyLinksForPreview(array $data, array &$payload): void
+    {
+        // Use the same method as the actual import to ensure consistency
+        $this->processCaseStudyLinks($data, $payload);
+    }
+    
+    /**
+     * Process videos for preview using fixed column mappings for case studies
+     * 
+     * Uses the same hardcoded format1 columns as the import process to ensure
+     * consistency between preview and actual import results.
+     *
+     * @param array $data The Excel data
+     * @param array &$payload The project payload to update
+     */
+    private function processCaseStudyVideosForPreview(array $data, array &$payload): void
+    {
+        // Use the same method as the actual import to ensure consistency
+        $this->processCaseStudyVideos($data, $payload);
+    }
+    
+    /**
      * Overrides the file attachment processing from StandardProjectImporter
      * 
      * Since columns BV-CI are used for case study fields rather than file attachments,
@@ -294,85 +594,8 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 }
             }
         }
-        
-        // Process legacy file attachment (BO/BP) - now maps to Q15.1.N/L
-        // This provides backward compatibility with old templates
-        if (!empty($data['BO']) && !empty($data['BP'])) {
-            $filename = $data['BO']; // Q15.1.N
-            $url = $data['BP'];      // Q15.1.L
-            
-            try {
-                $fileData = $this->downloadAttachmentFromUrl($url, $filename);
-                
-                if ($fileData) {
-                    // Check if this file ID already exists in our payload
-                    if (!in_array($fileData['id'], $existingFileIds)) {
-                        // Add to files array
-                        $payload['files'][] = [
-                            'id' => $fileData['id'],
-                            'name' => $fileData['name'],
-                            'extension' => $fileData['extension'],
-                            'mimeType' => $fileData['mimeType'],
-                            'description' => $fileData['name'] ?? '',
-                        ];
-                        $existingFileIds[] = $fileData['id'];
-                    }
-                }
-            } catch (\Exception $e) {
-                // Log error but continue processing
-            }
-        }
-        
-        // Process legacy image attachment (BQ/BR) - now maps to Q16.1.N/L  
-        // This provides backward compatibility with old templates
-        if (!empty($data['BQ']) && !empty($data['BR'])) {
-            $filename = $data['BQ']; // Q16.1.N (in old format this was filename, in new format it's copyright)
-            $url = $data['BR'];      // Q16.1.L
-            
-            try {
-                $fileData = $this->downloadAttachmentFromUrl($url, $filename);
-                
-                if ($fileData) {
-                    // For images, we need to determine if it's actually an image
-                    $isImage = $this->isImageFile($filename);
-                    
-                    if ($isImage) {
-                        // Check if this image ID already exists in our payload
-                        if (!in_array($fileData['id'], $existingImageIds)) {
-                            // Add to images array
-                            // In legacy format, BQ contained filename, now it should be copyright
-                            // For backward compatibility, we'll use it as copyright if it doesn't look like a filename
-                            $copyright = $this->looksLikeUrl($filename) ? '' : $filename;
-                            
-                            $payload['images'][] = [
-                                'id' => $fileData['id'],
-                                'name' => $fileData['name'],
-                                'extension' => $fileData['extension'],
-                                'mimeType' => $fileData['mimeType'],
-                                'copyright' => $copyright,
-                                'description' => $fileData['name'] ?? ''
-                            ];
-                            $existingImageIds[] = $fileData['id'];
-                        }
-                    } else {
-                        // If it's not an image but in the image column, we'll treat it as a regular file
-                        if (!in_array($fileData['id'], $existingFileIds)) {
-                            $payload['files'][] = [
-                                'id' => $fileData['id'],
-                                'name' => $fileData['name'],
-                                'extension' => $fileData['extension'],
-                                'mimeType' => $fileData['mimeType'],
-                                'description' => $fileData['name'] ?? '',
-                            ];
-                            $existingFileIds[] = $fileData['id'];
-                        }
-                    }
-                }
-            } catch (\Exception $e) {
-                // Log error but continue processing
-            }
-        }
-        
+      
+               
         // Process new format files (Q15.{1-6}.N/L) - this supports up to 6 files
         $this->importCaseStudyFiles($data, $payload, $existingFileIds);
         
@@ -424,12 +647,14 @@ class CaseStudyProjectImporter extends StandardProjectImporter
     }
     
     /**
-     * Import images from Q16.{1-6}.N/L fields with copyright from Q17.{1-6}
+     * Import images from Q16.{1-6}.N/L fields with copyright from Q17.{1-4}
      * 
      * New format supports up to 6 images where:
      * - Q16.X.N contains the image filename/label
      * - Q16.X.L contains the image URL
-     * - Q17.X contains the copyright text for image X
+     * - Q17.X contains the copyright text for image X (only available for images 1-4)
+     * 
+     * Note: Only 4 copyright fields exist (Q17.1-Q17.4), so images 5-6 won't have copyright info.
      * 
      * @param array $data The Excel data
      * @param array &$payload The project payload to update
@@ -440,7 +665,6 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         for ($i = 1; $i <= 6; $i++) {
             $nameKey = "Q16.$i.N";       // Image filename/label
             $urlKey = "Q16.$i.L";        // Image URL
-            $copyrightKey = "Q17.$i";    // Copyright text for this image
             
             if (empty($data[$urlKey])) {
                 continue;
@@ -448,7 +672,13 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             
             $url = $data[$urlKey];
             $filename = $data[$nameKey] ?? basename($url);
-            $copyright = $data[$copyrightKey] ?? '';
+            
+            // Copyright is only available for images 1-4 (Q17.1-Q17.4)
+            $copyright = '';
+            if ($i <= 4) {
+                $copyrightKey = "Q17.$i";
+                $copyright = $data[$copyrightKey] ?? '';
+            }
             
             try {
                 $fileData = $this->downloadAttachmentFromUrl($url, $filename);
@@ -674,6 +904,8 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         
         return str_replace($charsFrom, $charsTo, $string);
     }
+    
+
 
     /**
      * {@inheritdoc}
@@ -938,22 +1170,22 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         
         // Include basic case study fields without DB lookups
         // Map case study specific fields using field codes only
-        // Remove fallback to hard-coded column letters since they shifted in the new template
+        // Fixed field mapping to match main method - Q28=Results Quantity, Q29=Innovation, Q30=Mehrwert durch Vernetzung
         $caseStudyFields = [
             'exemplary' => $data['Q21'] ?? null,
             'initialContext' => $data['Q22'] ?? null,
             'initialContextGoals' => $data['Q23'] ?? null,
             'fundingMethod' => $data['Q24'] ?? null,
             'fundingMethodStakeholders' => $data['Q25'] ?? null,
-            'resultsQuantity' => $data['Q26'] ?? null,
+            'resultsQuantity' => $data['Q28'] ?? null,          // Fixed: Q28 = Results Quantity
             'resultsQuality' => $data['Q27'] ?? null,
-            'innovations' => $data['Q28'] ?? null,
-            'additionalValue' => $data['Q29'] ?? null,
-            'integrationYoungCitizen' => $data['Q30'] ?? null,
-            'integrationFemaleCitizen' => $data['Q31'] ?? null,
-            'integrationMinorities' => $data['Q32'] ?? null,
-            'learningExperience' => $data['Q33'] ?? null,
-            'transferable' => $data['Q34'] ?? null,
+            'innovations' => $data['Q29'] ?? null,              // Fixed: Q29 = Innovation
+            'additionalValue' => $data['Q30'] ?? null,          // Fixed: Q30 = Mehrwert durch Vernetzung  
+            'integrationYoungCitizen' => $data['Q31'] ?? null,  // Fixed: Q31 = Integration young citizens
+            'integrationFemaleCitizen' => $data['Q32'] ?? null, // Fixed: Q32 = Integration female citizens
+            'integrationMinorities' => $data['Q33'] ?? null,    // Fixed: Q33 = Integration minorities
+            'learningExperience' => $data['Q34'] ?? null,       // Fixed: Q34 = Learning experience
+            'transferable' => $data['Q35'] ?? null,             // Fixed: Q35 = Transferable
         ];
         
         foreach ($caseStudyFields as $field => $value) {
@@ -982,38 +1214,10 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             }
         }
         
-        // For synergy tags, just indicate their presence in preview without DB lookups
-        $synergyFundTagsPresent = false;
-        $synergyGoalTagsPresent = false;
         
-        // Check for synergy fund tags using field codes
-        foreach (['Q30_1', 'Q30_2', 'Q30_3', 'Q30_4', 'Q30_5'] as $code) {
-            if (isset($data[$code]) && $data[$code] == 1) {
-                $synergyFundTagsPresent = true;
-                break;
-            }
-        }
-        
-        // Check for synergy goal tags using field codes
-        foreach (['Q31_1', 'Q31_2', 'Q31_3', 'Q31_4', 'Q31_5', 'Q31_6', 'Q31_7'] as $code) {
-            if (isset($data[$code]) && $data[$code] == 1) {
-                $synergyGoalTagsPresent = true;
-                break;
-            }
-        }
-        
-        // Add placeholder indicators for synergy tags
-        if ($synergyFundTagsPresent) {
-            $payload['hasSynergyFundTags'] = true;
-        }
-        
-        if ($synergyGoalTagsPresent) {
-            $payload['hasSynergyGoalTags'] = true;
-        }
-        
-        // Extract localWorkgroupId from column AG and map to name
-        if (isset($data['AG']) && is_numeric($data['AG'])) {
-            $localWorkgroupId = (int)$data['AG'];
+        // Extract localWorkgroupId from Q7 field (LAG) and map to name - use field codes only
+        if (isset($data['Q7']) && is_numeric($data['Q7'])) {
+            $localWorkgroupId = (int)$data['Q7'];
             $payload['localWorkgroupId'] = $localWorkgroupId;
             
             // Get the LocalWorkgroup name from mapping
@@ -1023,14 +1227,30 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             }
         }
         
-        // Add LE category name without DB lookup - use field codes only
-        if (!empty($data['Q6'])) {
-            $excelCategoryId = $data['Q6'];
-            $leCategoryNameMapping = $this->getLeCategoryMapping();
+        // Add LE category ID and name for preview - use field codes only
+        if (!empty($data['Q6']) && is_numeric($data['Q6'])) {
+            $excelCategoryId = (int)$data['Q6'];
+            $payload['leFundingCategoryId'] = $excelCategoryId;
+            
+            // Get the category name from mapping
+            $leCategoryNameMapping = $this->getLeCategoryNameMapping();
             if (isset($leCategoryNameMapping[$excelCategoryId])) {
                 $payload['leFundingCategoryName'] = $leCategoryNameMapping[$excelCategoryId];
             }
         }
+        
+        // Process financing for preview using Q10.x fields - simplified without validation
+        $payload['financing'] = [
+            ['id' => 'costsGap', 'value' => isset($data['Q10.1']) ? (float)$data['Q10.1'] : 0],     // GAP Strategieplan
+            ['id' => 'costsPrivate', 'value' => isset($data['Q10.2']) ? (float)$data['Q10.2'] : 0], // Private und Eigenmittel
+            ['id' => 'costsExternal', 'value' => isset($data['Q10.3']) ? (float)$data['Q10.3'] : 0] // Andere Finanzquellen
+        ];
+        
+        // Process links for preview (with format detection)
+        $this->processCaseStudyLinksForPreview($data, $payload);
+        
+        // Process videos for preview (with format detection)
+        $this->processCaseStudyVideosForPreview($data, $payload);
         
         return $payload;
     }
@@ -1041,7 +1261,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
      * 
      * @return array Mapping from Excel ID to database ID
      */
-    private function getLeCategoryMapping(): array
+    protected function getLeCategoryMapping(): array
     {
         // This mapping was originally in StandardProjectImporter but is specific to Case Studies
         return [
@@ -1083,6 +1303,401 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             36 => 61, // 78-03 Nationalparke
             37 => 62  // 78-03 Alpenkonvention
         ];
+    }
+
+    /**
+     * Get the mapping between Excel LE-Category IDs and their names
+     * This mapping is specific to CaseStudy imports.
+     * 
+     * @return array Mapping from Excel ID to category name
+     */
+    protected function getLeCategoryNameMapping(): array
+    {
+        return [
+            1 => '73-01 Investitionen in die landwirtschaftliche Erzeugung',
+            2 => '73-08 Investitionen in Diversifizierungsaktivitäten inklusive Be- und Verarbeitung sowie Vermarktung landwirtschaftlicher Erzeugnisse',
+            3 => '73-10 Orts- und Stadtkernförderung (Investitionen zur Revitalisierung und Sanierung oder Um- und Weiterbau von leerstehenden, fehl- oder mindergenutzten Gebäuden oder öffentlichen Flächen)',
+            4 => '73-11 Soziale Dienstleistungen',
+            5 => '73-15 Investitionen zur Erhaltung, Wiederherstellung und Verbesserung des natürlichen Erbes',
+            6 => '75-02 Unterstützung der Gründung und Entwicklung von innovativen Kleinunternehmen mit Mehrwert für den ländlichen Raum',
+            7 => '77-02 Soziale Landwirtschaft',
+            8 => '77-02 Lokale Märkte/Absatzförderung',
+            9 => '77-02 Erzeugerorganisationen',
+            10 => '77-02 LMQ',
+            11 => '77-02 Cluster',
+            12 => '77-02 Tourismusdienstleistungen',
+            13 => '77-02 Arbeitsabläufe, Ressourcennutzung',
+            14 => '77-02 Bioökonomie',
+            15 => '77-02 Kulinarik',
+            16 => '77-02 Digitalisierung und sonstiges',
+            17 => '77-02 Forstwirtschaft',
+            18 => '77-02 Tourismus Pilotprojekte',
+            19 => '77-02 Naturschutz',
+            20 => '77-02 Naturschutz BL',
+            21 => '77-02 Naturschutz BMK',
+            22 => '77-02- Nationalparke',
+            23 => '77-02 Umweltschutz BML',
+            24 => '77-02 Alpenkonvention',
+            25 => '77-03 Ländliche Innovationssysteme',
+            26 => '77-04 Reaktivierung des Leerstands durch Bewusstseinsbildung & Beratung, Entwicklungskonzepte & Management zur Stadt- und Ortskernstärkung',
+            27 => '77-05 LEADER',
+            28 => '77-06 Förderung von Operationellen Gruppen und von Innovationsprojekten im Rahmen der Europäischen Innovationspartnerschaft für landwirtschaftliche Produktivität und Nachhaltigkeit – EIP-AGRI',
+            29 => '78-02 Wissenstransfer für land- und forstwirtschaftliche Themenfelder(fachliche und persönliche Fort- und Weiterbildung und Information)',
+            30 => '78-03 Pädagogik LW, Umw., Ernähr.',
+            31 => '78-03 Dialog mit der Gesellschaft LW, Umw., Ernähr.',
+            32 => '78-03 Waldbezogene Pläne, Natur- und Gesellschaftsthemen',
+            33 => '78-03-4WT Weiterbildung Mgmt in Regionen',
+            34 => '78-03 Naturschutz BL',
+            35 => '78-03 Naturschutz BMK',
+            36 => '78-03 Nationalparke',
+            37 => '78-03 Alpenkonvention'
+        ];
+    }
+
+    /**
+     * Override importProjects to fix the column mapping issue
+     * 
+     * The parent StandardProjectImporter stores incorrect column mappings in rawData.
+     * We need to re-read the Excel file directly to get the correct column data.
+     */
+    public function importProjects(ProjectImport $import, User $user, ?LEPeriod $lePeriod = null, ?array $selectedRows = null): bool
+    {
+        try {
+
+            // Update import status
+            $import->setStatus(ProjectImport::STATUS_PROCESSING);
+            $import->setUpdatedAt(new \DateTime());
+            $this->em->persist($import);
+            $this->em->flush();
+
+            // Re-read the Excel file directly to get correct column mappings
+            $filePath = $import->getFilePath();
+            if (!file_exists($filePath)) {
+                $filePath = $this->uploadDir . '/' . $filePath;
+            }
+
+            // Load the spreadsheet fresh
+            $spreadsheet = IOFactory::load($filePath);
+            $worksheet = $spreadsheet->getActiveSheet();
+            
+            $headerRowIndex = $this->getHeaderRowCount();
+            $highestRow = $worksheet->getHighestRow();
+            $highestColumnIndex = Coordinate::columnIndexFromString($worksheet->getHighestColumn());
+            
+            // Build correct header mapping from row 4 (field names)
+            $headerMapping = [];
+            for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                $columnLetter = Coordinate::stringFromColumnIndex($col);
+                $fieldName = $worksheet->getCellByColumnAndRow($col, $headerRowIndex)->getValue();
+                if (!empty($fieldName)) {
+                    $headerMapping[$columnLetter] = $fieldName;
+                }
+            }
+
+            // Get all import items
+            $items = $import->getItems();
+            
+            // If no items exist, create them from the Excel file
+            if ($items->isEmpty()) {
+
+                
+                // Get the highest row and column indexes
+                $highestRow = $worksheet->getHighestRow();
+                $highestColumnIndex = Coordinate::columnIndexFromString($worksheet->getHighestColumn());
+                
+                // Build header mapping from row 1 (parent headers) and row 4 (field names)
+                $headerMappingForCreation = [];
+                $parentHeaders = [];
+                
+                // Get parent headers from row 1
+                for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                    $parentHeader = $worksheet->getCellByColumnAndRow($col, 1)->getValue();
+                    if (!empty($parentHeader)) {
+                        $parentHeaders[$col] = $parentHeader;
+                    }
+                }
+                
+                // Get field names from row 4
+                for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                    $fieldName = $worksheet->getCellByColumnAndRow($col, 4)->getValue();
+                    if (!empty($fieldName)) {
+                        // Find the parent header for this column
+                        $currentParent = null;
+                        foreach ($parentHeaders as $parentCol => $parentValue) {
+                            if ($parentCol <= $col) {
+                                $currentParent = $parentValue;
+                            }
+                        }
+                        
+                        // Store the mapping
+                        $headerMappingForCreation[$col] = [
+                            'parent' => $currentParent,
+                            'field' => $fieldName
+                        ];
+                    }
+                }
+                
+                // Process each row starting from row 5 (after headers)
+                for ($row = 5; $row <= $highestRow; $row++) {
+                    $rowData = [];
+                    
+                    // Process each column
+                    for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                        if (isset($headerMappingForCreation[$col])) {
+                            $cellValue = $worksheet->getCellByColumnAndRow($col, $row)->getValue();
+                            $fieldName = $headerMappingForCreation[$col]['field'];
+                            $rowData[$fieldName] = $cellValue;
+                        }
+                        
+                        // Also store the column letter as a key for links and videos
+                        $colLetter = Coordinate::stringFromColumnIndex($col);
+                        $cellValue = $worksheet->getCellByColumnAndRow($col, $row)->getValue();
+                        if ($cellValue !== null) {
+                            $rowData[$colLetter] = $cellValue;
+                        }
+                    }
+                    
+                    // Skip empty rows
+                    if (empty($rowData)) {
+                        continue;
+                    }
+                    
+                    // Prepare the project payload for preview
+                    $payload = $this->preparePreviewPayload($rowData);
+                    
+                    // Create a new import item
+                    $importItem = new ProjectImportItem();
+                    $importItem->setImport($import);
+                    $importItem->setRowNumber($row - 4); // Adjust for header rows
+                    $importItem->setStatus(ProjectImportItem::STATUS_PENDING);
+                    $importItem->setRawData($rowData);
+                    $importItem->setProcessedData([
+                        'rowNumber' => $row - 4,
+                        'title' => $payload['title'] ?? 'Untitled',
+                        'description' => $payload['description'] ?? '',
+                        'projectCode' => $payload['projectCode'] ?? '',
+                        'startDate' => $payload['startDate'] ?? null,
+                        'endDate' => $payload['endDate'] ?? null,
+                        'status' => 'valid',
+                        'message' => '',
+                        'payload' => $payload
+                    ]);
+                    $importItem->setCreatedAt(new \DateTime());
+                    $importItem->setUpdatedAt(new \DateTime());
+                    
+                    $this->em->persist($importItem);
+                }
+                
+                $this->em->flush();
+                
+                // Refresh the items collection
+                $this->em->refresh($import);
+                $items = $import->getItems();
+                
+            }
+            
+            // Process each item with fresh Excel data
+            $successCount = 0;
+            $errorCount = 0;
+            $processedCount = 0;
+            
+            foreach ($items as $item) {
+                // Skip already processed items
+                if ($item->getStatus() !== ProjectImportItem::STATUS_PENDING) {
+                    continue;
+                }
+                
+                // Skip items not in the selectedRows array if it's provided
+                if ($selectedRows !== null && !in_array($item->getRowNumber(), $selectedRows)) {
+                    $item->setStatus(ProjectImportItem::STATUS_SKIPPED);
+                    $item->setUpdatedAt(new \DateTime());
+                    $this->em->persist($item);
+                    continue;
+                }
+                
+                // Update item status
+                $item->setStatus(ProjectImportItem::STATUS_PROCESSING);
+                $item->setUpdatedAt(new \DateTime());
+                $this->em->persist($item);
+                $this->em->flush();
+                
+                // Calculate the actual Excel row number (add header rows)
+                $excelRowNumber = $item->getRowNumber() + $headerRowIndex;
+                
+                // Read fresh data directly from Excel for this row
+                $freshRowData = [];
+                
+                // First, read by field names
+                for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                    $columnLetter = Coordinate::stringFromColumnIndex($col);
+                    if (isset($headerMapping[$columnLetter])) {
+                        $cellValue = $worksheet->getCellByColumnAndRow($col, $excelRowNumber)->getValue();
+                        $fieldName = $headerMapping[$columnLetter];
+                        $freshRowData[$fieldName] = $cellValue;
+                    }
+                }
+                
+                // Then, read by column letters for links/videos (this time with correct mapping)
+                for ($col = 1; $col <= $highestColumnIndex; $col++) {
+                    $columnLetter = Coordinate::stringFromColumnIndex($col);
+                    $cellValue = $worksheet->getCellByColumnAndRow($col, $excelRowNumber)->getValue();
+                    if ($cellValue !== null) {
+                        $freshRowData[$columnLetter] = $cellValue;
+                    }
+                }
+                
+                                    // Process with fresh data
+                try {
+                    $fullPayload = $this->prepareProjectPayload($freshRowData);
+                    
+                    // Create the result structure
+                    $result = [
+                        'rowNumber' => $item->getRowNumber(),
+                        'title' => $fullPayload['title'] ?? 'Untitled',
+                        'description' => $fullPayload['description'] ?? '',
+                        'projectCode' => $fullPayload['projectCode'] ?? '',
+                        'startDate' => $fullPayload['startDate'] ?? null,
+                        'endDate' => $fullPayload['endDate'] ?? null,
+                        'status' => 'valid',
+                        'message' => '',
+                        'payload' => $fullPayload
+                    ];
+                    
+                    // Validate required fields
+                    if (empty($result['title'])) {
+                        $result['status'] = 'error';
+                        $result['message'] = 'Project title is required';
+                    }
+                    
+
+                    
+                    if ($result['status'] === 'valid') {
+                        // Get the LE category and local workgroup mappings
+                        $leCategoryMapping = $this->getLeCategoryMapping();
+                        $localWorkgroupMapping = $this->getLocalWorkgroupMapping();
+                        
+                        // If LE Period is provided, add it to the payload
+                        if ($lePeriod) {
+                            $result['payload']['lePeriod'] = $lePeriod;
+                            
+                            // If LE Category ID is provided in the payload, find and add the LE Category
+                            if (isset($result['payload']['leFundingCategoryId']) && is_numeric($result['payload']['leFundingCategoryId'])) {
+                                $excelCategoryId = (int)$result['payload']['leFundingCategoryId'];
+                                
+                                // Get the database ID for the LE-Category
+                                $dbCategoryId = $leCategoryMapping[$excelCategoryId] ?? null;
+                                
+                                if ($dbCategoryId) {
+                                    $leCategory = $this->em->getRepository(\App\Entity\LEFundingCategory::class)->find($dbCategoryId);
+                                    
+                                    if ($leCategory) {
+                                        $result['payload']['leFundingCategory'] = $leCategory;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // If LocalWorkgroup ID is provided in the payload, find and add the LocalWorkgroup
+                        if (isset($result['payload']['localWorkgroupId']) && is_numeric($result['payload']['localWorkgroupId'])) {
+                            $excelWorkgroupId = (int)$result['payload']['localWorkgroupId'];
+                            
+                            // Get the database ID for the LocalWorkgroup
+                            $dbWorkgroupId = $localWorkgroupMapping[$excelWorkgroupId] ?? null;
+                            
+                            if ($dbWorkgroupId) {
+                                $localWorkgroup = $this->em->getRepository(\App\Entity\LocalWorkgroup::class)->find($dbWorkgroupId);
+                                
+                                if ($localWorkgroup) {
+                                    $result['payload']['localWorkgroup'] = $localWorkgroup;
+                                }
+                            }
+                        }
+                        
+                        // Check if a project with this title already exists
+                        $existingProject = $this->findProjectByTitle($result['payload']['title']);
+                        
+                        if ($existingProject) {
+                            // Update the project with the new data
+                            try {
+                                $this->projectService->updateProject($existingProject, $result['payload']);
+                                
+                                $item->setStatus(ProjectImportItem::STATUS_COMPLETED);
+                                $item->setProject($existingProject);
+                                $successCount++;
+                            } catch (\Exception $updateException) {
+                                $item->setStatus(ProjectImportItem::STATUS_FAILED);
+                                $item->setErrorMessage('Failed to update project: ' . $updateException->getMessage());
+                                $errorCount++;
+                            }
+                        } else {
+                            // Set the user as the creator
+                            $result['payload']['user'] = $user;
+                            
+                            // Create the project
+                            try {
+                                $project = $this->projectService->createProject($result['payload']);
+                                
+                                if ($project) {
+                                    $item->setStatus(ProjectImportItem::STATUS_COMPLETED);
+                                    $item->setProject($project);
+                                    $successCount++;
+                                } else {
+                                    $item->setStatus(ProjectImportItem::STATUS_FAILED);
+                                    $item->setErrorMessage('Failed to create project - ProjectService returned null');
+                                    $errorCount++;
+                                }
+                            } catch (\Exception $createException) {
+                                $item->setStatus(ProjectImportItem::STATUS_FAILED);
+                                $item->setErrorMessage('Failed to create project: ' . $createException->getMessage());
+                                $errorCount++;
+                            }
+                        }
+                    } else {
+                        $item->setStatus(ProjectImportItem::STATUS_FAILED);
+                        $item->setErrorMessage($result['message']);
+                        $errorCount++;
+                    }
+                    
+                } catch (\Exception $e) {
+                    $item->setStatus(ProjectImportItem::STATUS_FAILED);
+                    $item->setErrorMessage('Error: ' . $e->getMessage());
+                    $errorCount++;
+                }
+                
+                $item->setUpdatedAt(new \DateTime());
+                $this->em->persist($item);
+                
+                $processedCount++;
+                
+                // Update import progress
+                $import->setProcessedRows($processedCount);
+                $import->setSuccessfulRows($successCount);
+                $import->setErrorRows($errorCount);
+                $import->setUpdatedAt(new \DateTime());
+                $this->em->persist($import);
+                $this->em->flush();
+            }
+            
+            // Update final import status
+            $import->setStatus(ProjectImport::STATUS_COMPLETED);
+            $import->setUpdatedAt(new \DateTime());
+            $this->em->persist($import);
+            $this->em->flush();
+            
+
+            
+            return true;
+            
+        } catch (\Exception $e) {
+            // Update import status
+            $import->setStatus(ProjectImport::STATUS_FAILED);
+            $import->setErrorMessage('Error: ' . $e->getMessage());
+            $import->setUpdatedAt(new \DateTime());
+            $this->em->persist($import);
+            $this->em->flush();
+            
+            return false;
+        }
     }
 
 } 
