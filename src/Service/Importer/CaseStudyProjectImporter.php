@@ -6,8 +6,6 @@ use App\Entity\ProjectImport;
 use App\Entity\ProjectImportItem;
 use App\Entity\User;
 use App\Entity\LEPeriod;
-use App\Entity\LEFundingCategory;
-use App\Entity\LocalWorkgroup;
 use App\Service\ProjectService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\String\Slugger\SluggerInterface;
@@ -346,41 +344,12 @@ class CaseStudyProjectImporter extends StandardProjectImporter
     {
         // Initialize links array
         $payload['links'] = [];
-        
-        // Define both possible formats
-        $formats = [
-            'format1' => [
-                'labels' => ['BT', 'BV', 'BX', 'BZ', 'CB'],
-                'urls' => ['BU', 'BW', 'BY', 'CA', 'CC']
-            ],
-            'format2' => [
-                'labels' => ['AY', 'BA', 'BC', 'BE', 'BG'],
-                'urls' => ['AZ', 'BB', 'BD', 'BF', 'BH']
-            ]
-        ];
-        
+           
         // Detect which format has actual data
-        $selectedFormat = null;
-        foreach ($formats as $formatName => $format) {
-            for ($i = 0; $i < count($format['labels']); $i++) {
-                $labelCol = $format['labels'][$i];
-                $urlCol = $format['urls'][$i];
-                
-                $labelValue = $data[$labelCol] ?? '';
-                $urlValue = $data[$urlCol] ?? '';
-                
-                if (!empty($labelValue) || !empty($urlValue)) {
-                    $label = !empty($labelValue) ? trim($labelValue) : '';
-                    $url = !empty($urlValue) ? trim($urlValue) : '';
-                    
-                    // Check if we have a valid URL
-                    if (!empty($url) && $this->looksLikeUrl($url)) {
-                        $selectedFormat = $format;
-                        break 2; // Break out of both loops
-                    }
-                }
-            }
-        }
+        $selectedFormat =  [
+            'labels' => ['AY', 'BA', 'BC', 'BE', 'BG'],
+            'urls' => ['AZ', 'BB', 'BD', 'BF', 'BH']
+        ];
         
         // Use the detected format to process links
         if ($selectedFormat) {
@@ -439,40 +408,11 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         // Initialize videos array
         $payload['videos'] = [];
         
-        // Define both possible formats
-        $formats = [
-            'format1' => [
-                'labels' => ['CD', 'CF', 'CH'],
-                'urls' => ['CE', 'CG', 'CI']
-            ],
-            'format2' => [
-                'labels' => ['BI', 'BK', 'BM'],
-                'urls' => ['BJ', 'BL', 'BN']
-            ]
-        ];
-        
         // Detect which format has actual data
-        $selectedFormat = null;
-        foreach ($formats as $formatName => $format) {
-            for ($i = 0; $i < count($format['labels']); $i++) {
-                $labelCol = $format['labels'][$i];
-                $urlCol = $format['urls'][$i];
-                
-                $labelValue = $data[$labelCol] ?? '';
-                $urlValue = $data[$urlCol] ?? '';
-                
-                if (!empty($labelValue) || !empty($urlValue)) {
-                    $label = !empty($labelValue) ? trim($labelValue) : '';
-                    $url = !empty($urlValue) ? trim($urlValue) : '';
-                    
-                    // Check if we have a valid URL
-                    if (!empty($url) && $this->looksLikeUrl($url)) {
-                        $selectedFormat = $format;
-                        break 2; // Break out of both loops
-                    }
-                }
-            }
-        }
+        $selectedFormat = [
+            'labels' => ['BI', 'BK', 'BM'],
+            'urls' => ['BJ', 'BL', 'BN']
+        ];
         
         // Use the detected format to process videos
         if ($selectedFormat) {

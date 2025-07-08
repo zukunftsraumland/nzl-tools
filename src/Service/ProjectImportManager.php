@@ -465,15 +465,15 @@ class ProjectImportManager
             if ($needsModification) {
                 
                 
-                // Define the number of columns to remove (A=1 to S=19 -> 19 columns)
-                $columnsToRemove = 19;
+                // Define the number of columns to remove (A=1 to U=21 -> 21 columns)
+                $columnsToRemove = 21;
                 // Remove column by index repeatedly. Removing index 1 shifts others left.
                 for ($i = 0; $i < $columnsToRemove; $i++) {
                     // Important check: ensure the worksheet still has columns to remove
                     if ($worksheet->getHighestColumn() >= 'A') {
                          $worksheet->removeColumnByIndex(1); // Remove the first column (index 1)
                     } else {
-                        // Should not happen if removing A-S, but safety check
+                        // Should not happen if removing A-U, but safety check
                         
                         break; 
                     }
