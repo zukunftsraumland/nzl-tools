@@ -78,8 +78,8 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             'initialContextGoals' => $data['Q23'] ?? null,
             'fundingMethod' => $data['Q24'] ?? null,
             'fundingMethodStakeholders' => $data['Q25'] ?? null,
-            'resultsQuantity' => $data['Q28'] ?? null,          // Fixed: Q28 = Results Quantity
-            'resultsQuality' => $data['Q27'] ?? null,
+            'resultsQuantity' => $data['Q27'] ?? null,          // Fixed: Q28 = Results Quantity
+            'resultsQuality' => $data['Q28'] ?? null,
             'innovations' => $data['Q29'] ?? null,              // Fixed: Q29 = Innovation
             'additionalValue' => $data['Q30'] ?? null,          // Fixed: Q30 = Mehrwert durch Vernetzung  
             'integrationYoungCitizen' => $data['Q31'] ?? null,  // Fixed: Q31 = Integration young citizens
@@ -1117,8 +1117,8 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             'initialContextGoals' => $data['Q23'] ?? null,
             'fundingMethod' => $data['Q24'] ?? null,
             'fundingMethodStakeholders' => $data['Q25'] ?? null,
-            'resultsQuantity' => $data['Q28'] ?? null,          // Fixed: Q28 = Results Quantity
-            'resultsQuality' => $data['Q27'] ?? null,
+            'resultsQuantity' => $data['Q27'] ?? null,          // Fixed: Q28 = Results Quantity
+            'resultsQuality' => $data['Q28'] ?? null,
             'innovations' => $data['Q29'] ?? null,              // Fixed: Q29 = Innovation
             'additionalValue' => $data['Q30'] ?? null,          // Fixed: Q30 = Mehrwert durch Vernetzung  
             'integrationYoungCitizen' => $data['Q31'] ?? null,  // Fixed: Q31 = Integration young citizens
