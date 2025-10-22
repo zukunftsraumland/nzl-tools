@@ -62,7 +62,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
     /**
      * {@inheritdoc}
      */
-    protected function prepareProjectPayload(array $data): array
+    protected function prepareProjectPayload(array $data, array $headerMapping = []): array
     {
         // First, call the parent's method, but we'll override the file processing later
         $payload = parent::prepareProjectPayload($data);
@@ -166,10 +166,10 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         $this->processCaseStudyFinancing($data, $payload);
         
         // Process links using Q13.1.1/Q13.1.2 fields for case studies
-        $this->processCaseStudyLinks($data, $payload);
+        $this->processCaseStudyLinks($data, $payload, $headerMapping);
         
         // Process videos using Q14.1.1/Q14.1.2 fields for case studies
-        $this->processCaseStudyVideos($data, $payload);
+        $this->processCaseStudyVideos($data, $payload, $headerMapping);
         
         return $payload;
     }
@@ -340,16 +340,28 @@ class CaseStudyProjectImporter extends StandardProjectImporter
      * @param array $data The Excel data
      * @param array &$payload The project payload to update
      */
-    private function processCaseStudyLinks(array $data, array &$payload): void
+    private function processCaseStudyLinks(array $data, array &$payload, array $headerMapping = []): void
     {
         // Initialize links array
         $payload['links'] = [];
            
         // Detect which format has actual data
         $selectedFormat =  [
-            'labels' => ['AY', 'BA', 'BC', 'BE', 'BG'],
-            'urls' => ['AZ', 'BB', 'BD', 'BF', 'BH']
+            'labels' => [],
+            'urls' => [],
         ];
+
+        foreach($headerMapping as $column => $identifier) {
+
+            if($identifier === 'Q13.1.1') {
+                $selectedFormat['labels'][] = $column;
+            }
+
+            if($identifier === 'Q13.1.2') {
+                $selectedFormat['urls'][] = $column;
+            }
+
+        }
         
         // Use the detected format to process links
         if ($selectedFormat) {
@@ -403,16 +415,28 @@ class CaseStudyProjectImporter extends StandardProjectImporter
      * @param array $data The Excel data
      * @param array &$payload The project payload to update
      */
-    private function processCaseStudyVideos(array $data, array &$payload): void
+    private function processCaseStudyVideos(array $data, array &$payload, array $headerMapping = []): void
     {
         // Initialize videos array
         $payload['videos'] = [];
         
         // Detect which format has actual data
-        $selectedFormat = [
-            'labels' => ['BI', 'BK', 'BM'],
-            'urls' => ['BJ', 'BL', 'BN']
+        $selectedFormat =  [
+            'labels' => [],
+            'urls' => [],
         ];
+
+        foreach($headerMapping as $column => $identifier) {
+
+            if($identifier === 'Q14.1.1') {
+                $selectedFormat['labels'][] = $column;
+            }
+
+            if($identifier === 'Q14.1.2') {
+                $selectedFormat['urls'][] = $column;
+            }
+
+        }
         
         // Use the detected format to process videos
         if ($selectedFormat) {
@@ -464,10 +488,10 @@ class CaseStudyProjectImporter extends StandardProjectImporter
      * @param array $data The Excel data
      * @param array &$payload The project payload to update
      */
-    private function processCaseStudyLinksForPreview(array $data, array &$payload): void
+    private function processCaseStudyLinksForPreview(array $data, array &$payload, array $headerMapping = []): void
     {
         // Use the same method as the actual import to ensure consistency
-        $this->processCaseStudyLinks($data, $payload);
+        $this->processCaseStudyLinks($data, $payload, $headerMapping);
     }
     
     /**
@@ -479,10 +503,10 @@ class CaseStudyProjectImporter extends StandardProjectImporter
      * @param array $data The Excel data
      * @param array &$payload The project payload to update
      */
-    private function processCaseStudyVideosForPreview(array $data, array &$payload): void
+    private function processCaseStudyVideosForPreview(array $data, array &$payload, array $headerMapping = []): void
     {
         // Use the same method as the actual import to ensure consistency
-        $this->processCaseStudyVideos($data, $payload);
+        $this->processCaseStudyVideos($data, $payload, $headerMapping);
     }
     
     /**
@@ -997,7 +1021,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 }
                 
                 // Prepare basic payload without expensive operations
-                $payload = $this->preparePreviewPayload($rowData);
+                $payload = $this->preparePreviewPayload($rowData, $headerMapping);
                 
                 // Add basic case study fields to payload (without database lookups)
                 $payload['caseStudy'] = true;
@@ -1060,7 +1084,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
      * @param array $data The Excel row data
      * @return array The payload for preview
      */
-    private function preparePreviewPayload(array $data): array
+    private function preparePreviewPayload(array $data, array $headerMapping = []): array
     {
         $payload = [];
         
@@ -1187,10 +1211,10 @@ class CaseStudyProjectImporter extends StandardProjectImporter
         ];
         
         // Process links for preview (with format detection)
-        $this->processCaseStudyLinksForPreview($data, $payload);
+        $this->processCaseStudyLinksForPreview($data, $payload, $headerMapping);
         
         // Process videos for preview (with format detection)
-        $this->processCaseStudyVideosForPreview($data, $payload);
+        $this->processCaseStudyVideosForPreview($data, $payload, $headerMapping);
         
         return $payload;
     }
@@ -1488,7 +1512,7 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                 
                                     // Process with fresh data
                 try {
-                    $fullPayload = $this->prepareProjectPayload($freshRowData);
+                    $fullPayload = $this->prepareProjectPayload($freshRowData, $headerMapping);
                     
                     // Create the result structure
                     $result = [
