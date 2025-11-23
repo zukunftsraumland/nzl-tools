@@ -93,15 +93,34 @@ class ApiFilesController extends AbstractController
         $file
             ->setName($payload['name'])
             ->setCreatedAt(new \DateTime())
-            ->setData($payload['data'])
-            ->setHash(md5($payload['data']))
+            ->setFileHash(md5($payload['data']))
             ->setMimeType($payload['mimeType'])
             ->setExtension(strtolower($payload['extension']))
         ;
 
+        $fileData = $payload['data'];
+        $fileData = count(explode(';base64,', $fileData)) >= 2 ? explode(';base64,', $fileData, 2)[1] : $fileData;
+        $fileData = base64_decode($fileData);
+        $fileHash = md5($fileData);
+        $fileDir = 'var/storage/files/'.substr($fileHash, 0, 2);
+        $filePath = $fileDir.'/'.$fileHash.'.'.strtolower($payload['extension']);
+
         $existing = $em->getRepository(File::class)->findOneBy([
-            'hash' => $file->getHash(),
+            'fileHash' => $file->getFileHash(),
         ]);
+
+        if(!is_dir(__DIR__.'/../../'.$fileDir)) {
+            mkdir(__DIR__.'/../../'.$fileDir, 0777, true);
+        }
+
+        if(!is_file(__DIR__.'/../../'.$filePath)) {
+            file_put_contents(__DIR__.'/../../'.$filePath, $fileData);
+        }
+
+        $file
+            ->setFilePath($filePath)
+            ->setFileHash($fileHash)
+        ;
 
         if(!$existing) {
             $em->persist($file);
@@ -132,10 +151,7 @@ class ApiFilesController extends AbstractController
         }
 
         $imagick = new \Imagick();
-        $data = stream_get_contents($file->getData());
-        $data = count(explode(';base64,', $data)) >= 2 ? explode(';base64,', $data, 2)[1] : $data;
-
-        $imagick->readImageBlob(base64_decode($data));
+        $imagick->readImage(__DIR__.'/../../'.$file->getFilePath());
 
         $response = new Response($imagick->getImageBlob(), 200, [
             'Content-Type' => $imagick->getImageMimeType(),
@@ -167,11 +183,7 @@ class ApiFilesController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        $data = stream_get_contents($file->getData());
-        $data = count(explode(';base64,', $data)) >= 2 ? explode(';base64,', $data, 2)[1] : $data;
-        $content = base64_decode($data);
-
-        return new Response($content, 200, [
+        return new Response(file_get_contents(__DIR__.'/../../'.$file->getFilePath()), 200, [
             'Content-Type' => $file->getMimeType(),
         ]);
 
@@ -203,17 +215,13 @@ class ApiFilesController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        $data = stream_get_contents($file->getData());
-        $data = count(explode(';base64,', $data)) >= 2 ? explode(';base64,', $data, 2)[1] : $data;
-        $content = base64_decode($data);
-
         $filename = $request->get('id').'.'.$request->get('extension');
 
         if($file->getName()) {
             $filename = $file->getName();
         }
 
-        return new Response($content, 200, [
+        return new Response(file_get_contents(__DIR__.'/../../'.$file->getFilePath()), 200, [
             'Content-Type' => $file->getMimeType(),
             'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);

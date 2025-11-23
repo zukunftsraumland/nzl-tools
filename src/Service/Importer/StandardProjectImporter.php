@@ -1716,23 +1716,36 @@ class StandardProjectImporter extends AbstractProjectImporter
             $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
             $mimeType = $this->getMimeTypeFromFilename($filename);
             
-            // Convert to base64 data
-            $base64Data = 'data:' . $mimeType . ';base64,' . base64_encode($fileContents);
-            
             // Create a File entity
             $file = new \App\Entity\File();
             $file
                 ->setName($cleanFilename)
                 ->setCreatedAt(new \DateTime())
-                ->setData($base64Data)
-                ->setHash(md5($base64Data))
                 ->setMimeType($mimeType)
                 ->setExtension($extension);
-            
+
+            $fileData = $fileContents;
+            $fileHash = md5($fileData);
+            $fileDir = 'var/storage/files/'.substr($fileHash, 0, 2);
+            $filePath = $fileDir.'/'.$fileHash.'.'.strtolower($extension);
+
             // Check if a file with the same hash already exists
             $existingFile = $this->em->getRepository(\App\Entity\File::class)->findOneBy([
-                'hash' => $file->getHash(),
+                'fileHash' => $fileHash,
             ]);
+
+            if(!is_dir(__DIR__.'/../../../'.$fileDir)) {
+                mkdir(__DIR__.'/../../../'.$fileDir, 0777, true);
+            }
+
+            if(!is_file(__DIR__.'/../../../'.$filePath)) {
+                file_put_contents(__DIR__.'/../../../'.$filePath, $fileData);
+            }
+
+            $file
+                ->setFilePath($filePath)
+                ->setFileHash($fileHash)
+            ;
             
             if (!$existingFile) {
                 $this->em->persist($file);

@@ -10,7 +10,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
  */
 #[ORM\Table(name: 'pv_file')]
 #[ORM\Entity(repositoryClass: 'App\Repository\FileRepository')]
-#[ORM\Index(columns: ['hash'], name: 'hash_idx')]
+#[ORM\Index(columns: ['file_hash'], name: 'file_hash_idx')]
 class File
 {
 
@@ -40,13 +40,13 @@ class File
     #[Groups(['file'])]
     private $mimeType;
 
-    #[ORM\Column(name: 'data', type: 'blob', nullable: true)]
-    #[Groups(['file_data'])]
-    private $data;
-
-    #[ORM\Column(name: 'hash', type: 'string', length: 255, nullable: true)]
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
     #[Groups(['file'])]
-    private $hash;
+    private ?string $filePath = null;
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Groups(['file'])]
+    private ?string $fileHash = null;
 
     /**
      * Get id
@@ -167,49 +167,30 @@ class File
     {
         return $this->mimeType;
     }
-    /**
-     * Set data
-     *
-     * @param string $data
-     *
-     * @return File
-     */
-    public function setData($data)
+
+    public function getFilePath(): ?string
     {
-        $this->data = $data;
+        return $this->filePath;
+    }
+
+    public function setFilePath(string $filePath): self
+    {
+        $this->filePath = $filePath;
 
         return $this;
     }
-    /**
-     * Get data
-     *
-     * @return string
-     */
-    public function getData()
+
+    public function getFileHash(): ?string
     {
-        return $this->data;
+        return $this->fileHash;
     }
-    /**
-     * Set hash
-     *
-     * @param string $hash
-     *
-     * @return File
-     */
-    public function setHash($hash)
+
+    public function setFileHash(string $fileHash): self
     {
-        $this->hash = $hash;
+        $this->fileHash = $fileHash;
 
         return $this;
     }
-    /**
-     * Get hash
-     *
-     * @return string
-     */
-    public function getHash()
-    {
-        return $this->hash;
-    }
+
 }
 
