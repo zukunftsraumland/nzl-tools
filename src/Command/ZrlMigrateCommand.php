@@ -735,8 +735,8 @@ class ZrlMigrateCommand extends Command
                             $this->doctrine->getManager()->flush();
                         }
 
-                        $project->setImages([
-                            ...$project->getImages(),
+                        $project->setFiles([
+                            ...$project->getFiles(),
                             [
                                 'id' => $file->getId(),
                                 'name' => $file->getName(),
