@@ -508,7 +508,6 @@ class ZrlMigrateCommand extends Command
                     }
 
                 } else {
-                    $missingPlans[] = $oldPlan['plan'];
                     $missingPlans[$oldPlan['plan']] = ($missingPlans[$oldPlan['plan']] ?? 0) + 1;
                     $io->warning(sprintf('Cannot match plan "%s" of project "%s" (ID: %s)', $oldPlan['plan'], $oldProject['identifier'], $oldProject['project_id']));
                 }
@@ -780,7 +779,7 @@ class ZrlMigrateCommand extends Command
                 ['Massnahme', 'Betroffene Projekte'],
                 [
                     ...array_map(function ($key) use ($missingPlans) {
-                        return [mb_substr($key, 0, 64), $missingPlans[$key]];
+                        return [mb_substr($key, 0, 128) ?? '???', $missingPlans[$key]];
                     }, array_keys($missingPlans))
                 ]
             );
@@ -795,7 +794,7 @@ class ZrlMigrateCommand extends Command
                 ['Schwerpunkt', 'Betroffene Projekte'],
                 [
                     ...array_map(function ($key) use ($missingTopics) {
-                        return [mb_substr($key, 0, 64), $missingTopics[$key]];
+                        return [mb_substr($key, 0, 128) ?? '???', $missingTopics[$key]];
                     }, array_keys($missingTopics))
                 ]
             );
