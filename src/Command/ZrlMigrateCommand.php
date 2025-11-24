@@ -141,7 +141,7 @@ class ZrlMigrateCommand extends Command
             }
 
             $project
-                ->setIsPublic($oldProject['show_web'] ? true : false)
+                ->setIsPublic($oldProject['show_web'] === '1')
                 ->setProjectCode($oldProject['identifier'])
                 ->setTitle($oldProjectTrans['title'])
                 ->setKeywords('')
