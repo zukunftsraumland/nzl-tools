@@ -463,22 +463,32 @@ class ProjectImportManager
             $needsModification = ($a1Value === 'Operation System');
 
             if ($needsModification) {
-                
-                
-                // Define the number of columns to remove (A=1 to U=21 -> 21 columns)
-                $columnsToRemove = 21;
-                // Remove column by index repeatedly. Removing index 1 shifts others left.
-                for ($i = 0; $i < $columnsToRemove; $i++) {
-                    // Important check: ensure the worksheet still has columns to remove
-                    if ($worksheet->getHighestColumn() >= 'A') {
-                         $worksheet->removeColumnByIndex(1); // Remove the first column (index 1)
-                    } else {
-                        // Should not happen if removing A-U, but safety check
-                        
-                        break; 
+
+                while (true) {
+
+                    $cell = $worksheet->getCell('A1');
+
+                    if (str_starts_with(trim((string)$cell->getValue()), 'Q2')) {
+                        break;
                     }
+
+                    if ($worksheet->getHighestColumn() === 'A') {
+                        break;
+                    }
+
+                    foreach ($worksheet->getMergeCells() as $range) {
+                        if(explode(':', $range)[0] === 'A') {
+                            $worksheet->unmergeCells($range);
+                        }
+                    }
+
+                    for ($i = 1; $i <= $worksheet->getHighestRow(); $i++) {
+                        $worksheet->getCell('A'.$i)->setValue(null);
+                    }
+
+                    $worksheet->removeColumnByIndex(1);
+
                 }
-                
 
                 // Create a temporary file path with the correct extension
                 $originalExtension = $file->guessExtension() ?: 'xlsx'; // Fallback extension
