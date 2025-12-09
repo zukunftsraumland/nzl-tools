@@ -520,6 +520,7 @@
               class="embed-projects-list-item-header-image"
               v-if="project.images.length"
               :style="{
+                backgroundSize: 'cover',
                 backgroundImage:
                   'url(' +
                   $env.HOST +
