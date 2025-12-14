@@ -509,6 +509,9 @@ class ZrlMigrateCommand extends Command
                     case '16.05.2. b)  Stärkung der Zusammenarbeit von AkteurInnen und Strukturen zur Erhaltung des natürlichen Erbes & des Umweltschutzes - Umweltschutz':
                         $oldPlan['plan'] = '16.05.2. b)  Stärkung der Zusammenarbeit von AkteurInnen und Strukturen zur Erhaltung des natürlichen Erbes & des Umweltschutzes';
                         break;
+                    case '16.05.2. b)  Stärkung der Zusammenarbeit von AkteurInnen und Strukturen zur Erhaltung des natürlichen Erbes & des Umweltschutzes - Umweltschutz':
+                        $oldPlan['plan'] = '16.09.1.  Förderung horizontaler & vertikaler Zusammenarbeit lw. & fw. AkteurInnen zur Schaffung & Entwicklung v. Sozialleistung';
+                        break;
                     default:
                         break;
                 }
