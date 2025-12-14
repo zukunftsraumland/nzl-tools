@@ -500,8 +500,14 @@ class ZrlMigrateCommand extends Command
                     case '8.5.3. Investitionen zur Stärkung des ökologischen Werts der Waldökosysteme - Wald-Ökologie-Programm':
                         $oldPlan['plan'] = '8.5.3. Investitionen zur Stärkung des ökologischen Werts der Waldökosysteme';
                         break;
-                    case '16.01.1. Unterstützung beim Aufbau & Betrieb operationeller Gruppen der EIP für lw. Produktivität & Nachhaltigkeit':
-                        $oldPlan['plan'] = '16.01.1. Unterstützung beim Aufbau & Betrieb operationeller Gruppen der EIP';
+                    case '16.01.1.  Unterstützung beim Aufbau & Betrieb operationeller Gruppen der EIP für lw. Produktivität & Nachhaltigkeit':
+                        $oldPlan['plan'] = '16.01.1.  Unterstützung beim Aufbau & Betrieb operationeller Gruppen der EIP';
+                        break;
+                    case '16.05.2. a) Stärkung der Zusammenarbeit von AkteurInnen und Strukturen zur Erhaltung des natürlichen Erbes & des Umweltschutzes - Naturschutz':
+                        $oldPlan['plan'] = '16.05.2. a) Stärkung der Zusammenarbeit von AkteurInnen und Strukturen zur Erhaltung des natürlichen Erbes & des Umweltschutzes';
+                        break;
+                    case '16.05.2. b)  Stärkung der Zusammenarbeit von AkteurInnen und Strukturen zur Erhaltung des natürlichen Erbes & des Umweltschutzes - Umweltschutz':
+                        $oldPlan['plan'] = '16.05.2. b)  Stärkung der Zusammenarbeit von AkteurInnen und Strukturen zur Erhaltung des natürlichen Erbes & des Umweltschutzes';
                         break;
                     default:
                         break;
