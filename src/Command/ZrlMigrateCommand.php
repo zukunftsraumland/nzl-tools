@@ -409,11 +409,11 @@ class ZrlMigrateCommand extends Command
             if($oldProject['lead_partner'] || $oldProject['contact'] || $oldProject['function'] || $oldProject['address'] || $oldProject['tel'] || $oldProject['email'] || $oldProject['url']) {
 
                 $contacts[] = [
-                    'name' => $oldProject['lead_partner'] ?? null,
-                    'firstName' => explode(' ', $oldProject['contact'] ?? '', 2)[0] ?? null,
-                    'lastName' => explode(' ', $oldProject['contact'] ?? '', 2)[1] ?? null,
-                    'role' => $oldProject['function'] ?? null,
-                    'phone' => $oldProject['tel'] ?? null,
+                    //'name' => $oldProject['lead_partner'] ?? null,
+                    //'firstName' => explode(' ', $oldProject['contact'] ?? '', 2)[0] ?? null,
+                    //'lastName' => explode(' ', $oldProject['contact'] ?? '', 2)[1] ?? null,
+                    //'role' => $oldProject['function'] ?? null,
+                    //'phone' => $oldProject['tel'] ?? null,
                     'email' => $oldProject['email'] ?? null,
                     'website' => $oldProject['url'] ?? null,
                     // street zip parsing impossible without AI
@@ -484,6 +484,28 @@ class ZrlMigrateCommand extends Command
             }
 
             if($oldPlan) {
+
+                switch(trim($oldPlan['plan'] ?? '')) {
+                    case '7.1.1. a) B Pläne und Entwicklungskonzepte zur Erhaltung des natürlichen Erbes - Naturschutz':
+                    case '7.1.1. a) L Pläne und Entwicklungskonzepte zur Erhaltung des natürlichen Erbes - Naturschutz':
+                        $oldPlan['plan'] = '7.1.1. a) Pläne und Entwicklungskonzepte zur Erhaltung des natürlichen Erbes - Naturschutz';
+                        break;
+                    case '7.6.1. a) B Studien und Investitionen zur Erhaltung, Wiederherstellung und Verbesserung des natürlichen Erbes - Naturschutz':
+                    case '7.6.1. a) L Studien und Investitionen zur Erhaltung, Wiederherstellung und Verbesserung des natürlichen Erbes - Naturschutz':
+                        $oldPlan['plan'] = '7.6.1. a) Studien und Investitionen zur Erhaltung, Wiederherstellung und Verbesserung des natürlichen Erbes - Naturschutz';
+                        break;
+                    case '8.5.1. Investitionen zur Stärkung von Resistenz und ökologischem Wert des Waldes - Öffentlicher Wert & Schutz vor Naturgefahren':
+                        $oldPlan['plan'] = '8.5.1. Investitionen zur Stärkung von Resistenz und ökologischem Wert des Waldes';
+                        break;
+                    case '8.5.3. Investitionen zur Stärkung des ökologischen Werts der Waldökosysteme - Wald-Ökologie-Programm':
+                        $oldPlan['plan'] = '8.5.3. Investitionen zur Stärkung des ökologischen Werts der Waldökosysteme';
+                        break;
+                    case '16.01.1. Unterstützung beim Aufbau & Betrieb operationeller Gruppen der EIP für lw. Produktivität & Nachhaltigkeit':
+                        $oldPlan['plan'] = '16.01.1. Unterstützung beim Aufbau & Betrieb operationeller Gruppen der EIP';
+                        break;
+                    default:
+                        break;
+                }
 
                 $leFundingMethod = $this->doctrine->getRepository(LEFundingMethod::class)->findOneBy([
                     'name' => $oldPlan['plan'],
