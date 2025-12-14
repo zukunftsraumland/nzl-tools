@@ -485,7 +485,11 @@ class ZrlMigrateCommand extends Command
 
             if($oldPlan) {
 
-                switch(trim($oldPlan['plan'] ?? '')) {
+                $oldPlan['plan'] = str_replace("\xC2\xA0", ' ', $oldPlan['plan']);
+                $oldPlan['plan'] = preg_replace('/\s+/u', ' ', $oldPlan['plan']);
+                $oldPlan['plan'] = trim($oldPlan['plan']);
+
+                switch($oldPlan['plan']) {
                     case '7.1.1. a) B Pläne und Entwicklungskonzepte zur Erhaltung des natürlichen Erbes - Naturschutz':
                     case '7.1.1. a) L Pläne und Entwicklungskonzepte zur Erhaltung des natürlichen Erbes - Naturschutz':
                         $oldPlan['plan'] = '7.1.1. a) Pläne und Entwicklungskonzepte zur Erhaltung des natürlichen Erbes - Naturschutz';
@@ -500,17 +504,14 @@ class ZrlMigrateCommand extends Command
                     case '8.5.3. Investitionen zur Stärkung des ökologischen Werts der Waldökosysteme - Wald-Ökologie-Programm':
                         $oldPlan['plan'] = '8.5.3. Investitionen zur Stärkung des ökologischen Werts der Waldökosysteme';
                         break;
-                    case '16.01.1.  Unterstützung beim Aufbau & Betrieb operationeller Gruppen der EIP für lw. Produktivität & Nachhaltigkeit':
-                        $oldPlan['plan'] = '16.01.1.  Unterstützung beim Aufbau & Betrieb operationeller Gruppen der EIP';
+                    case '16.01.1. Unterstützung beim Aufbau & Betrieb operationeller Gruppen der EIP für lw. Produktivität & Nachhaltigkeit':
+                        $oldPlan['plan'] = '16.01.1. Unterstützung beim Aufbau & Betrieb operationeller Gruppen der EIP';
                         break;
                     case '16.05.2. a) Stärkung der Zusammenarbeit von AkteurInnen und Strukturen zur Erhaltung des natürlichen Erbes & des Umweltschutzes - Naturschutz':
                         $oldPlan['plan'] = '16.05.2. a) Stärkung der Zusammenarbeit von AkteurInnen und Strukturen zur Erhaltung des natürlichen Erbes & des Umweltschutzes';
                         break;
-                    case '16.05.2. b)  Stärkung der Zusammenarbeit von AkteurInnen und Strukturen zur Erhaltung des natürlichen Erbes & des Umweltschutzes - Umweltschutz':
-                        $oldPlan['plan'] = '16.05.2. b)  Stärkung der Zusammenarbeit von AkteurInnen und Strukturen zur Erhaltung des natürlichen Erbes & des Umweltschutzes';
-                        break;
-                    case '16.05.2. b)  Stärkung der Zusammenarbeit von AkteurInnen und Strukturen zur Erhaltung des natürlichen Erbes & des Umweltschutzes - Umweltschutz':
-                        $oldPlan['plan'] = '16.09.1.  Förderung horizontaler & vertikaler Zusammenarbeit lw. & fw. AkteurInnen zur Schaffung & Entwicklung v. Sozialleistung';
+                    case '16.05.2. b) Stärkung der Zusammenarbeit von AkteurInnen und Strukturen zur Erhaltung des natürlichen Erbes & des Umweltschutzes - Umweltschutz':
+                        $oldPlan['plan'] = '16.05.2. b) Stärkung der Zusammenarbeit von AkteurInnen und Strukturen zur Erhaltung des natürlichen Erbes & des Umweltschutzes';
                         break;
                     default:
                         break;
