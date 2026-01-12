@@ -439,6 +439,10 @@ class ZrlMigrateCommand extends Command
 
                 if($period) {
                     $project->setLePeriod($period);
+
+                    if($period->getName() === 'LE 07–13') {
+                        $project->setIsPublic(false);
+                    }
                 } else {
                     $io->warning(sprintf('Cannot match period "%s" of project "%s" (ID: %s)', $oldPeriod['period'], $oldProject['identifier'], $oldProject['project_id']));
                 }
