@@ -441,6 +441,7 @@ class ZrlMigrateCommand extends Command
                     $project->setLePeriod($period);
 
                     if($period->getName() === 'LE 07–13') {
+                        $io->info(sprintf('Disabling LE 07–13 project "%s" (ID: %s)', $oldProject['identifier'], $oldProject['project_id']));
                         $project->setIsPublic(false);
                     }
                 } else {
