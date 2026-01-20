@@ -396,7 +396,7 @@ class ProjectImportManager
                 ];
                 
                 // Scan the header row (row 4) for case study specific headers
-                for ($col = 1; $col <= min(120, $highestColumnIndex); $col++) {
+                for ($col = 1; $col <= min(1024, $highestColumnIndex); $col++) {
                     $headerValue = $worksheet->getCellByColumnAndRow($col, 4)->getValue();
                     
                     if (in_array($headerValue, $caseStudyHeaders)) {
