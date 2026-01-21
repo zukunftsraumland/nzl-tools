@@ -1270,15 +1270,16 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             26 => 51, // 77-04 Reaktivierung des Leerstands...
             27 => 52, // 77-05 LEADER
             28 => 53, // 77-06 Förderung von Operationellen Gruppen...
-            29 => 54, // 78-02 Wissenstransfer für land- und forstwirtschaftliche Themenfelder...
-            30 => 55, // 78-03 Pädagogik LW, Umw., Ernähr.
-            31 => 56, // 78-03 Dialog mit der Gesellschaft LW, Umw., Ernähr.
-            32 => 57, // 78-03 Waldbezogene Pläne, Natur- und Gesellschaftsthemen
-            33 => 58, // 78-03-4WT Weiterbildung Mgmt in Regionen
-            34 => 59, // 78-03 Naturschutz BL
-            35 => 60, // 78-03 Naturschutz BMK
-            36 => 61, // 78-03 Nationalparke
-            37 => 62  // 78-03 Alpenkonvention
+            29 => 63, // 78-01 Land- und forstwirtschaftliche Betriebsberatung
+            30 => 54, // 78-02 Wissenstransfer für land- und forstwirtschaftliche Themenfelder...
+            31 => 55, // 78-03 Pädagogik LW, Umw., Ernähr.
+            32 => 56, // 78-03 Dialog mit der Gesellschaft LW, Umw., Ernähr.
+            33 => 57, // 78-03 Waldbezogene Pläne, Natur- und Gesellschaftsthemen
+            34 => 58, // 78-03-4WT Weiterbildung Mgmt in Regionen
+            35 => 59, // 78-03 Naturschutz BL
+            36 => 60, // 78-03 Naturschutz BMK
+            37 => 61, // 78-03 Nationalparke
+            38 => 62  // 78-03 Alpenkonvention
         ];
     }
 
