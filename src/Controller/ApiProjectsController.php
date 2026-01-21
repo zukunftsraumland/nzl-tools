@@ -550,7 +550,7 @@ class ApiProjectsController extends AbstractController
         $projects = $qb->getQuery()->getResult();
         $serializationGroups = ['id', 'project', 'topic', 'program', 'instrument', 'state', 'country', 'geographic_region', 'business_sector'];
 
-        if ($this->isGranted('ROLE_ADMIN')) {
+        if ($this->isGranted('ROLE_EDITOR')) {
             $serializationGroups[] = 'project_secure'; // Include contacts only for admins
         }
 
@@ -577,7 +577,7 @@ class ApiProjectsController extends AbstractController
 
         $serializationGroups = ['id', 'project', 'topic', 'program', 'instrument', 'state', 'country', 'geographic_region', 'business_sector'];
 
-        if ($this->isGranted('ROLE_ADMIN')) {
+        if ($this->isGranted('ROLE_EDITOR')) {
             $serializationGroups[] = 'project_secure'; // Include contacts only for admins
         }
 
