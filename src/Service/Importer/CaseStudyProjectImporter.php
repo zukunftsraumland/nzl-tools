@@ -1320,15 +1320,16 @@ class CaseStudyProjectImporter extends StandardProjectImporter
             26 => '77-04 Reaktivierung des Leerstands durch Bewusstseinsbildung & Beratung, Entwicklungskonzepte & Management zur Stadt- und Ortskernstärkung',
             27 => '77-05 LEADER',
             28 => '77-06 Förderung von Operationellen Gruppen und von Innovationsprojekten im Rahmen der Europäischen Innovationspartnerschaft für landwirtschaftliche Produktivität und Nachhaltigkeit – EIP-AGRI',
-            29 => '78-02 Wissenstransfer für land- und forstwirtschaftliche Themenfelder(fachliche und persönliche Fort- und Weiterbildung und Information)',
-            30 => '78-03 Pädagogik LW, Umw., Ernähr.',
-            31 => '78-03 Dialog mit der Gesellschaft LW, Umw., Ernähr.',
-            32 => '78-03 Waldbezogene Pläne, Natur- und Gesellschaftsthemen',
-            33 => '78-03-4WT Weiterbildung Mgmt in Regionen',
-            34 => '78-03 Naturschutz BL',
-            35 => '78-03 Naturschutz BMK',
-            36 => '78-03 Nationalparke',
-            37 => '78-03 Alpenkonvention'
+            29 => '78-01 Land- und forstwirtschaftliche Betriebsberatung',
+            30 => '78-02 Wissenstransfer für land- und forstwirtschaftliche Themenfelder(fachliche und persönliche Fort- und Weiterbildung und Information)',
+            31 => '78-03 Pädagogik LW, Umw., Ernähr.',
+            32 => '78-03 Dialog mit der Gesellschaft LW, Umw., Ernähr.',
+            33 => '78-03 Waldbezogene Pläne, Natur- und Gesellschaftsthemen',
+            34 => '78-03-4WT Weiterbildung Mgmt in Regionen',
+            35 => '78-03 Naturschutz BL',
+            36 => '78-03 Naturschutz BMK',
+            37 => '78-03 Nationalparke',
+            38 => '78-03 Alpenkonvention'
         ];
     }
 
