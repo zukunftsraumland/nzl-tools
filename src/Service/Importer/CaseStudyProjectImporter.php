@@ -1598,7 +1598,10 @@ class CaseStudyProjectImporter extends StandardProjectImporter
                         if ($existingProject) {
                             // Update the project with the new data
                             try {
-                                $this->projectService->updateProject($existingProject, $result['payload']);
+                                $this->projectService->updateProject($existingProject, [
+                                    ...$result['payload'],
+                                    'isPublic' => $existingProject->getIsPublic(),
+                                ]);
                                 
                                 $item->setStatus(ProjectImportItem::STATUS_COMPLETED);
                                 $item->setProject($existingProject);

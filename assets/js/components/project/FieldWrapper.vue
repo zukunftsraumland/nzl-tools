@@ -368,11 +368,11 @@ export default {
 
     compareHTML(a, b) {
       return (
-        a
+        ('' + a)
           .replace(/(<([^>]+)>)/gi, "")
           .replace(/&nbsp;/gi, " ")
           .replace(/\s+/g, "") ===
-        b
+        ('' + b)
           .replace(/(<([^>]+)>)/gi, "")
           .replace(/&nbsp;/gi, " ")
           .replace(/\s+/g, "")

@@ -409,11 +409,11 @@ class ZrlMigrateCommand extends Command
             if($oldProject['lead_partner'] || $oldProject['contact'] || $oldProject['function'] || $oldProject['address'] || $oldProject['tel'] || $oldProject['email'] || $oldProject['url']) {
 
                 $contacts[] = [
-                    //'name' => $oldProject['lead_partner'] ?? null,
-                    //'firstName' => explode(' ', $oldProject['contact'] ?? '', 2)[0] ?? null,
-                    //'lastName' => explode(' ', $oldProject['contact'] ?? '', 2)[1] ?? null,
-                    //'role' => $oldProject['function'] ?? null,
-                    //'phone' => $oldProject['tel'] ?? null,
+                    'name' => $oldProject['lead_partner'] ?? null,
+                    'firstName' => explode(' ', $oldProject['contact'] ?? '', 2)[0] ?? null,
+                    'lastName' => explode(' ', $oldProject['contact'] ?? '', 2)[1] ?? null,
+                    'role' => $oldProject['function'] ?? null,
+                    'phone' => $oldProject['tel'] ?? null,
                     'email' => $oldProject['email'] ?? null,
                     'website' => $oldProject['url'] ?? null,
                     // street zip parsing impossible without AI

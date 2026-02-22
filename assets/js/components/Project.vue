@@ -106,7 +106,7 @@
           },
         ]"
         :project="project"
-        :diff="diff"
+        :diff="diff ? { ...diff, localWorkgroup: (diff.localWorkgroup ? {id: diff.localWorkgroup} : null) } : null"
         :locale="locale"
         @mergeFields="mergeFields"
         @update:project="project = $event"
@@ -1597,7 +1597,7 @@
                 >
                   <div class="row">
                     <div class="col-md-12">
-                      <label>Name</label>
+                      <label>Projektträger</label>
                       <input type="text" class="form-control" v-model="contact.name" />
                     </div>
                   </div>
@@ -1719,7 +1719,7 @@
                 >
                   <div class="row">
                     <div class="col-md-12">
-                      <label>Name</label>
+                      <label>Projektträger</label>
                       <input
                         readonly
                         type="text"
@@ -1853,7 +1853,7 @@
                 >
                   <div class="row">
                     <div class="col-md-12">
-                      <label>Name</label>
+                      <label>Projektträger</label>
                       <input type="text" class="form-control" v-model="contact.name" />
                     </div>
                   </div>
@@ -1992,7 +1992,7 @@
                 >
                   <div class="row">
                     <div class="col-md-12">
-                      <label>Name</label>
+                      <label>Projektträger</label>
                       <input
                         readonly
                         type="text"
@@ -2152,7 +2152,7 @@
                 >
                   <div class="row">
                     <div class="col-md-12">
-                      <label>Name</label>
+                      <label>Projektträger</label>
                       <input
                         readonly
                         type="text"
@@ -2411,6 +2411,22 @@ export default {
           { id: "costsExternal", value: null }, // Andere Finanzquellen
         ],
         financingError: false,
+        exemplary: '',
+        initialContext: '',
+        initialContextGoals: '',
+        fundingMethod: '',
+        fundingMethodStakeholders: '',
+        resultsQuantity: '',
+        resultsQuality: '',
+        additionalValue: '',
+        additionalValueResult: '',
+        innovations: '',
+        integrationYoungCitizen: '',
+        integrationFemaleCitizen: '',
+        integrationMinorities: '',
+        learningExperience: '',
+        transferable: '',
+        transferDetails: '',
         topics: [],
         tags: [],
         geographicRegions: [],

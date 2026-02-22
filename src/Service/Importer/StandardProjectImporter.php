@@ -459,24 +459,7 @@ class StandardProjectImporter extends AbstractProjectImporter
                     $payload['financing'][$key]['value'] = 0;
                 }
             }
-            
-            // Process contact (Q12)
-            if (!empty($data['Q12'])) {
-                $contact = [
-                    'firstName' => $data['Q12.1'] ?? '',
-                    'lastName' => $data['Q12.2'] ?? '',
-                    'email' => $data['Q12.3'] ?? '',
-                    'phone' => $data['Q12.4'] ?? '',
-                    'organization' => $data['Q12.5'] ?? '',
-                    'position' => $data['Q12.6'] ?? '',
-                    'isPublic' => true
-                ];
-                
-                if (!empty($contact['firstName']) || !empty($contact['lastName']) || !empty($contact['email'])) {
-                    $payload['contacts'][] = $contact;
-                }
-            }
-            
+
             // Process contacts from columns AO-AX
             $this->processContactsFromExcel($data, $payload);
             
@@ -516,22 +499,20 @@ class StandardProjectImporter extends AbstractProjectImporter
     private function processContactsFromExcel(array $data, array &$payload): void
     {
         
-        // Process contact using field codes Q12.1-Q12.10
-        if (!empty($data['Q12.1']) || !empty($data['Q12.2']) || !empty($data['Q12.3'])) {
+        if (!empty($data['Q12.3']) || !empty($data['Q12.4']) || !empty($data['Q12.5']) || !empty($data['Q12.6']) || !empty($data['Q12.7']) || !empty($data['Q12.8']) || !empty($data['Q12.9'])) {
+
             $contact = [
-                'firstName' => $data['Q12.1'] ?? '',
-                'lastName' => $data['Q12.2'] ?? '',
-                'email' => $data['Q12.3'] ?? '',
-                'phone' => $data['Q12.4'] ?? '',
-                'name' => $data['Q12.5'] ?? '', // Organization name
-                'position' => $data['Q12.6'] ?? '',
+                'name' => $data['Q12.3'] ?? '',
+                'firstName' => explode(' ', trim((string)$data['Q12.4'] ?? ''), 2)[0] ?? '',
+                'lastName' => explode(' ', trim((string)$data['Q12.4'] ?? ''), 2)[1] ?? '',
+                'email' => $data['Q12.5'] ?? '',
+                'phone' => $data['Q12.6'] ?? '',
                 'zipCode' => $data['Q12.7'] ?? '',
                 'city' => $data['Q12.8'] ?? '',
                 'street' => $data['Q12.9'] ?? '',
-                'additionalInfo' => $data['Q12.10'] ?? '',
-                'public' => true
+                'isPublic' => true
             ];
-            
+
             $payload['contacts'][] = $contact;
         }
 
@@ -1246,7 +1227,10 @@ class StandardProjectImporter extends AbstractProjectImporter
                     
                     if ($existingProject) {                       
                         // Update the project with the new data
-                        $this->projectService->updateProject($existingProject, $result['payload']);
+                        $this->projectService->updateProject($existingProject, [
+                            ...$result['payload'],
+                            'isPublic' => $existingProject->getIsPublic(),
+                        ]);
                         
                         // Update the item status
                         $item->setStatus(ProjectImportItem::STATUS_COMPLETED);
@@ -2119,24 +2103,10 @@ class StandardProjectImporter extends AbstractProjectImporter
                 $payload['financing'][2]['value'] = $value;
             }
         }
-        
-        // Simplified contact processing - just create a basic structure without all the details
-        if (!empty($data['Q12'])) {
-            $contact = [
-                'firstName' => $data['Q12.1'] ?? '',
-                'lastName' => $data['Q12.2'] ?? '',
-                'email' => $data['Q12.3'] ?? '',
-                'phone' => $data['Q12.4'] ?? '',
-                'organization' => $data['Q12.5'] ?? '',
-                'position' => $data['Q12.6'] ?? '',
-                'isPublic' => true
-            ];
-            
-            if (!empty($contact['firstName']) || !empty($contact['lastName']) || !empty($contact['email'])) {
-                $payload['contacts'][] = $contact;
-            }
-        }
-        
+
+        // Process contacts from columns AO-AX
+        $this->processContactsFromExcel($data, $payload);
+
         // Process links for preview using fixed column mappings (AY/AZ, BA/BB, etc.)
         $this->processStandardLinks($data, $payload);
         

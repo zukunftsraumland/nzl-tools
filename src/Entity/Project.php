@@ -1238,6 +1238,17 @@ class Project
         return !empty($this->getContacts() ?? []);
     }
 
+    #[Groups(['project'])]
+    public function getLeadPartner(): ?string {
+        foreach (($this->getContacts() ?? []) as $contact) {
+            if($contact['name'] ?? null) {
+                return $contact['name'];
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Set links
      *
@@ -1703,7 +1714,7 @@ class Project
      */
     public function getExemplary(): ?string
     {
-        return $this->exemplary;
+        return $this->exemplary ?? '';
     }
 
 
@@ -1716,7 +1727,7 @@ class Project
 
     public function getInitialContext(): ?string
     {
-        return $this->initialContext;
+        return $this->initialContext ?? '';
     }
 
     public function setInitialContext(?string $initialContext): static
@@ -1728,7 +1739,7 @@ class Project
 
     public function getInitialContextGoals(): ?string
     {
-        return $this->initialContextGoals;
+        return $this->initialContextGoals ?? '';
     }
 
     public function setInitialContextGoals(?string $initialContextGoals): static
@@ -1740,7 +1751,7 @@ class Project
 
     public function getAdditionalValue(): ?string
     {
-        return $this->additionalValue;
+        return $this->additionalValue ?? '';
     }
 
     public function setAdditionalValue(?string $additionalValue): static
@@ -1752,7 +1763,7 @@ class Project
 
     public function getAdditionalValueResult(): ?string
     {
-        return $this->additionalValueResult;
+        return $this->additionalValueResult ?? '';
     }
 
     public function setAdditionalValueResult(?string $additionalValueResult): static
@@ -1764,7 +1775,7 @@ class Project
 
     public function getInnovations(): ?string
     {
-        return $this->innovations;
+        return $this->innovations ?? '';
     }
 
     public function setInnovations(?string $innovations): static
@@ -1776,7 +1787,7 @@ class Project
 
     public function getIntegrationYoungCitizen(): ?string
     {
-        return $this->integrationYoungCitizen;
+        return $this->integrationYoungCitizen ?? '';
     }
 
     public function setIntegrationYoungCitizen(?string $integrationYoungCitizen): static
@@ -1788,7 +1799,7 @@ class Project
 
     public function getIntegrationFemaleCitizen(): ?string
     {
-        return $this->integrationFemaleCitizen;
+        return $this->integrationFemaleCitizen ?? '';
     }
 
     public function setIntegrationFemaleCitizen(?string $integrationFemaleCitizen): static
@@ -1800,7 +1811,7 @@ class Project
 
     public function getIntegrationMinorities(): ?string
     {
-        return $this->integrationMinorities;
+        return $this->integrationMinorities ?? '';
     }
 
     public function setIntegrationMinorities(?string $integrationMinorities): static
@@ -1812,7 +1823,7 @@ class Project
 
     public function getLearningExperience(): ?string
     {
-        return $this->learningExperience;
+        return $this->learningExperience ?? '';
     }
 
     public function setLearningExperience(?string $learningExperience): static
@@ -1824,7 +1835,7 @@ class Project
 
     public function getTransferable(): ?string
     {
-        return $this->transferable;
+        return $this->transferable ?? '';
     }
 
     public function setTransferable(?string $transferable): static
@@ -1836,7 +1847,7 @@ class Project
 
     public function getTransferDetails(): ?string
     {
-        return $this->transferDetails;
+        return $this->transferDetails ?? '';
     }
 
     public function setTransferDetails(?string $transferDetails): static
@@ -1848,7 +1859,7 @@ class Project
 
     public function getFundingMethod(): ?string
     {
-        return $this->fundingMethod;
+        return $this->fundingMethod ?? '';
     }
 
     public function setFundingMethod(?string $fundingMethod): self
@@ -1860,7 +1871,7 @@ class Project
 
     public function getFundingMethodStakeholders(): ?string
     {
-        return $this->fundingMethodStakeholders;
+        return $this->fundingMethodStakeholders ?? '';
     }
 
     public function setFundingMethodStakeholders(?string $fundingMethodStakeholders): self
@@ -1872,7 +1883,7 @@ class Project
 
     public function getResultsQuantity(): ?string
     {
-        return $this->resultsQuantity;
+        return $this->resultsQuantity ?? '';
     }
 
     public function setResultsQuantity(?string $resultsQuantity): self
@@ -1884,7 +1895,7 @@ class Project
 
     public function getResultsQuality(): ?string
     {
-        return $this->resultsQuality;
+        return $this->resultsQuality ?? '';
     }
 
     public function setResultsQuality(?string $resultsQuality): self
