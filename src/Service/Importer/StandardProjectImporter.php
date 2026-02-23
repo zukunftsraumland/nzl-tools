@@ -1497,7 +1497,7 @@ class StandardProjectImporter extends AbstractProjectImporter
             68 => 65,  // STM13 LEADER Aktionsgruppe Lipizzanerheimat -> LAG Lipizzanerheimat
             69 => 66,  // STM14 Steir. Vulkanland -> LAG Steirisches Vulkanland
             70 => 67,  // STM15 LAG Oststeirisches Kernland -> LAG Oststeirisches Kernland
-            71 => 83, // STM16 LAG Graz Umgebung Nord -> No match
+            71 => 83, // STM16 LAG Grazer Bergland -> No match
             72 => 68,  // TIR01 Verein Regionalmangement Bezirk Imst -> LAG Regionalmangement Bezirk Imst
             73 => 69,  // TIR02 Verein Regionalentwicklung Außerfern -REA -> LAG Regionalentwicklung Außerfern - REA
             74 => 70,  // TIR03 RegioL Regionalmanagement Landeck -> LAG Regionalmanagement Landeck - RegioL
@@ -1591,7 +1591,7 @@ class StandardProjectImporter extends AbstractProjectImporter
             68 => 'STM13 LEADER Aktionsgruppe Lipizzanerheimat',
             69 => 'STM14 Steir. Vulkanland',
             70 => 'STM15 LAG Oststeirisches Kernland',
-            71 => 'STM16 LAG Graz Umgebung Nord',
+            71 => 'STM16 LAG Grazer Bergland',
             72 => 'TIR01 Verein Regionalmangement Bezirk Imst',
             73 => 'TIR02 Verein Regionalentwicklung Außerfern -REA',
             74 => 'TIR03 RegioL Regionalmanagement Landeck',

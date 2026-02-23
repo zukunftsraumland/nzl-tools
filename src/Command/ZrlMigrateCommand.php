@@ -124,6 +124,7 @@ class ZrlMigrateCommand extends Command
                 ->setCreatedAt(new \DateTime($oldProject['publishing_date']))
                 ->setSource('zrl')
                 ->setForeignId($oldProject['project_id'])
+                ->setIsPublic($oldProject['show_web'] === '1')
             ;
 
             $project = $this->doctrine->getManager()->getRepository(Project::class)->findOneBy([
@@ -141,7 +142,6 @@ class ZrlMigrateCommand extends Command
             }
 
             $project
-                ->setIsPublic($oldProject['show_web'] === '1')
                 ->setProjectCode($oldProject['identifier'])
                 ->setTitle($oldProjectTrans['title'])
                 ->setKeywords('')
